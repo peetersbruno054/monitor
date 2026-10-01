@@ -1,4 +1,4 @@
-import { generateReport, authenticate } from '../lib/orpen.js';
+import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
@@ -17,7 +17,7 @@ function payload(reportId, start, end, destiny) {
     protocolStatus: '0', attendance_type: '', date_grouping_option: 'by_date', group_by_queue: '1', include_available_agents: '1',
     show_service_level_for_abandons: '1', startLetter: '0', uci: '0', blacklist: '0', optIn: '0', optOut: '0',
     show_only_first_substatus: '1', lineDivision: '1', minTalkTime: '0', graphDivision: '1', abandonThreshold: '5',
-    include_transfer_info: '0', email: 'admti@safeweb.com.br', reportDestiny: destiny
+    include_transfer_info: '0', email: process.env.ORPEN_REPORT_EMAIL || 'admti@safeweb.com.br', reportDestiny: destiny
   };
   if (reportId === 72) p.bot_point = BOT_POINTS;
   if (reportId === 74) p.survey_bots = ['66666','393939','313131','323232','676767'];
@@ -29,7 +29,7 @@ function deepFindPath(value) {
   function walk(x) {
     if (x == null) return '';
     if (typeof x === 'string') {
-      if (/generatedReports\/tmp\/.*\.csv/i.test(x) || /report_.*\.csv/i.test(x)) return x;
+      if (/generatedReports\\/tmp\\/.*\\.csv/i.test(x) || /report_.*\\.csv/i.test(x)) return x;
       try { return walk(JSON.parse(x)); } catch (_) { return ''; }
     }
     if (typeof x !== 'object' || seen.has(x)) return '';
@@ -54,30 +54,29 @@ function extractDirect(raw) {
   } catch (_) { return raw; }
 }
 
-async function fetchGeneratedPath(path) {
-  const token = await authenticate();
-  const url = new URL(path, BASE.startsWith('http') ? BASE : undefined);
-  for (let i=0; i<8; i++) {
+async function fetchGeneratedPath(path, session) {
+  const url = new URL(path, BASE);
+  for (let i = 0; i < 8; i++) {
     url.searchParams.set('_', Date.now());
-    const r = await fetch(url, {
-      headers: { authorization: `Bearer ${token}`, 'x-requested-with':'XMLHttpRequest', accept:'text/plain,text/csv,application/json,*/*' }
+    const r = await orpenFetch(url, session, {
+      headers: { accept: 'text/plain,text/csv,application/json,*/*' }
     });
     const text = await r.text();
     const nested = deepFindPath(text);
-    if (nested && nested !== path) return fetchGeneratedPath(nested);
-    if (r.ok && text && !/^\s*\{\s*"?success"?\s*:/i.test(text) && !/<html|<!doctype/i.test(text)) return text;
+    if (nested && nested !== path) return fetchGeneratedPath(nested, session);
+    if (r.ok && text && !/^\\s*\\{\\s*"?success"?\\s*:/i.test(text) && !/<html|<!doctype/i.test(text)) return text;
     await new Promise(resolve => setTimeout(resolve, 1200));
   }
-  throw new Error('O CSV do R72 não ficou disponível após as tentativas.');
+  throw new Error('O CSV do relatório não ficou disponível após as tentativas.');
 }
 
-async function load(reportId, start, end, destinies) {
+async function load(reportId, start, end, destinies, session) {
   let last = '';
   for (const destiny of destinies) {
-    const raw = await generateReport(payload(reportId,start,end,destiny));
+    const raw = await generateReport(payload(reportId,start,end,destiny), session);
     const path = deepFindPath(raw);
     if (path) {
-      const csv = await fetchGeneratedPath(path);
+      const csv = await fetchGeneratedPath(path, session);
       if (csv) return csv;
     }
     const direct = extractDirect(raw);
@@ -92,11 +91,22 @@ export default async function handler(req, res) {
   try {
     const { start, end } = req.body || {};
     if (!start || !end) return res.status(400).json({ ok:false, error:'Informe start e end.' });
+
+    const session = await authenticate();
+
     const [r72, r74] = await Promise.all([
-      load(72,start,end,['csv','screen']),
-      load(74,start,end,['screen','csv'])
+      load(72,start,end,['csv','screen'],session),
+      load(74,start,end,['screen','csv'],session)
     ]);
-    res.status(200).json({ ok:true, version:'3.0.0', period:{start,end}, r72, r74 });
+
+    res.status(200).json({
+      ok:true,
+      version:'3.0.0',
+      period:{start,end},
+      auth:{ userId:session.userId, userType:session.userType },
+      r72,
+      r74
+    });
   } catch (error) {
     res.status(500).json({ ok:false, error:error?.message || 'Erro ao consultar o Orpen.' });
   }

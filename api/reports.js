@@ -89,15 +89,14 @@ async function load(reportId, start, end, destinies, session) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok:false, error:'Método não permitido.' });
   try {
-    const { start, end } = req.body || {};
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    const { start, end } = body;
     if (!start || !end) return res.status(400).json({ ok:false, error:'Informe start e end.' });
 
     const session = await authenticate();
 
-    const [r72, r74] = await Promise.all([
-      load(72,start,end,['csv','screen'],session),
-      load(74,start,end,['screen','csv'],session)
-    ]);
+    const r72 = await load(72,start,end,['csv','screen'],session);
+    const r74 = await load(74,start,end,['screen','csv'],session);
 
     res.status(200).json({
       ok:true,
@@ -108,6 +107,7 @@ export default async function handler(req, res) {
       r74
     });
   } catch (error) {
-    res.status(500).json({ ok:false, error:error?.message || 'Erro ao consultar o Orpen.' });
+    console.error('Monitor IA /api/reports:', error);
+    if (!res.headersSent) res.status(500).json({ ok:false, error:error?.message || 'Erro ao consultar o Orpen.', name:error?.name || 'Error' });
   }
 }

@@ -205,7 +205,7 @@ async function downloadCsv(path, session) {
 function findPath(value) {
   if (!value) return '';
   if (typeof value === 'string') {
-    return /generatedReports\\/tmp\\/.*\\.(csv|pdf)/i.test(value) || /report_.*\\.(csv|pdf)/i.test(value) ? value : '';
+    return /generatedReports\/tmp\/.*\.(csv|pdf)/i.test(value) || /report_.*\.(csv|pdf)/i.test(value) ? value : '';
   }
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -293,13 +293,13 @@ async function loadReport(reportId, start, end, session) {
       }
 
       const path = findPath(result || raw);
-      if (path && /\\.csv$/i.test(path)) {
+      if (path && /\.csv$/i.test(path)) {
         const csv = await downloadCsv(path, session);
         const rows = reportId === 72 ? normalizeR72(csv) : normalizeR74(csv);
         if (rows.length) return { path, rows, destiny };
       }
 
-      if (path && /\\.pdf$/i.test(path) && destiny === 'screen') {
+      if (path && /\.pdf$/i.test(path) && destiny === 'screen') {
         continue;
       }
 

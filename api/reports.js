@@ -57,56 +57,163 @@ function payload(reportId, start, end) {
   return p;
 }
 
-function parseCsvLine(line) {
-  const out = [];
+function normalizeText(value) {
+  return String(value ?? '')
+    .replace(/^\uFEFF/, '')
+    .replace(/\u00A0/g, ' ')
+    .trim();
+}
+
+function normalizeHeader(value) {
+  return normalizeText(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function detectDelimiter(text) {
+  const sample = String(text || '')
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .slice(0, 8);
+
+  const candidates = [',', ';', '\t', '|'];
+  let best = ',';
+  let bestScore = -1;
+
+  for (const delimiter of candidates) {
+    let score = 0;
+
+    for (const line of sample) {
+      let quoted = false;
+      let count = 0;
+
+      for (let i = 0; i < line.length; i += 1) {
+        const char = line[i];
+
+        if (char === '"') {
+          if (quoted && line[i + 1] === '"') {
+            i += 1;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (char === delimiter && !quoted) {
+          count += 1;
+        }
+      }
+
+      score += count;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = delimiter;
+    }
+  }
+
+  return best;
+}
+
+function parseCsv(text) {
+  const input = String(text || '').replace(/^\uFEFF/, '');
+  if (!input.trim()) return [];
+
+  const delimiter = detectDelimiter(input);
+  const rows = [];
+  let row = [];
   let value = '';
   let quoted = false;
 
-  for (let i = 0; i < line.length; i += 1) {
-    const char = line[i];
+  for (let i = 0; i < input.length; i += 1) {
+    const char = input[i];
 
     if (char === '"') {
-      if (quoted && line[i + 1] === '"') {
+      if (quoted && input[i + 1] === '"') {
         value += '"';
         i += 1;
       } else {
         quoted = !quoted;
       }
-    } else if (char === ',' && !quoted) {
-      out.push(value);
-      value = '';
-    } else {
-      value += char;
+      continue;
     }
+
+    if (char === delimiter && !quoted) {
+      row.push(value);
+      value = '';
+      continue;
+    }
+
+    if (char === '\n' && !quoted) {
+      row.push(value);
+      value = '';
+      if (row.some((cell) => normalizeText(cell) !== '')) rows.push(row);
+      row = [];
+      continue;
+    }
+
+    if (char === '\r' && !quoted) {
+      if (input[i + 1] === '\n') continue;
+      row.push(value);
+      value = '';
+      if (row.some((cell) => normalizeText(cell) !== '')) rows.push(row);
+      row = [];
+      continue;
+    }
+
+    value += char;
   }
 
-  out.push(value);
-  return out;
-}
-
-function parseCsv(text) {
-  const clean = String(text || '').replace(/^\uFEFF/, '');
-  const lines = clean.split(/\r?\n/);
-  const rows = [];
-
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    rows.push(parseCsvLine(line));
-  }
+  row.push(value);
+  if (row.some((cell) => normalizeText(cell) !== '')) rows.push(row);
 
   return rows;
 }
 
-function rowsToObjects(rows) {
-  if (!rows.length) return [];
-  const headers = rows[0].map((value) => value.trim());
-  return rows.slice(1).map((row) => {
+function findHeaderRow(rows, aliases) {
+  const wanted = aliases.map(normalizeHeader);
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const normalized = rows[index].map(normalizeHeader);
+    const matches = wanted.filter((alias) =>
+      normalized.some((header) => header === alias || header.includes(alias) || alias.includes(header))
+    ).length;
+
+    if (matches >= 2) return index;
+  }
+
+  return 0;
+}
+
+function rowsToObjects(rows, headerIndex = 0) {
+  if (!rows.length || !rows[headerIndex]) return [];
+
+  const headers = rows[headerIndex].map((value, index) => {
+    const header = normalizeText(value);
+    return header || `c${index}`;
+  });
+
+  return rows.slice(headerIndex + 1).map((row) => {
     const item = {};
+
     headers.forEach((header, index) => {
-      item[header] = String(row[index] ?? '').trim();
+      item[header] = normalizeText(row[index]);
     });
+
     return item;
   });
+}
+
+function findColumn(row, aliases) {
+  const keys = Object.keys(row || {});
+  const wanted = aliases.map(normalizeHeader);
+
+  return keys.find((key) => {
+    const normalized = normalizeHeader(key);
+    return wanted.some((alias) =>
+      normalized === alias || normalized.includes(alias) || alias.includes(normalized)
+    );
+  }) || '';
 }
 
 function parseNumber(value) {
@@ -117,62 +224,87 @@ function parseNumber(value) {
 
 function normalizeR72(csv) {
   const rows = parseCsv(csv);
-  const data = rowsToObjects(rows);
+  if (!rows.length) return [];
 
-  return data.map((row) => ({
-    Data: row['Data'] || '',
-    Protocolo: row['Protocolo'] || '',
-    'Tipo de Entrada': row['Tipo de Entrada'] || '',
-    Cliente: row['Cliente'] || '',
-    Contato: row['Contato'] || '',
-    'Pontos de Bot': row['Pontos de Bot'] || '',
-    Agente: row['Agente'] || '',
-    date: row['Data'] || '',
-    protocol: row['Protocolo'] || '',
-    inputType: row['Tipo de Entrada'] || '',
-    client: row['Cliente'] || '',
-    contact: row['Contato'] || '',
-    botPoint: row['Pontos de Bot'] || '',
-    agent: row['Agente'] || ''
-  }));
+  const headerIndex = findHeaderRow(rows, [
+    'Data',
+    'Protocolo',
+    'Pontos de Bot',
+    'Agente'
+  ]);
+  const data = rowsToObjects(rows, headerIndex);
+
+  return data.map((row) => {
+    const dateKey = findColumn(row, ['Data/Hora', 'Data Hora', 'Data']);
+    const protocolKey = findColumn(row, ['Protocolo', 'Protocol']);
+    const inputKey = findColumn(row, ['Tipo de Entrada', 'Input Type', 'Tipo Entrada']);
+    const clientKey = findColumn(row, ['Cliente', 'Client']);
+    const contactKey = findColumn(row, ['Contato', 'Telefone', 'Contact', 'Phone']);
+    const botPointKey = findColumn(row, ['Pontos de Bot', 'Bot Point', 'Checkpoint', 'Ponto de Bot']);
+    const agentKey = findColumn(row, ['Agente', 'Agent']);
+
+    return {
+      Data: row[dateKey] || '',
+      Protocolo: row[protocolKey] || '',
+      'Tipo de Entrada': row[inputKey] || '',
+      Cliente: row[clientKey] || '',
+      Contato: row[contactKey] || '',
+      'Pontos de Bot': row[botPointKey] || '',
+      Agente: row[agentKey] || '',
+      date: row[dateKey] || '',
+      protocol: row[protocolKey] || '',
+      inputType: row[inputKey] || '',
+      client: row[clientKey] || '',
+      contact: row[contactKey] || '',
+      botPoint: row[botPointKey] || '',
+      agent: row[agentKey] || '',
+      raw: row
+    };
+  }).filter((row) => row.protocol || row.botPoint || row.agent);
 }
 
 function normalizeR74(csv) {
   const rows = parseCsv(csv);
-  const data = [];
-  let answersStarted = false;
+  if (!rows.length) return [];
 
-  for (const row of rows) {
-    if (!row.length || !row[0]) continue;
+  const headerIndex = findHeaderRow(rows, [
+    'Data/Hora',
+    'Agente',
+    'Contato',
+    'Protocolo',
+    'Questão',
+    'Nota'
+  ]);
+  const data = rowsToObjects(rows, headerIndex);
 
-    const first = String(row[0]).trim();
+  return data
+    .filter((row) => {
+      const firstKey = Object.keys(row)[0] || '';
+      const first = normalizeHeader(row[firstKey] || '');
+      return first !== 'media de agentes' && first !== 'satisfacao geral';
+    })
+    .map((row) => {
+      const dateKey = findColumn(row, ['Data/Hora', 'Data Hora', 'Data', 'Date']);
+      const agentKey = findColumn(row, ['Agente', 'Agent']);
+      const contactKey = findColumn(row, ['Contato', 'Telefone', 'Contact', 'Phone']);
+      const protocolKey = findColumn(row, ['Protocolo', 'Protocol']);
+      const questionKey = findColumn(row, ['Questão', 'Questao', 'Pergunta', 'Question']);
+      const answerKey = findColumn(row, ['Nota', 'Resposta', 'Answer', 'Response']);
 
-    // O relatório começa com o título "Pesquisa de satisfação".
-    // As respostas começam na linha de cabeçalho Data/Hora,...
-    if (first === 'Data/Hora') {
-      answersStarted = true;
-      continue;
-    }
+      const answer = row[answerKey] || '';
 
-    // Depois das respostas aparecem as seções de médias.
-    if (first === 'Média de Agentes' || first === 'Satisfação Geral') {
-      answersStarted = false;
-      continue;
-    }
-
-    if (answersStarted && row.length >= 6) {
-      data.push({
-        date: row[0] || '',
-        agent: row[1] || '',
-        contact: row[2] || '',
-        protocol: row[3] || '',
-        question: row[4] || '',
-        answer: row.slice(5).join(',').trim()
-      });
-    }
-  }
-
-  return data;
+      return {
+        date: row[dateKey] || '',
+        agent: row[agentKey] || '',
+        contact: row[contactKey] || '',
+        protocol: row[protocolKey] || '',
+        question: row[questionKey] || '',
+        answer,
+        note: parseNumber(answer),
+        raw: row
+      };
+    })
+    .filter((row) => row.protocol || row.question || row.answer);
 }
 
 async function downloadCsv(path, session) {
@@ -225,13 +357,13 @@ async function loadReport(reportId, start, end, session) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('x-monitor-build', '3.2.0');
+  res.setHeader('x-monitor-build', '3.3.0');
 
   if (req.method === 'GET') {
     return res.status(200).json({
       ok: true,
       route: 'reports',
-      build: '3.2.0',
+      build: '3.3.0',
       runtime: process.version
     });
   }
@@ -298,7 +430,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      version: '3.2.0',
+      version: '3.3.0',
       period: { start, end },
       auth: {
         authMethod: session.authMethod || 'unknown',

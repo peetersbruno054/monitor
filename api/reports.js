@@ -88,6 +88,7 @@ async function load(reportId, start, end, destinies, session) {
 
 export default async function handler(req, res) {
   res.setHeader('x-monitor-build', '3.0.2');
+  if (req.method === 'GET') return res.status(200).json({ ok:true, route:'reports', build:'3.0.2', runtime:process.version });
   if (req.method !== 'POST') return res.status(405).json({ ok:false, error:'Método não permitido.' });
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});

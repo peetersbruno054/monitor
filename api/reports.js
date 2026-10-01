@@ -3,7 +3,6 @@ import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const SURVEY_BOTS = ['66666', '393939', '313131', '323232', '676767'];
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
-const BUILD = '3.3.0';
 
 function brDate(iso) {
   const [y, m, d] = String(iso || '').split('-');
@@ -50,7 +49,7 @@ function payload(reportId, start, end) {
     abandonThreshold: '5',
     include_transfer_info: '0',
     email: process.env.ORPEN_REPORT_EMAIL || 'admti@safeweb.com.br',
-    reportDestiny: reportId === 74 ? 'screen' : 'csv'
+    reportDestiny: 'csv'
   };
 
   if (reportId === 72) p.bot_point = BOT_POINTS;
@@ -202,124 +201,37 @@ async function downloadCsv(path, session) {
   throw new Error('O CSV gerado pelo Orpen não ficou disponível.');
 }
 
-function findPath(value) {
-  if (!value) return '';
-  if (typeof value === 'string') {
-    return /generatedReports\/tmp\/.*\.(csv|pdf)/i.test(value) || /report_.*\.(csv|pdf)/i.test(value) ? value : '';
-  }
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findPath(item);
-      if (found) return found;
-    }
-    return '';
-  }
-  if (typeof value === 'object') {
-    for (const key of ['result', 'data', 'url', 'path', 'file', 'filename', 'href']) {
-      const found = findPath(value[key]);
-      if (found) return found;
-    }
-    for (const item of Object.values(value)) {
-      const found = findPath(item);
-      if (found) return found;
-    }
-  }
-  return '';
-}
-
-function extractDirectRows(value) {
-  if (!value || typeof value !== 'object') return null;
-  for (const key of ['data', 'rows', 'result', 'aaData', 'items', 'records']) {
-    const candidate = value[key];
-    if (Array.isArray(candidate) && candidate.length) return candidate;
-    if (candidate && typeof candidate === 'object') {
-      const nested = extractDirectRows(candidate);
-      if (nested) return nested;
-    }
-  }
-  return null;
-}
-
-function normalizeDirect(reportId, rows) {
-  if (!Array.isArray(rows)) return [];
-  if (reportId === 72) {
-    return rows.map((row) => {
-      if (Array.isArray(row)) {
-        return {
-          Data: row[0] || '', Protocolo: row[1] || '', 'Tipo de Entrada': row[2] || '',
-          Cliente: row[3] || '', Contato: row[4] || '', 'Pontos de Bot': row[5] || '', Agente: row[6] || '',
-          date: row[0] || '', protocol: row[1] || '', inputType: row[2] || '', client: row[3] || '',
-          contact: row[4] || '', botPoint: row[5] || '', agent: row[6] || ''
-        };
-      }
-      return {
-        Data: row?.Data || row?.date || '', Protocolo: row?.Protocolo || row?.protocol || '',
-        'Tipo de Entrada': row?.['Tipo de Entrada'] || row?.inputType || '',
-        Cliente: row?.Cliente || row?.client || '', Contato: row?.Contato || row?.contact || '',
-        'Pontos de Bot': row?.['Pontos de Bot'] || row?.botPoint || '', Agente: row?.Agente || row?.agent || '',
-        date: row?.Data || row?.date || '', protocol: row?.Protocolo || row?.protocol || '',
-        inputType: row?.['Tipo de Entrada'] || row?.inputType || '', client: row?.Cliente || row?.client || '',
-        contact: row?.Contato || row?.contact || '', botPoint: row?.['Pontos de Bot'] || row?.botPoint || '',
-        agent: row?.Agente || row?.agent || ''
-      };
-    });
-  }
-  return rows.map((row) => Array.isArray(row)
-    ? { date: row[0] || '', agent: row[1] || '', contact: row[2] || '', protocol: row[3] || '', question: row[4] || '', answer: row.slice(5).join(',').trim() }
-    : {
-        date: row?.['Data/Hora'] || row?.date || '', agent: row?.Agente || row?.agent || '',
-        contact: row?.Contato || row?.contact || '', protocol: row?.Protocolo || row?.protocol || '',
-        question: row?.Questão || row?.Pergunta || row?.question || '', answer: row?.Nota || row?.Resposta || row?.answer || ''
-      });
-}
-
 async function loadReport(reportId, start, end, session) {
-  const destinies = reportId === 74 ? ['screen', 'csv'] : ['csv', 'screen'];
-  let lastError = null;
+  const raw = await generateReport(payload(reportId, start, end), session);
 
-  for (const destiny of destinies) {
-    try {
-      const p = payload(reportId, start, end);
-      p.reportDestiny = destiny;
-      const raw = await generateReport(p, session, { destiny });
-
-      let result = null;
-      try { result = JSON.parse(String(raw).replace(/^\s+/, '')); } catch (_) {}
-
-      const direct = result ? extractDirectRows(result) : null;
-      if (direct) {
-        const rows = normalizeDirect(reportId, direct);
-        if (rows.length) return { path: '', rows, destiny };
-      }
-
-      const path = findPath(result || raw);
-      if (path && /\.csv$/i.test(path)) {
-        const csv = await downloadCsv(path, session);
-        const rows = reportId === 72 ? normalizeR72(csv) : normalizeR74(csv);
-        if (rows.length) return { path, rows, destiny };
-      }
-
-      if (path && /\.pdf$/i.test(path) && destiny === 'screen') {
-        continue;
-      }
-
-      lastError = new Error(`O Orpen não retornou dados úteis no R${reportId} com destino ${destiny}.`);
-    } catch (error) {
-      lastError = error;
-    }
+  let result;
+  try {
+    result = JSON.parse(String(raw).replace(/^\s+/, ''));
+  } catch (_) {
+    throw new Error(`O Orpen não retornou JSON ao gerar o R${reportId}.`);
   }
 
-  throw lastError || new Error(`Não foi possível obter o R${reportId}.`);
+  const path = result?.result;
+  if (!path) {
+    throw new Error(`O Orpen não retornou o arquivo do R${reportId}.`);
+  }
+
+  const csv = await downloadCsv(path, session);
+
+  return {
+    path,
+    rows: reportId === 72 ? normalizeR72(csv) : normalizeR74(csv)
+  };
 }
 
 export default async function handler(req, res) {
-  res.setHeader('x-monitor-build', BUILD);
+  res.setHeader('x-monitor-build', '3.2.0');
 
   if (req.method === 'GET') {
     return res.status(200).json({
       ok: true,
       route: 'reports',
-      build: BUILD,
+      build: '3.2.0',
       runtime: process.version
     });
   }
@@ -386,7 +298,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      version: BUILD,
+      version: '3.2.0',
       period: { start, end },
       auth: {
         authMethod: session.authMethod || 'unknown',

@@ -50,7 +50,7 @@ input:disabled{background:var(--surface2);color:var(--muted)}
 .tabs button:hover{color:#fff;background:rgba(255,255,255,.06)}
 .tabs button.active{color:#fff;font-weight:600}
 .tabs button.active:after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--cyan)}
-.tabs em{min-width:20px;height:19px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:11px;font-style:normal;font-weight:600;line-height:19px;text-align:center}
+.tabs em:empty{display:none}.tabs em{min-width:20px;height:19px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:11px;font-style:normal;font-weight:600;line-height:19px;text-align:center}
 .shell{max-width:1480px;margin:auto;padding:20px 24px 48px}
 .view{display:flex;flex-direction:column;gap:16px}
 .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}

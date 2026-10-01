@@ -222,6 +222,35 @@ function parseNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function classifyR72Point(value) {
+  const point = normalizeHeader(value);
+
+  if (point.includes('problema nao resolvido')) return 'nao';
+  if (point.includes('falha de conhecimento')) return 'outro';
+  if (point.includes('problema resolvido')) return 'resolvido';
+  if (point.includes('finaliza safenota')) return 'outro';
+  if (
+    point.includes('transferencia fila') ||
+    point.includes('transfere ac') ||
+    point.includes('transferencia ac') ||
+    point.includes('transfere documental') ||
+    point.includes('transferencia documental') ||
+    point.includes('transferencial comercial') ||
+    point.includes('transferencia comercial') ||
+    point.includes('transfere comercial')
+  ) return 'transferido';
+  if (point.includes('nao retomou') || point.includes('nao retornou')) return 'outro';
+  if (
+    point.includes('atendimento retomado') ||
+    point.includes('retomada apos inatividade') ||
+    point.includes('retomado') ||
+    point.includes('retomou atendimento')
+  ) return 'retomado';
+  if (point.includes('inatividade')) return 'inatividade';
+  if (point.includes('pesquisa encaminhada')) return 'possivel';
+  return 'outro';
+}
+
 function normalizeR72(csv) {
   const rows = parseCsv(csv);
   if (!rows.length) return [];
@@ -258,6 +287,7 @@ function normalizeR72(csv) {
       contact: row[contactKey] || '',
       botPoint: row[botPointKey] || '',
       agent: row[agentKey] || '',
+      outcome: classifyR72Point(row[botPointKey] || ''),
       raw: row
     };
   }).filter((row) => row.protocol || row.botPoint || row.agent);
@@ -460,7 +490,19 @@ export default async function handler(req, res) {
       r74: r74.rows,
       meta: {
         r72Rows: r72.rows.length,
-        r74Rows: r74.rows.length
+        r74Rows: r74.rows.length,
+        r72ProblemUnresolvedRows: r72.rows.filter((row) => row.outcome === 'nao').length,
+        r72ProblemUnresolvedProtocols: new Set(
+          r72.rows
+            .filter((row) => row.outcome === 'nao' && row.protocol)
+            .map((row) => row.protocol)
+        ).size,
+        r72ProblemUnresolvedPoints: [...new Set(
+          r72.rows
+            .filter((row) => row.outcome === 'nao')
+            .map((row) => row.botPoint)
+            .filter(Boolean)
+        )]
       }
     });
   } catch (error) {

@@ -120,6 +120,13 @@ function normalizeR72(csv) {
   const data = rowsToObjects(rows);
 
   return data.map((row) => ({
+    Data: row['Data'] || '',
+    Protocolo: row['Protocolo'] || '',
+    'Tipo de Entrada': row['Tipo de Entrada'] || '',
+    Cliente: row['Cliente'] || '',
+    Contato: row['Contato'] || '',
+    'Pontos de Bot': row['Pontos de Bot'] || '',
+    Agente: row['Agente'] || '',
     date: row['Data'] || '',
     protocol: row['Protocolo'] || '',
     inputType: row['Tipo de Entrada'] || '',

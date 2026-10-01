@@ -93,10 +93,29 @@ export default async function handler(req, res) {
     const { start, end } = body;
     if (!start || !end) return res.status(400).json({ ok:false, error:'Informe start e end.' });
 
-    const session = await authenticate();
+    let session;
+    try {
+      session = await authenticate();
+    } catch (error) {
+      console.error('Monitor IA auth:', error);
+      return res.status(502).json({ ok:false, stage:'authenticate', error:error?.message || String(error), name:error?.name || 'Error' });
+    }
 
-    const r72 = await load(72,start,end,['csv','screen'],session);
-    const r74 = await load(74,start,end,['screen','csv'],session);
+    let r72;
+    try {
+      r72 = await load(72,start,end,['csv','screen'],session);
+    } catch (error) {
+      console.error('Monitor IA R72:', error);
+      return res.status(502).json({ ok:false, stage:'r72', error:error?.message || String(error), name:error?.name || 'Error' });
+    }
+
+    let r74;
+    try {
+      r74 = await load(74,start,end,['screen','csv'],session);
+    } catch (error) {
+      console.error('Monitor IA R74:', error);
+      return res.status(502).json({ ok:false, stage:'r74', error:error?.message || String(error), name:error?.name || 'Error' });
+    }
 
     res.status(200).json({
       ok:true,

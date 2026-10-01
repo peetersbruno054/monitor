@@ -299,3 +299,54 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
 @media(max-width:400px){
   body{zoom:.90}
 }
+
+/* Protocol cards: prevent mobile content from stretching the row */
+@media(max-width:620px){
+  .unresolved-row{
+    grid-template-columns:40px minmax(0,1fr);
+    align-items:start;
+  }
+  .unresolved-row .row-main{
+    min-width:0;
+    max-width:100%;
+  }
+  .unresolved-row .row-top{
+    min-width:0;
+    align-items:flex-start;
+  }
+  .unresolved-row .row-top b{
+    min-width:0;
+    max-width:100%;
+    overflow-wrap:anywhere;
+  }
+  .unresolved-row .row-top .pill,
+  .unresolved-row .row-top .row-date{
+    max-width:100%;
+    overflow-wrap:anywhere;
+    white-space:normal;
+  }
+  .unresolved-row .row-content{
+    max-width:100%;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+  .unresolved-row .view-btn{
+    grid-column:2;
+    width:auto;
+    max-width:100%;
+    justify-self:start;
+  }
+}
+@media(max-width:400px){
+  .unresolved-row{
+    grid-template-columns:36px minmax(0,1fr);
+    gap:10px;
+  }
+  .unresolved-row .score-box{
+    width:34px;
+    height:34px;
+  }
+  .unresolved-row .view-btn{
+    max-width:100%;
+  }
+}

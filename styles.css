@@ -300,249 +300,75 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
   body{zoom:.90}
 }
 
-/* Protocol cards: prevent mobile content from stretching the row */
-@media(max-width:620px){
-  .unresolved-row{
-    grid-template-columns:40px minmax(0,1fr);
-    align-items:start;
-  }
-  .unresolved-row .row-main{
-    min-width:0;
-    max-width:100%;
-  }
-  .unresolved-row .row-top{
-    min-width:0;
-    align-items:flex-start;
-  }
-  .unresolved-row .row-top b{
-    min-width:0;
-    max-width:100%;
-    overflow-wrap:anywhere;
-  }
-  .unresolved-row .row-top .pill,
-  .unresolved-row .row-top .row-date{
-    max-width:100%;
-    overflow-wrap:anywhere;
-    white-space:normal;
-  }
-  .unresolved-row .row-content{
-    max-width:100%;
-    overflow-wrap:anywhere;
-    word-break:break-word;
-  }
-  .unresolved-row .view-btn{
-    grid-column:2;
-    width:auto;
-    max-width:100%;
-    justify-self:start;
-  }
-}
-@media(max-width:400px){
-  .unresolved-row{
-    grid-template-columns:36px minmax(0,1fr);
-    gap:10px;
-  }
-  .unresolved-row .score-box{
-    width:34px;
-    height:34px;
-  }
-  .unresolved-row .view-btn{
-    max-width:100%;
-  }
-}
-
-/* Dedicated unresolved-protocol cards */
+/* Protocol cards: single consistent layout */
 .protocol-card{
   display:grid;
   grid-template-columns:42px minmax(0,1fr) 118px;
   gap:12px;
   align-items:start;
+  min-width:0;
+  width:100%;
   padding:14px 5px;
   border-bottom:1px solid var(--line2);
-  min-width:0;
 }
-.protocol-card .score-box{
-  flex:0 0 38px;
+.protocol-card-head{
+  display:contents;
 }
-.protocol-card .row-main{
-  min-width:0;
-  max-width:100%;
+.protocol-card-head>.score-box{
+  width:38px;
+  height:38px;
 }
-.protocol-card .row-top{
+.protocol-card-info{
   min-width:0;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.protocol-card-info .row-top{
+  min-width:0;
+  width:100%;
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px 8px;
   flex-wrap:wrap;
 }
-.protocol-card .row-top b{
+.protocol-card-info .row-top b{
   min-width:0;
   overflow-wrap:anywhere;
 }
-.protocol-card .row-top .pill,
-.protocol-card .row-top .row-date{
+.protocol-card-info .row-top .pill,
+.protocol-card-info .row-top .row-date{
   max-width:100%;
-  overflow-wrap:anywhere;
   white-space:normal;
-}
-.protocol-card .row-content{
-  min-width:0;
-  max-width:100%;
   overflow-wrap:anywhere;
-  word-break:break-word;
 }
-.protocol-card .view-btn{
-  width:118px;
-  max-width:100%;
-}
-@media(max-width:620px){
-  .protocol-card{
-    grid-template-columns:40px minmax(0,1fr);
-    gap:10px;
-    padding:13px 2px;
-  }
-  .protocol-card .score-box{
-    width:38px;
-    height:38px;
-  }
-  .protocol-card .view-btn{
-    grid-column:2;
-    width:max-content;
-    max-width:100%;
-    justify-self:start;
-  }
-}
-@media(max-width:400px){
-  .protocol-card{
-    grid-template-columns:36px minmax(0,1fr);
-    gap:9px;
-  }
-  .protocol-card .score-box{
-    width:34px;
-    height:34px;
-  }
-  .protocol-card .view-btn{
-    white-space:nowrap;
-  }
-}
-
-/* Protocol card layout: stable hierarchy on desktop and mobile */
-.protocol-card{
-  display:grid;
-  grid-template-columns:42px minmax(0,1fr) 118px;
-  gap:12px;
-  align-items:start;
-  min-width:0;
-  padding:14px 5px;
-  border-bottom:1px solid var(--line2);
-}
-.protocol-card-head{display:contents}
-.protocol-card-info{min-width:0;max-width:100%}
-.protocol-card-info .row-top{min-width:0}
-.protocol-card-info .row-top b{min-width:0;overflow-wrap:anywhere}
-.protocol-card-info .row-content{
-  min-width:0;
-  max-width:100%;
-  overflow-wrap:anywhere;
-  word-break:normal;
-}
-.protocol-card-actions{min-width:0}
-.protocol-card-actions .view-btn{
-  width:118px;
-  max-width:100%;
-}
-@media(max-width:620px){
-  .protocol-card{
-    display:grid;
-    grid-template-columns:1fr;
-    gap:9px;
-    padding:14px 2px;
-  }
-  .protocol-card-head{
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    min-width:0;
-  }
-  .protocol-card-head .score-box{
-    flex:0 0 38px;
-  }
-  .protocol-card-info{
-    flex:1 1 auto;
-    min-width:0;
-  }
-  .protocol-card-info .row-top{
-    display:flex;
-    align-items:flex-start;
-    gap:6px 8px;
-  }
-  .protocol-card-info .row-top b{
-    flex:1 1 100%;
-    line-height:1.3;
-  }
-  .protocol-card-info .row-top .pill,
-  .protocol-card-info .row-top .row-date{
-    max-width:100%;
-    white-space:normal;
-    overflow-wrap:anywhere;
-  }
-  .protocol-card-info .row-content{
-    width:100%;
-    margin-top:7px;
-    padding:9px 10px;
-  }
-  .protocol-card-info .row-content .pill{
-    display:inline-block;
-    max-width:100%;
-    white-space:normal;
-    vertical-align:top;
-    line-height:1.3;
-  }
-  .protocol-card-actions{
-    padding-left:48px;
-  }
-  .protocol-card-actions .view-btn{
-    width:max-content;
-    max-width:100%;
-  }
-}
-@media(max-width:400px){
-  .protocol-card-head{
-    gap:9px;
-  }
-  .protocol-card-head .score-box{
-    flex-basis:34px;
-    width:34px;
-    height:34px;
-  }
-  .protocol-card-actions{
-    padding-left:43px;
-  }
-}
-
-/* Protocol card text spacing */
-.protocol-card-head{min-width:0}
-.protocol-card-info{min-width:0;display:flex;flex-direction:column;gap:8px}
-.protocol-card-info .row-top{row-gap:5px}
 .protocol-point{
   display:flex;
   flex-direction:column;
   align-items:flex-start;
   gap:5px;
   min-width:0;
+  width:100%;
   color:var(--ink2);
   font-size:12px;
   line-height:1.45;
 }
-.protocol-point>.pill{max-width:100%;white-space:normal;line-height:1.3}
-.protocol-point>div{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.protocol-point>.pill{
+  max-width:100%;
+  white-space:normal;
+  line-height:1.3;
+}
+.protocol-point>div{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+}
 .protocol-card-survey{
   display:flex;
   flex-direction:column;
   gap:8px;
   min-width:0;
-  margin-top:0;
-  padding:0;
 }
 .protocol-detail{
   display:grid;
@@ -557,20 +383,104 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
   font-size:12px;
   line-height:1.45;
 }
-.protocol-detail>strong{color:var(--muted);font-size:11px}
-.detail-values{min-width:0;display:flex;flex-wrap:wrap;gap:5px}
-.detail-values .pill{max-width:100%;white-space:normal;line-height:1.3}
-.detail-text{min-width:0;overflow-wrap:anywhere}
-.protocol-card-actions{padding-top:1px}
+.protocol-detail>strong{
+  color:var(--muted);
+  font-size:11px;
+}
+.detail-values{
+  min-width:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.detail-values .pill{
+  max-width:100%;
+  white-space:normal;
+  line-height:1.3;
+}
+.detail-text{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.protocol-card-actions{
+  min-width:0;
+  align-self:start;
+}
+.protocol-card-actions .view-btn{
+  width:118px;
+  max-width:100%;
+}
+
 @media(max-width:620px){
-  .protocol-card-info{gap:9px}
-  .protocol-point{gap:6px}
-  .protocol-card-survey{gap:7px}
+  .protocol-card{
+    display:block;
+    padding:14px 2px;
+  }
+  .protocol-card-head{
+    display:grid;
+    grid-template-columns:38px minmax(0,1fr);
+    gap:10px;
+    align-items:start;
+    width:100%;
+  }
+  .protocol-card-head>.score-box{
+    grid-column:1;
+    width:38px;
+    height:38px;
+  }
+  .protocol-card-info{
+    grid-column:2;
+    width:100%;
+    gap:8px;
+  }
+  .protocol-card-info .row-top{
+    align-items:flex-start;
+  }
+  .protocol-card-info .row-top b{
+    flex:1 1 100%;
+    line-height:1.3;
+  }
+  .protocol-point{
+    gap:6px;
+  }
+  .protocol-card-survey{
+    margin:9px 0 0 48px;
+    gap:7px;
+  }
   .protocol-detail{
     grid-template-columns:1fr;
     gap:4px;
     padding:9px 10px;
   }
-  .protocol-detail>strong{font-size:11px}
-  .detail-values{gap:5px}
+  .protocol-detail>strong{
+    font-size:11px;
+  }
+  .protocol-card-actions{
+    margin:9px 0 0 48px;
+  }
+  .protocol-card-actions .view-btn{
+    width:max-content;
+  }
+}
+
+@media(max-width:400px){
+  .protocol-card{
+    padding:13px 1px;
+  }
+  .protocol-card-head{
+    grid-template-columns:34px minmax(0,1fr);
+    gap:9px;
+  }
+  .protocol-card-head>.score-box{
+    width:34px;
+    height:34px;
+  }
+  .protocol-card-survey,
+  .protocol-card-actions{
+    margin-left:43px;
+  }
+  .protocol-detail{
+    padding:8px 9px;
+  }
 }

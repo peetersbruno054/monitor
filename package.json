@@ -1,7 +1,11 @@
 {
   "name": "monitor-ia-safeweb",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "description": "Monitor IA Safeweb — dashboard web para R72/R74 no Orpen.",
   "scripts": { "dev": "vercel dev" }
 }

@@ -257,7 +257,7 @@ function normalizeR72(csv) {
       client: row[clientKey] || '',
       contact: row[contactKey] || '',
       botPoint: row[botPointKey] || '',
-      agent: row[agentKey] || '',
+      agent: row[agentKey] || 'Sem IA identificada',
       raw: row
     };
   }).filter((row) => row.protocol || row.botPoint || row.agent);
@@ -275,36 +275,55 @@ function normalizeR74(csv) {
     'Questão',
     'Nota'
   ]);
-  const data = rowsToObjects(rows, headerIndex);
 
-  return data
-    .filter((row) => {
-      const firstKey = Object.keys(row)[0] || '';
-      const first = normalizeHeader(row[firstKey] || '');
-      return first !== 'media de agentes' && first !== 'satisfacao geral';
-    })
-    .map((row) => {
-      const dateKey = findColumn(row, ['Data/Hora', 'Data Hora', 'Data', 'Date']);
-      const agentKey = findColumn(row, ['Agente', 'Agent']);
-      const contactKey = findColumn(row, ['Contato', 'Telefone', 'Contact', 'Phone']);
-      const protocolKey = findColumn(row, ['Protocolo', 'Protocol']);
-      const questionKey = findColumn(row, ['Questão', 'Questao', 'Pergunta', 'Question']);
-      const answerKey = findColumn(row, ['Nota', 'Resposta', 'Answer', 'Response']);
+  if (!rows[headerIndex]) return [];
 
-      const answer = row[answerKey] || '';
+  const headers = rows[headerIndex].map((value, index) => {
+    const header = normalizeText(value);
+    return header || `c${index}`;
+  });
 
-      return {
-        date: row[dateKey] || '',
-        agent: row[agentKey] || '',
-        contact: row[contactKey] || '',
-        protocol: row[protocolKey] || '',
-        question: row[questionKey] || '',
-        answer,
-        note: parseNumber(answer),
-        raw: row
-      };
-    })
-    .filter((row) => row.protocol || row.question || row.answer);
+  const data = [];
+
+  for (let index = headerIndex + 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    const first = normalizeHeader(row?.[0] || '');
+
+    if (first === 'media de agentes' || first === 'satisfacao geral') {
+      break;
+    }
+
+    if (!row?.length) continue;
+
+    const object = {};
+    headers.forEach((header, columnIndex) => {
+      object[header] = normalizeText(row[columnIndex]);
+    });
+
+    const dateKey = findColumn(object, ['Data/Hora', 'Data Hora', 'Data', 'Date']);
+    const agentKey = findColumn(object, ['Agente', 'Agent']);
+    const contactKey = findColumn(object, ['Contato', 'Telefone', 'Contact', 'Phone']);
+    const protocolKey = findColumn(object, ['Protocolo', 'Protocol']);
+    const questionKey = findColumn(object, ['Questão', 'Questao', 'Pergunta', 'Question']);
+    const answerKey = findColumn(object, ['Nota', 'Resposta', 'Answer', 'Response']);
+
+    const answer = object[answerKey] || '';
+
+    if (!(object[protocolKey] || object[questionKey] || answer)) continue;
+
+    data.push({
+      date: object[dateKey] || '',
+      agent: object[agentKey] || 'Sem IA identificada',
+      contact: object[contactKey] || '',
+      protocol: object[protocolKey] || '',
+      question: object[questionKey] || '',
+      answer,
+      note: parseNumber(answer),
+      raw: object
+    });
+  }
+
+  return data;
 }
 
 async function downloadCsv(path, session) {

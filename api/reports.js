@@ -257,7 +257,7 @@ function normalizeR72(csv) {
       client: row[clientKey] || '',
       contact: row[contactKey] || '',
       botPoint: row[botPointKey] || '',
-      agent: row[agentKey] || 'Sem IA identificada',
+      agent: row[agentKey] || '',
       raw: row
     };
   }).filter((row) => row.protocol || row.botPoint || row.agent);
@@ -313,7 +313,7 @@ function normalizeR74(csv) {
 
     data.push({
       date: object[dateKey] || '',
-      agent: object[agentKey] || 'Sem IA identificada',
+      agent: object[agentKey] || '',
       contact: object[contactKey] || '',
       protocol: object[protocolKey] || '',
       question: object[questionKey] || '',

@@ -140,19 +140,27 @@ function normalizeR72(csv) {
 function normalizeR74(csv) {
   const rows = parseCsv(csv);
   const data = [];
-  let section = 'answers';
+  let answersStarted = false;
 
   for (const row of rows) {
     if (!row.length || !row[0]) continue;
 
     const first = String(row[0]).trim();
 
-    if (first === 'Média de Agentes' || first === 'Satisfação Geral') {
-      section = 'summary';
+    // O relatório começa com o título "Pesquisa de satisfação".
+    // As respostas começam na linha de cabeçalho Data/Hora,...
+    if (first === 'Data/Hora') {
+      answersStarted = true;
       continue;
     }
 
-    if (section === 'answers' && row.length >= 6 && row[0] !== 'Data/Hora') {
+    // Depois das respostas aparecem as seções de médias.
+    if (first === 'Média de Agentes' || first === 'Satisfação Geral') {
+      answersStarted = false;
+      continue;
+    }
+
+    if (answersStarted && row.length >= 6) {
       data.push({
         date: row[0] || '',
         agent: row[1] || '',

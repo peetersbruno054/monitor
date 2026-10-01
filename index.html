@@ -1,9 +1,124 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Monitor IA · Safeweb</title><link rel="stylesheet" href="/styles.css"></head><body>
-<header class="topbar"><div class="brand"><div class="logo">safeweb</div><div class="brand-title"><b>Monitor IA</b><small>Agentes de IA no Orpen</small></div></div><div class="actions"><label>Período <select id="preset"><option value="today">Hoje</option><option value="yesterday">Ontem</option><option value="7days">Últimos 7 dias</option><option value="custom">Personalizado</option></select></label><input id="start" type="date"><input id="end" type="date"><button class="report-btn" id="reportBtn">⇩ &nbsp;Relatório da coordenação</button><button id="refresh">↻ &nbsp;Atualizar dados</button><span class="last-status">Última coleta<strong id="status">Dados de Hoje</strong><small>coletados há pouco</small></span></div></header>
-<nav class="nav"><button class="active" data-view="overview">▦ &nbsp;Visão geral</button><button data-view="surveys">Pesquisas <em id="tabSurveys"></em></button><button data-view="quality">Qualidade <em id="tabQuality"></em></button><button data-view="protocols">Protocolos <em id="tabProtocols"></em></button></nav>
-<main><div id="notice" class="notice" hidden></div>
-<section data-panel="overview"><div id="overviewKpis" class="grid kpis"></div><article class="panel"><div class="head"><div><h2>Desfechos da IA</h2><p>Como terminaram os atendimentos que passaram pela IA.</p></div><span id="outcomeBadge" class="badge"></span></div><div id="outcomes"></div></article><article class="panel"><div class="head"><div><h2>Desempenho por IA</h2><p>Desfechos do R72 e nota da pesquisa do R74.</p></div><div><button class="mode active" data-mode="cards">Resumo</button><button class="mode" data-mode="table">Tabela</button></div></div><div id="agentCards" class="agents"></div><div id="agentTable" hidden></div></article></section>
-<section data-panel="surveys" hidden><div id="surveyKpis" class="grid kpis five"></div><div class="two"><article class="panel"><div class="head"><div><h2>Satisfação do cliente</h2><p>Distribuição das notas de 1 a 5.</p></div><strong id="scoreLabel"></strong></div><div id="satDist"></div><div id="satByIA"></div></article><article class="panel"><div class="head"><div><h2>Como a IA ajudou</h2><p>Motivos da nota nas pesquisas.</p></div></div><div id="helpBody"></div></article></div><article class="panel"><div class="head"><div><h2>Todas as respostas</h2><p>Nota, motivo e comentário.</p></div><span id="surveyCount" class="badge"></span></div><div class="toolbar"><input id="surveySearch" placeholder="Buscar protocolo, IA, comentário ou motivo"><select id="surveyAgent"><option value="">Todas as IAs</option></select><select id="surveyOption"><option value="">Todos os motivos</option></select><select id="surveySize"><option>10</option><option selected>20</option><option>50</option></select></div><div id="surveyChips" class="chips"></div><div id="surveyList"></div><div id="surveyPager" class="pager"></div></article></section>
-<section data-panel="quality" hidden><div id="qualityKpis" class="grid kpis"></div><article class="panel"><div class="head"><div><h2>Clientes que voltaram em até 24h</h2><p>Mesmo telefone/contato em protocolos diferentes.</p></div><span id="recontactBadge" class="badge"></span></div><div class="two"><div><h3>Tempo até voltar</h3><div id="recontactWindows" class="columns"></div></div><div id="recontactList"></div></div></article><article class="panel"><div class="head"><div><h2>Bot points do R72</h2><p>Os 23 pontos monitorados, inclusive zerados.</p></div><span id="checkpointBadge" class="badge"></span></div><div id="checkpointList" class="checkpoints"></div></article></section>
-<section data-panel="protocols" hidden><div id="protocolKpis" class="grid kpis"></div><article class="panel"><div class="head"><div><h2>Problemas não resolvidos</h2><p>Protocolos cujo último ponto relevante foi “Problema não resolvido”.</p></div><span id="unresolvedBadge" class="badge"></span></div><div class="toolbar"><input id="unresolvedSearch" placeholder="Buscar protocolo, IA, contato ou motivo"><select id="unresolvedAgent"><option value="">Todas as IAs</option></select><select id="unresolvedSize"><option>10</option><option selected>20</option><option>50</option></select></div><div id="unresolvedChips" class="chips"></div><div id="unresolvedList"></div><div id="unresolvedPager" class="pager"></div></article></section>
-</main><script src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monitor IA · Safeweb</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-logo-text">safeweb</div>
+      <span class="brand-sep"></span>
+      <div class="brand-text"><h1>Monitor IA</h1><p>Agentes de IA no Orpen</p></div>
+    </div>
+    <div class="controls">
+      <div class="period">
+        <label for="preset">Período</label>
+        <select id="preset">
+          <option value="today">Hoje</option><option value="yesterday">Ontem</option>
+          <option value="7days">Últimos 7 dias</option><option value="custom">Personalizado</option>
+        </select>
+        <input id="start" type="date" aria-label="Data inicial">
+        <input id="end" type="date" aria-label="Data final">
+      </div>
+      <button id="reportBtn" class="btn btn-secondary" type="button"><span class="btn-icon">↓</span> Relatório da coordenação</button>
+      <button id="refresh" class="btn btn-primary" type="button"><span class="btn-icon">↻</span> Atualizar dados</button>
+      <div class="freshness"><span>Última coleta</span><strong id="status">Dados de Hoje</strong><small>coletados há pouco</small></div>
+    </div>
+  </div>
+</header>
+
+<nav class="rail">
+  <div class="rail-inner">
+    <div class="rail-spacer"></div>
+    <div class="tabs">
+      <button type="button" class="active" data-view="overview"><span>▦</span> Visão geral</button>
+      <button type="button" data-view="surveys"><span>◌</span> Pesquisas <em id="tabSurveys"></em></button>
+      <button type="button" data-view="quality"><span>↪</span> Qualidade <em id="tabQuality"></em></button>
+      <button type="button" data-view="protocols"><span>▤</span> Protocolos <em id="tabProtocols"></em></button>
+    </div>
+  </div>
+</nav>
+
+<main id="main" class="shell">
+  <div id="notice" class="notice" hidden></div>
+
+  <section data-panel="overview" class="view">
+    <div id="overviewKpis" class="kpis kpis-4"></div>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Desfechos da IA</h2><p>Como terminaram os atendimentos que passaram pela IA</p></div><span id="outcomeBadge" class="badge"></span></div>
+      <div id="outcomes"></div>
+      <div id="complement"></div>
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Desempenho por IA</h2><p>Desfechos do R72 e nota da pesquisa do R74, por agente</p></div>
+        <div class="segmented"><button class="mode active" data-mode="cards">Resumo</button><button class="mode" data-mode="table">Tabela</button></div>
+      </div>
+      <div id="agentCards" class="agent-cards"></div>
+      <div id="agentTable" class="table-wrap" hidden></div>
+    </article>
+  </section>
+
+  <section data-panel="surveys" class="view" hidden>
+    <div id="surveyKpis" class="kpis kpis-5"></div>
+    <div class="grid-2">
+      <article class="panel">
+        <div class="panel-head"><div><h2>Satisfação do cliente</h2><p>Distribuição das notas de 1 a 5</p></div><div id="scoreLabel" class="score"></div></div>
+        <div id="satDist"></div>
+        <div id="satByIA"></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><div><h2>Como a IA ajudou</h2><p>Motivos informados nas pesquisas</p></div></div>
+        <div id="helpBody"></div>
+      </article>
+    </div>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Todas as respostas</h2><p>Nota, como a IA ajudou e comentário, agrupados por protocolo</p></div><span id="surveyCount" class="badge"></span></div>
+      <div class="toolbar">
+        <input id="surveySearch" type="search" placeholder="Buscar protocolo, IA, comentário ou motivo">
+        <select id="surveyAgent"><option value="">Todas as IAs</option></select>
+        <select id="surveyOption"><option value="">Todos os motivos</option></select>
+        <select id="surveySize"><option>10</option><option selected>20</option><option>50</option></select>
+      </div>
+      <div id="surveyChips" class="chips"></div>
+      <div id="surveyList" class="item-list"></div>
+      <div id="surveyPager" class="pager"></div>
+    </article>
+  </section>
+
+  <section data-panel="quality" class="view" hidden>
+    <div id="qualityKpis" class="kpis kpis-4"></div>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Clientes que voltaram em até 24h</h2><p>Mesmo telefone ou contato em protocolos diferentes do período</p></div><span id="recontactBadge" class="badge"></span></div>
+      <div class="recontact-layout">
+        <div><h3 class="subhead">Tempo até voltar</h3><div id="recontactWindows" class="columns-chart"></div></div>
+        <div id="recontactList" class="scroll-list"></div>
+      </div>
+    </article>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Bot points do R72</h2><p>Os 23 pontos monitorados, inclusive os que ficaram zerados no período</p></div><span id="checkpointBadge" class="badge"></span></div>
+      <div id="checkpointList" class="checkpoints"></div>
+    </article>
+  </section>
+
+  <section data-panel="protocols" class="view" hidden>
+    <div id="protocolKpis" class="kpis kpis-4"></div>
+    <article class="panel">
+      <div class="panel-head"><div><h2>Problemas não resolvidos</h2><p>Protocolos cujo último bot point relevante foi “Problema não resolvido”</p></div><span id="unresolvedBadge" class="badge"></span></div>
+      <div class="toolbar">
+        <input id="unresolvedSearch" type="search" placeholder="Buscar protocolo, IA, contato, comentário ou motivo">
+        <select id="unresolvedAgent"><option value="">Todas as IAs</option></select>
+        <select id="unresolvedSize"><option>10</option><option selected>20</option><option>50</option></select>
+      </div>
+      <div id="unresolvedChips" class="chips"></div>
+      <div id="unresolvedList" class="item-list"></div>
+      <div id="unresolvedPager" class="pager"></div>
+    </article>
+  </section>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

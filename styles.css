@@ -46,7 +46,7 @@ input:disabled{background:var(--surface2);color:var(--muted)}
 .tabs{display:flex;align-items:stretch;align-self:stretch;gap:2px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{position:relative;display:inline-flex;align-items:center;gap:7px;padding:0 16px;background:none;border:0;color:#bcd2e0;font-weight:500;white-space:nowrap}
-.tabs button span{font-size:15px;opacity:.9}
+.tabs button span{font-size:15px;opacity:.9}.tabs button .tab-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;flex:0 0 15px}.tabs button .tab-icon svg{display:block;width:15px;height:15px}
 .tabs button:hover{color:#fff;background:rgba(255,255,255,.06)}
 .tabs button.active{color:#fff;font-weight:600}
 .tabs button.active:after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--cyan)}

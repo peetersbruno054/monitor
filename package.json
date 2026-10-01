@@ -1,0 +1,7 @@
+{
+  "name": "monitor-ia-safeweb",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Monitor IA Safeweb — dashboard web para R72/R74 no Orpen.",
+  "scripts": { "dev": "vercel dev" }
+}

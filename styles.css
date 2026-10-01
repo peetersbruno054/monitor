@@ -183,9 +183,3 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
  .period label{grid-column:1/-1}
  .tabs button{padding:0 11px;font-size:12px}
 }
-
-/* Interaction safety */
-.topbar{position:relative;z-index:30}
-.topbar-inner,.controls,.btn{position:relative}
-.btn{pointer-events:auto}
-.btn:disabled{opacity:.72;cursor:wait}

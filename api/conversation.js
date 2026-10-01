@@ -3,17 +3,6 @@ import { authenticate, orpenFetch } from '../lib/orpen.js';
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
 const CONVERSATION_URL = `${BASE}/ContactCenter/ajax.php?getMessagesFromProtocol`;
 
-function maskSensitive(value = '') {
-  let out = String(value || '').replace(/\s+/g, ' ').trim();
-  out = out.replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '***.***.***-**');
-  out = out.replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, '**.***.***/****-**');
-  out = out.replace(/(\+?55)?\s?\(?\d{2}\)?\s?\d{4,5}[-\s]?\d{4}/g, (telefone) => {
-    const digits = String(telefone).replace(/\D/g, '');
-    return digits.length >= 8 ? `+${digits.slice(0, 4)}****${digits.slice(-4)}` : telefone;
-  });
-  return out;
-}
-
 function extractMessageText(message = {}) {
   const candidates = [
     message.MESSAGE,

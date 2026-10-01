@@ -425,3 +425,97 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
     white-space:nowrap;
   }
 }
+
+/* Protocol card layout: stable hierarchy on desktop and mobile */
+.protocol-card{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) 118px;
+  gap:12px;
+  align-items:start;
+  min-width:0;
+  padding:14px 5px;
+  border-bottom:1px solid var(--line2);
+}
+.protocol-card-head{display:contents}
+.protocol-card-info{min-width:0;max-width:100%}
+.protocol-card-info .row-top{min-width:0}
+.protocol-card-info .row-top b{min-width:0;overflow-wrap:anywhere}
+.protocol-card-info .row-content{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.protocol-card-actions{min-width:0}
+.protocol-card-actions .view-btn{
+  width:118px;
+  max-width:100%;
+}
+@media(max-width:620px){
+  .protocol-card{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:9px;
+    padding:14px 2px;
+  }
+  .protocol-card-head{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    min-width:0;
+  }
+  .protocol-card-head .score-box{
+    flex:0 0 38px;
+  }
+  .protocol-card-info{
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .protocol-card-info .row-top{
+    display:flex;
+    align-items:flex-start;
+    gap:6px 8px;
+  }
+  .protocol-card-info .row-top b{
+    flex:1 1 100%;
+    line-height:1.3;
+  }
+  .protocol-card-info .row-top .pill,
+  .protocol-card-info .row-top .row-date{
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+  .protocol-card-info .row-content{
+    width:100%;
+    margin-top:7px;
+    padding:9px 10px;
+  }
+  .protocol-card-info .row-content .pill{
+    display:inline-block;
+    max-width:100%;
+    white-space:normal;
+    vertical-align:top;
+    line-height:1.3;
+  }
+  .protocol-card-actions{
+    padding-left:48px;
+  }
+  .protocol-card-actions .view-btn{
+    width:max-content;
+    max-width:100%;
+  }
+}
+@media(max-width:400px){
+  .protocol-card-head{
+    gap:9px;
+  }
+  .protocol-card-head .score-box{
+    flex-basis:34px;
+    width:34px;
+    height:34px;
+  }
+  .protocol-card-actions{
+    padding-left:43px;
+  }
+}

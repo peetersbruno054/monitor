@@ -286,3 +286,8 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
     font-size:9px;
   }
 }
+
+/* Desktop density: keeps mobile layout unchanged */
+@media(min-width:821px){
+  body{zoom:.9}
+}

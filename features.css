@@ -1,0 +1,128 @@
+/* features.css — correções de layout, filtro por clique, resumo, falhas de conhecimento,
+   tendência nos KPIs e impressão. Carregar por ÚLTIMO (depois do segundo styles.css). */
+
+/* ---------- Correção: "Como a IA ajudou" — nome em cima, barra embaixo (não sobrepõe) ---------- */
+.help-box .r.mini{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:6px 10px;min-height:0;padding:9px 0}
+.help-box .r.mini b{grid-column:1;grid-row:1;min-width:0;font-size:12px;font-weight:600;line-height:1.3;overflow-wrap:normal;word-break:normal}
+.help-box .r.mini span{grid-column:2;grid-row:1;font-size:12px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;text-align:right}
+.help-box .r.mini .bar{grid-column:1/-1;grid-row:2;width:100%}
+/* Cores com significado: pontos fortes em verde, a melhorar em vermelho; notas 1–2 / 3 / 4–5 */
+.help-box.good .r .bar i{background:var(--good)}
+.help-box.bad .r .bar i{background:var(--bad)}
+#satDist .r:nth-child(-n+2) .bar i{background:var(--bad)}
+#satDist .r:nth-child(3) .bar i{background:var(--inactivity)}
+#satDist .r:nth-child(n+4) .bar i{background:var(--good)}
+
+/* ---------- Correção: botão "Copiar protocolo" cabe no texto e dá retorno ---------- */
+.view-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-width:104px;height:32px;padding:0 12px;white-space:nowrap;line-height:1;transition:color .15s,border-color .15s,background .15s}
+.view-btn:hover{border-color:var(--blue);background:var(--surface2)}
+.view-btn.done{color:var(--good);border-color:var(--good)}
+.survey-row{grid-template-columns:42px minmax(0,1fr) auto}
+/* Cartão de protocolo: nota | dados + pesquisa | botão (antes a pesquisa caía na coluna estreita do botão) */
+@media(min-width:621px){
+  .protocol-card{grid-template-columns:42px minmax(0,1fr) auto;row-gap:10px}
+  .protocol-card-head>.score-box{grid-column:1;grid-row:1/span 2}
+  .protocol-card-info{grid-column:2;grid-row:1}
+  .protocol-card-survey{grid-column:2;grid-row:2}
+  .protocol-card-survey:empty{display:none}
+  .protocol-card-actions{grid-column:3;grid-row:1}
+}
+.protocol-card-actions .view-btn{width:auto}
+@media(max-width:620px){.survey-row{grid-template-columns:40px minmax(0,1fr)}.view-btn,.protocol-card-actions .view-btn{width:max-content;min-width:0}}
+@media(max-width:400px){.survey-row{grid-template-columns:34px minmax(0,1fr)}}
+
+/* ---------- Botões do cabeçalho ---------- */
+.quick-actions{display:flex;gap:8px}
+.quick-actions .btn{white-space:nowrap}
+.rail-spacer:has(.quick-actions){display:flex;align-items:center}
+.quick-actions.on-rail .btn{height:32px;padding:0 12px;font-size:12.5px;background:transparent;border:1px solid rgba(255,255,255,.28);color:#fff}
+.quick-actions.on-rail .btn:hover{background:rgba(255,255,255,.12);filter:none}
+.quick-actions .btn svg{flex:0 0 auto}
+html[data-theme=dark] .quick-actions.on-rail .btn{background:transparent;border-color:rgba(255,255,255,.22)}
+html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
+@media(max-width:620px){.quick-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}}
+
+/* ---------- Clicar para filtrar ---------- */
+.go{cursor:pointer}
+.go:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.oc-row.go{position:relative}
+.oc-row.go:hover .oc-l b,.oc-row.go:focus-visible .oc-l b{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.oc-sp .go{border-radius:4px}
+.oc-sp .go:hover{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.ag2-h.go:hover b,.ag2-h.go:focus-visible b{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.ag-stat.go{transition:border-color .15s,background .15s}
+.ag-stat.go:hover,.ag-stat.go:focus-visible{border-color:var(--blue)}
+#agentTable tr.go:hover td{background:var(--surface2)}
+.fn.go{border-radius:8px}
+.fn.go:hover span:first-child{color:var(--blue);text-decoration:underline;text-underline-offset:2px}
+.chip.clear{border-style:dashed;color:var(--blue)}
+.protocol-point{flex-direction:row;flex-wrap:wrap;align-items:center}
+.protocol-point>div{flex:1 1 100%}
+.pill.o-resolvido{background:color-mix(in srgb,var(--resolved) 12%,transparent);border-color:color-mix(in srgb,var(--resolved) 30%,transparent);color:var(--resolved)}
+.pill.o-transferido{background:color-mix(in srgb,var(--transferred) 12%,transparent);border-color:color-mix(in srgb,var(--transferred) 30%,transparent);color:var(--transferred)}
+.pill.o-inatividade{background:color-mix(in srgb,var(--inactivity) 14%,transparent);border-color:color-mix(in srgb,var(--inactivity) 34%,transparent);color:var(--warn)}
+.pill.o-possivel{background:color-mix(in srgb,var(--possible) 12%,transparent);border-color:color-mix(in srgb,var(--possible) 30%,transparent);color:var(--possible)}
+.pill.o-nao{background:var(--badbg);border-color:#f3c4c9;color:var(--bad)}
+
+/* ---------- Falhas de conhecimento ---------- */
+.kf-sum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:14px 16px;margin-bottom:10px;border-radius:12px;background:var(--surface2)}
+.kf-sum big{font-size:30px;font-weight:600;line-height:1;letter-spacing:-.02em;color:var(--bad);font-variant-numeric:tabular-nums}
+.kf-sum .kf-t b{display:block;font-size:13px}.kf-sum .kf-t small{color:var(--muted);font-size:12px}
+.kf-ends{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.kf-ends .pill{font-size:11px}
+.kf-ends .pill b{margin-left:4px}
+.kf-list .item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line2)}
+.kf-list .item:last-child{border-bottom:0}
+.kf-list .item .kf-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.kf-list .item .kf-top b{font-size:13px}
+.kf-list .item .meta{grid-column:1;color:var(--muted);font-size:11.5px;overflow-wrap:anywhere}
+.kf-list .item .view-btn{grid-column:2;grid-row:1/3;min-width:0}
+.kf-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.kf-foot .btn{height:32px;font-size:12px}
+@media(max-width:620px){.kf-ends{margin-left:0}.kf-list .item{grid-template-columns:1fr}.kf-list .item .view-btn{grid-column:1;grid-row:auto;justify-self:start}.kf-foot .btn{width:100%}}
+
+/* ---------- Tendência nos KPIs ---------- */
+.kpi2 .spark{grid-column:2;display:block;margin-top:8px}
+.kpi2 .spark svg{display:block;width:100%;height:30px;overflow:visible}
+.kpi2 .spark .ln{fill:none;stroke:var(--c);stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.kpi2:not(.col) .spark .ln{stroke:var(--blue)}
+.kpi2 .spark .ar{fill:var(--c);opacity:.10}
+.kpi2:not(.col) .spark .ar{fill:var(--blue)}
+.kpi2 .spark .ax{display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.kpi2 .spark .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.kpi2 .spark .plot{position:relative;display:block}
+.kpi2 .spark .pt{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--surface);border:1.75px solid var(--c)}
+.kpi2:not(.col) .spark .pt{border-color:var(--blue)}
+
+/* ---------- Impressão / PDF ---------- */
+#printHead,.print-note{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important}
+  body{zoom:.72!important}
+  .print-note{display:block;margin:8px 0 0;color:#5b7083;font-size:12px}
+  .survey-row,.protocol-card{padding-top:8px!important;padding-bottom:8px!important}
+  .row-content{margin-top:5px!important;padding:6px 10px!important}
+  *{animation:none!important;transition:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .topbar,.rail,#loginView,#toast,.notice,.toolbar,.chips,.pager,.view-btn,.more-btn,.head-actions .btn,.segmented,.kf-foot,.quick-actions{display:none!important}
+  #printHead{display:block;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid #003b5c}
+  #printHead h1{margin:0;color:#003b5c;font-size:20px}
+  #printHead p{margin:4px 0 0;color:#5b7083;font-size:12px}
+  .shell{max-width:none!important;padding:0!important}
+  main [data-panel][hidden]{display:block!important}
+  main [data-panel]{display:block!important}
+  main [data-panel]+[data-panel]{break-before:page}
+  main [data-panel]::before{content:attr(data-title);display:block;margin:0 0 10px;color:#003b5c;font-size:16px;font-weight:700}
+  .view>*+*{margin-top:12px}
+  .kpi,.kpi2,.survey-row,.protocol-card,.oc-row,.ag2,.kf-list .item,.fn,.cp,.panel-head,.oc-sum,.kf-sum,.hc,.help-columns,#satDist,.columns-chart{break-inside:avoid}
+  .panel{break-inside:auto}
+  .panel-head{break-after:avoid}
+  #recontactList .item:nth-child(n+16){display:none}
+  .panel,.kpi,.kpi2,.ag2{box-shadow:none!important}
+  .scroll-list,.clamp{max-height:none!important;overflow:visible!important}
+  .kpis-4{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .kpis-5{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+  .grid-2,.recontact-layout{grid-template-columns:1fr 1fr!important}
+  .survey-row,.protocol-card{grid-template-columns:42px minmax(0,1fr)!important}
+  a{color:inherit;text-decoration:none}
+}

@@ -28,11 +28,32 @@ document.head.appendChild(Object.assign(document.createElement('style'),{textCon
 window.maskPhone=function(v){var d=String(v||'').replace(/\D/g,'');if(d.length<8)return String(v||'');return(d.length>=10?'('+(d.length>=11?d.slice(-11,-9):d.slice(0,2))+') ':'')+'•••••-'+d.slice(-4)};
 
 /* ---------- Aviso rápido + copiar ---------- */
-var tt;function toast(m){var t=q('#toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',role:'status'}));t.textContent=m;t.className='show';clearTimeout(tt);tt=setTimeout(function(){t.className=''},1800)}
-function copy(s){(navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).catch(function(){var a=document.createElement('textarea');a.value=s;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}).then(function(){toast('Protocolo copiado')})}
+var tt;function toast(m){var t=q('#toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',role:'status'}));t.textContent=m;t.className='show';clearTimeout(tt);tt=setTimeout(function(){t.className=''},1800)}window.monToast=toast;
+/* Copia texto: tenta a API do navegador e, se ela for bloqueada, usa o método antigo.
+   Só mostra "copiado" quando a cópia realmente aconteceu. */
+function legacyCopy(s){
+  var a=document.createElement('textarea'),sel=document.getSelection(),prev=sel&&sel.rangeCount?sel.getRangeAt(0):null,ok=false;
+  a.value=s;a.setAttribute('readonly','');a.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+  document.body.appendChild(a);a.focus({preventScroll:true});a.select();a.setSelectionRange(0,s.length);
+  try{ok=document.execCommand('copy')}catch(_){ok=false}
+  a.remove();if(prev&&sel){sel.removeAllRanges();sel.addRange(prev)}
+  return ok;
+}
+window.copyText=function(s,msg){
+  s=String(s||'');if(!s)return Promise.resolve(false);
+  var p=navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(s).then(function(){return true},function(){return legacyCopy(s)}):Promise.resolve(legacyCopy(s));
+  return p.then(function(ok){toast(ok?(msg||'Copiado'):s.length>40?'O navegador bloqueou a cópia. Tente de novo.':'Não foi possível copiar: '+s);return ok});
+};
+function copy(s,btn){
+  copyText(s,'Protocolo '+s+' copiado').then(function(ok){
+    if(!btn||!ok)return;var old=btn.textContent;btn.classList.add('done');btn.textContent='✓ Copiado';
+    setTimeout(function(){btn.classList.remove('done');btn.textContent=old},1500);
+  });
+}
 document.addEventListener('click',function(e){
   var b=e.target.closest('.view-btn'),m=e.target.closest('.more-btn'),p=e.target.closest('.ph');
-  if(b){var id=q('.row-top b',b.closest('.survey-row,.protocol-card')).textContent.replace(/^Protocolo\s*/,'').trim();CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):copy(id)}
+  if(b){var id=b.dataset.protocol;if(!id){var t=q('.row-top b',b.closest('.survey-row,.protocol-card'));id=t?t.textContent.replace(/^Protocolo\s*/,'').trim():''}
+    if(id)CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):copy(id,b)}
   if(m){var c=m.previousElementSibling;c.classList.toggle('open');m.textContent=c.classList.contains('open')?'ver menos':'ver mais'}
   if(p){var on=p.dataset.on==='1';p.textContent=on?maskPhone(p.dataset.f):p.dataset.f;p.dataset.on=on?'0':'1'}
   if(e.target.closest('#retryBtn'))q('#refresh').click();

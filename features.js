@@ -1,0 +1,219 @@
+/* features.js — carregar DEPOIS de app.js, ui.js, overview.js e extras.js.
+   Clicar para filtrar · Resumo para copiar · Falhas de conhecimento · Tendência nos KPIs · Impressão/PDF */
+(function(){
+'use strict';
+var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var OUT=['resolvido','transferido','nao','inatividade','possivel'];
+var DESC={
+  nao:'Protocolos com o bot point “Problema não resolvido”',
+  resolvido:'Protocolos cujo último desfecho foi “Problema resolvido”',
+  transferido:'Protocolos que a IA encaminhou para atendimento humano',
+  inatividade:'Protocolos finalizados porque o cliente parou de responder',
+  possivel:'Pesquisa encaminhada como possível solução, ainda sem confirmação',
+  falha:'Protocolos em que a IA registrou “Falha de conhecimento”',
+  todos:'Todos os protocolos da IA que tiveram desfecho no período'
+};
+function wrap(n,f,before){var o=window[n];window[n]=function(){if(before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}var r=o.apply(this,arguments);if(!before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}return r}}
+function toast(m){if(window.monToast)window.monToast(m)}
+function brDay(iso){var p=String(iso||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:''}
+function dayKey(v){var m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);if(m)return m[3]+'-'+m[2]+'-'+m[1];m=String(v||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+'-'+m[2]+'-'+m[3]:''}
+function outcomes(){return data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0})}
+function svgIcon(p){return'<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
+function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','button');el.tabIndex=0;if(label)el.setAttribute('aria-label',label);el.addEventListener('click',fn);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(e)}})}
+
+/* Período efetivamente carregado (o seletor pode mudar antes de clicar em Atualizar) */
+var loaded={start:$('start').value,end:$('end').value,label:''};
+wrap('renderAll',function(){var p=$('preset');loaded={start:$('start').value,end:$('end').value,label:p.value==='custom'?'Período':p.options[p.selectedIndex].text}},true);
+function periodText(){var a=brDay(loaded.start),b=brDay(loaded.end);return(loaded.label||'Período')+' ('+(a===b?a:a.slice(0,5)+' a '+b)+')'}
+
+/* ======================================================================
+   1. Clicar para filtrar → aba Protocolos com a lista daquele desfecho/IA
+   ====================================================================== */
+var toolbar=q('#unresolvedSearch').parentNode,outSel=document.createElement('select');
+outSel.id='unresolvedOutcome';outSel.setAttribute('aria-label','Desfecho');
+outSel.innerHTML=Object.keys(OUTCOME_LIST).map(function(k){return'<option value="'+k+'">'+OUTCOME_LIST[k]+'</option>'}).join('');
+toolbar.insertBefore(outSel,$('unresolvedAgent'));toolbar.classList.add('t5');
+outSel.onchange=function(){uv.outcome=outSel.value;uv.page=1;if(data)renderProtocols()};
+var listPanel=$('unresolvedList').closest('.panel'),listH=q('.panel-head h2',listPanel),listP=q('.panel-head p',listPanel);
+
+wrap('renderProtocols',function(){
+  var o=uv.outcome||'nao';outSel.value=o;
+  listH.textContent=o==='nao'?'Problemas não resolvidos':OUTCOME_LIST[o];listP.textContent=DESC[o];
+  if(o!=='nao'||uv.agent){$('unresolvedChips').insertAdjacentHTML('beforeend','<button type="button" class="chip clear" data-clear-filters>✕ Limpar filtros</button>')}
+});
+wrap('renderUnList',function(){var a=unresolved().length,b=listBase().length;$('unresolvedBadge').textContent=(a===b?fmt(b):fmt(a)+' de '+fmt(b))+' protocolo'+(b===1?'':'s')});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('[data-clear-filters]'))return;
+  uv.outcome='nao';uv.agent='';uv.q='';uv.filter='all';uv.page=1;$('unresolvedSearch').value='';renderProtocols();
+});
+
+window.goProtocols=function(outcome,agent){
+  if(!data)return;
+  uv.outcome=outcome||'nao';uv.agent=agent||'';uv.q='';uv.filter='all';uv.page=1;$('unresolvedSearch').value='';
+  if(location.hash!=='#protocols')location.hash='protocols';
+  renderProtocols();
+  setTimeout(function(){listPanel.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})},60);
+};
+function goSurveys(agent){
+  if(!data)return;sv.agent=agent||'';sv.q='';sv.option='';sv.filter='all';sv.page=1;$('surveySearch').value='';
+  if(location.hash!=='#surveys')location.hash='surveys';
+  renderSurveys();$('surveyAgent').value=sv.agent;renderSurveyList();
+}
+
+function bindOverview(){
+  var map=['resolvido','transferido','nao','inatividade','possivel'];
+  qa('#outcomes .oc-row').forEach(function(row,i){
+    var o=map[i];if(!o)return;var name=q('.oc-l b',row).textContent;
+    keyGo(row,function(e){if(e&&e.target&&e.target.closest('.oc-sp [data-agent]'))return;goProtocols(o)},'Ver protocolos: '+name);
+    qa('.oc-sp span',row).forEach(function(sp){
+      var ag=sp.firstChild?sp.firstChild.textContent:'';if(!ag)return;sp.dataset.agent=ag;
+      keyGo(sp,function(e){e.stopPropagation();goProtocols(o,ag)},'Ver protocolos: '+name+' · '+ag);
+    });
+  });
+}
+function bindAgents(){
+  qa('#agentCards .ag2').forEach(function(card){
+    var name=q('.ag2-h b',card).textContent;
+    keyGo(q('.ag2-h',card),function(){goProtocols('todos',name)},'Ver todos os protocolos de '+name);
+    var st=qa('.ag-stat',card),map=['resolvido','transferido','nao'];
+    st.forEach(function(s,i){
+      if(i<3)keyGo(s,function(){goProtocols(map[i],name)},'Ver protocolos de '+name+': '+q('small',s).textContent);
+      else keyGo(s,function(){goSurveys(name)},'Ver pesquisas de '+name);
+    });
+  });
+  qa('#agentTable tr').forEach(function(tr){var td=q('td',tr);if(!td)return;var name=td.textContent;keyGo(tr,function(){goProtocols('todos',name)},'Ver protocolos de '+name)});
+}
+wrap('renderOverview',bindOverview);
+wrap('renderAgents',bindAgents);
+wrap('renderQuality',function(){
+  var map=[null,'todos','resolvido','transferido','nao','inatividade','possivel'];
+  qa('#funnelPanel .fn').forEach(function(r,i){var o=map[i];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
+});
+
+/* ======================================================================
+   2. Falhas de conhecimento (aba Qualidade)
+   ====================================================================== */
+var OUTLBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando',retomado:'Retomado',outro:'Sem desfecho'};
+wrap('renderQuality',function(){
+  var anchor=$('recontactList').closest('.panel'),p=$('knowledgePanel');
+  if(!p){p=document.createElement('article');p.id='knowledgePanel';p.className='panel';anchor.after(p)}
+  var all=data.r72.protocols,list=all.filter(hasFailure),n=list.length;
+  var head='<div class="panel-head"><div><h2>Falhas de conhecimento</h2><p>Atendimentos em que a IA não soube responder: mostram o que precisa entrar no treinamento</p></div><span class="badge">'+fmt(n)+' protocolo'+(n===1?'':'s')+'</span></div>';
+  if(!n){p.innerHTML=head+'<div class="empty">Nenhuma falha de conhecimento registrada no período.</div>';return}
+  var byAg={},ends={};list.forEach(function(x){byAg[x.agent]=(byAg[x.agent]||0)+1;var o=isUnresolvedProtocol(x)?'nao':x.outcome;ends[o]=(ends[o]||0)+1});
+  var agTxt=Object.keys(byAg).sort(function(a,b){return byAg[b]-byAg[a]}).map(function(a){return esc(a)+' '+fmt(byAg[a])}).join(' · ');
+  var endTxt=['transferido','nao','resolvido','inatividade','possivel','outro','retomado'].filter(function(k){return ends[k]}).map(function(k){return'<span class="pill o-'+k+'">'+OUTLBL[k]+'<b>'+fmt(ends[k])+'</b></span>'}).join('');
+  var recent=list.slice().sort(function(a,b){var fa=failurePoint(a),fb=failurePoint(b);return dt(fb&&fb.date)-dt(fa&&fa.date)}).slice(0,6);
+  p.innerHTML=head+
+    '<div class="kf-sum"><big>'+fmt(n)+'</big><div class="kf-t"><b>'+pct(n,all.length)+'% dos '+fmt(all.length)+' atendimentos iniciados</b><small>'+agTxt+'</small></div><div class="kf-ends" aria-label="Como terminaram">'+endTxt+'</div></div>'+
+    '<div class="kf-list">'+recent.map(function(x){var f=failurePoint(x),o=isUnresolvedProtocol(x)?'nao':x.outcome,s=x.survey;
+      return'<div class="item"><div class="kf-top"><b>Protocolo '+esc(x.protocol)+'</b><span class="pill">'+esc(x.agent)+'</span><span class="pill o-'+esc(o)+'">Terminou: '+esc(OUTLBL[o]||'Sem desfecho')+'</span></div>'+
+        '<div class="meta">'+esc(f?f.date:x.firstDate)+(s&&s.note?' · nota '+s.note:'')+(s&&s.comment?' · “'+esc(s.comment.length>140?s.comment.slice(0,137)+'…':s.comment)+'”':'')+'</div>'+
+        '<button type="button" class="view-btn" data-protocol="'+esc(x.protocol)+'">⧉ Copiar protocolo</button></div>'}).join('')+'</div>'+
+    (n>recent.length?'<div class="kf-foot"><button type="button" class="btn btn-secondary" data-go-failures>Ver os '+fmt(n)+' protocolos</button></div>':'');
+});
+document.addEventListener('click',function(e){if(e.target.closest('[data-go-failures]'))goProtocols('falha')});
+
+/* ======================================================================
+   3. Tendência por dia nos KPIs da Visão geral (períodos com mais de um dia)
+   ====================================================================== */
+function daysOf(a,b){var out=[],d=new Date(a+'T12:00:00'),e=new Date(b+'T12:00:00');while(d<=e&&out.length<93){out.push(ymdLocal(d));d.setDate(d.getDate()+1)}return out}
+function series(){
+  var days=daysOf(loaded.start,loaded.end);if(days.length<2)return null;
+  var P={},S={};days.forEach(function(d){P[d]={t:0,r:0,tr:0};S[d]={n:0,sum:0,pos:0}});
+  outcomes().forEach(function(x){var d=dayKey(x.firstDate);if(!P[d])return;P[d].t++;if(x.outcome==='resolvido')P[d].r++;if(x.outcome==='transferido')P[d].tr++});
+  data.r74.forEach(function(x){var d=dayKey(x.date);if(!S[d]||!x.note)return;S[d].n++;S[d].sum+=x.note;if(x.note>=4)S[d].pos++});
+  return{days:days,
+    res:days.map(function(d){return P[d].t?P[d].r/P[d].t*100:null}),
+    tr:days.map(function(d){return P[d].t?P[d].tr/P[d].t*100:null}),
+    avg:days.map(function(d){return S[d].n?S[d].sum/S[d].n:null}),
+    pos:days.map(function(d){return S[d].n?S[d].pos/S[d].n*100:null})};
+}
+function spark(vals,days,fmtv,limits){
+  var pts=vals.map(function(v,i){return v==null?null:[i,v]}).filter(Boolean);if(pts.length<2)return'';
+  // escala pelos próprios dados, com amplitude mínima para variações pequenas não parecerem enormes
+  var W=100,H=28,pad=3,n=vals.length-1,lo=Math.min.apply(null,pts.map(function(p){return p[1]})),hi=Math.max.apply(null,pts.map(function(p){return p[1]})),minSpan=limits[2];
+  if(hi-lo<minSpan){var mid=(hi+lo)/2;lo=mid-minSpan/2;hi=mid+minSpan/2}
+  if(lo<limits[0]){hi+=limits[0]-lo;lo=limits[0]}if(hi>limits[1]){lo-=hi-limits[1];hi=limits[1]}
+  var X=function(i){return n?i/n*W:W/2},Y=function(v){return pad+(1-(v-lo)/(hi-lo))*(H-2*pad)};
+  // segmentos contínuos (dias sem dados interrompem a linha)
+  var segs=[],cur=[];vals.forEach(function(v,i){if(v==null){if(cur.length)segs.push(cur);cur=[]}else cur.push([X(i),Y(v)])});if(cur.length)segs.push(cur);
+  var path=segs.map(function(s){return'M'+s.map(function(p){return p[0].toFixed(2)+' '+p[1].toFixed(2)}).join('L')}).join(''),
+      area=segs.filter(function(s){return s.length>1}).map(function(s){return'M'+s[0][0].toFixed(2)+' '+H+'L'+s.map(function(p){return p[0].toFixed(2)+' '+p[1].toFixed(2)}).join('L')+'L'+s[s.length-1][0].toFixed(2)+' '+H+'Z'}).join(''),
+      last=pts[pts.length-1],lx=X(last[0]),ly=Y(last[1]);
+  var desc=days.map(function(d,i){return brDay(d).slice(0,5)+': '+(vals[i]==null?'sem dados':fmtv(vals[i]))}).join(' · ');
+  return'<span class="spark" title="'+esc(desc)+'"><span class="plot"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true"><path class="ar" d="'+area+'"/><path class="ln" d="'+path+'"/></svg><i class="pt" style="left:'+(lx/W*100).toFixed(2)+'%;top:'+(ly/H*100).toFixed(2)+'%"></i></span>'+
+    '<span class="ax"><span>'+brDay(days[0]).slice(0,5)+'</span><span>por dia</span><span>'+brDay(days[days.length-1]).slice(0,5)+'</span></span><span class="sr">Evolução por dia: '+esc(desc)+'</span></span>';
+}
+wrap('renderOverview',function(){
+  var s=series(),cards=qa('#overviewKpis .kpi2');if(!s||cards.length<4)return;
+  var pc=function(v){return Math.round(v)+'%'},nt=function(v){return v.toFixed(2).replace('.',',')};
+  [[s.res,pc,[0,100,12]],[s.tr,pc,[0,100,12]],[s.avg,nt,[1,5,.6]],[s.pos,pc,[0,100,12]]].forEach(function(c,i){var h=spark(c[0],s.days,c[1],c[2]);if(h)cards[i].insertAdjacentHTML('beforeend',h)});
+});
+
+/* ======================================================================
+   4. Resumo para copiar (WhatsApp / Teams)
+   ====================================================================== */
+function summary(){
+  var all=data.r72.protocols,p=outcomes(),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},
+      un=all.filter(isUnresolvedProtocol).length,s=data.r74,ns=s.filter(function(x){return x.note}),
+      avg=ns.length?ns.reduce(function(a,x){return a+x.note},0)/ns.length:0,kf=all.filter(hasFailure).length;
+  var L=['Monitor IA · '+periodText(),''];
+  L.push(fmt(t)+' atendimento'+(t===1?'':'s')+' da IA com desfecho');
+  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')]]
+    .forEach(function(r){L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
+  L.push('');
+  L.push(ns.length?'Pesquisa: nota média '+avg.toFixed(2).replace('.',',')+' ('+fmt(ns.length)+' avaliaç'+(ns.length===1?'ão':'ões')+') · '+nPositive(s)+'% positivas':'Pesquisa: sem avaliações no período');
+  var imp={};s.forEach(function(x){if(x.note&&x.note<=3)x.help.forEach(function(h){if(neg.has(norm(h)))imp[h]=(imp[h]||0)+1})});
+  var top=Object.keys(imp).sort(function(a,b){return imp[b]-imp[a]})[0];if(top)L.push('Principal ponto a melhorar: '+top+' ('+fmt(imp[top])+')');
+  if(kf)L.push('Falhas de conhecimento: '+fmt(kf)+' protocolo'+(kf===1?'':'s'));
+  var g={};p.forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,n:[]});o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
+  var names=Object.keys(g).sort(function(a,b){return g[b].t-g[a].t});
+  if(names.length){L.push('Maior volume: '+names[0]+' ('+fmt(g[names[0]].t)+')');L.push('');L.push('Por IA:');
+    names.forEach(function(n){var o=g[n],a=o.n.length?(o.n.reduce(function(x,y){return x+y},0)/o.n.length).toFixed(2).replace('.',','):'';
+      L.push('• '+n+': '+fmt(o.t)+' atend. · '+pct(o.r,o.t)+'% resolvidos · '+pct(o.tr,o.t)+'% transferidos'+(a?' · nota '+a:''))})}
+  return L.join('\n');
+}
+
+/* ======================================================================
+   5. Impressão / PDF
+   ====================================================================== */
+var TITLES={overview:'Visão geral',surveys:'Pesquisas',quality:'Qualidade',protocols:'Protocolos'};
+qa('main [data-panel]').forEach(function(s){s.dataset.title=TITLES[s.dataset.panel]||''});
+var ph=document.createElement('header');ph.id='printHead';$('main').insertBefore(ph,$('main').firstChild);
+var saved=null;
+function beforePrint(){
+  if(saved||!data)return;
+  saved={theme:document.documentElement.dataset.theme,sv:sv.size,uv:uv.size};
+  document.documentElement.dataset.theme='light';
+  var o=uv.outcome||'nao';
+  ph.innerHTML='<h1>Monitor IA · Safeweb</h1><p>'+esc(periodText())+' · gerado em '+new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})+'</p>'+
+    '<p>Lista de protocolos: '+esc(OUTCOME_LIST[o])+(uv.agent?' · '+esc(uv.agent):'')+(sv.agent||sv.filter!=='all'||sv.q?' · Pesquisas com os filtros da tela':'')+'</p>';
+  // listas longas: no PDF vão as 30 primeiras (com os filtros e a ordem da tela); a completa fica no CSV
+  var MAX=30;sv.size=uv.size=MAX;sv.page=uv.page=1;renderSurveyList();renderUnList();
+  [['surveyList',surveyFiltered().length,'respostas'],['unresolvedList',unresolved().length,'protocolos']].forEach(function(l){
+    if(l[1]>MAX)$(l[0]).insertAdjacentHTML('afterend','<p class="print-note">Mostrando '+MAX+' de '+fmt(l[1])+' '+l[2]+'. A lista completa sai no botão CSV.</p>');
+  });
+  var rc=qa('#recontactList .item').length;if(rc>15)$('recontactList').insertAdjacentHTML('afterend','<p class="print-note">Mostrando 15 de '+fmt(rc)+' recontatos listados na tela.</p>');
+}
+function afterPrint(){
+  if(!saved)return;document.documentElement.dataset.theme=saved.theme;sv.size=saved.sv;uv.size=saved.uv;saved=null;
+  qa('.print-note').forEach(function(n){n.remove()});
+  if(data){renderSurveyList();renderUnList()}
+}
+addEventListener('beforeprint',beforePrint);addEventListener('afterprint',afterPrint);
+
+/* ---------- Botões no cabeçalho ---------- */
+var box=document.createElement('div');box.className='quick-actions';
+box.innerHTML='<button id="summaryBtn" type="button" class="btn btn-secondary" title="Copiar um resumo do período para colar no WhatsApp ou no Teams">'+svgIcon('<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>')+' Copiar resumo</button>'+
+  '<button id="printBtn" type="button" class="btn btn-ghost" title="Imprimir ou salvar em PDF">'+svgIcon('<path d="M6 8V3h8v5M6 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2"/><path d="M6 12h8v5H6z"/>')+' PDF</button>';
+/* No computador ficam na faixa azul (o cabeçalho já está cheio); no celular, junto dos controles */
+var wide=matchMedia('(min-width:821px)');
+function placeActions(){if(wide.matches){var sp=q('.rail-spacer');sp.appendChild(box);box.classList.add('on-rail')}else{$('refresh').parentNode.insertBefore(box,$('refresh'));box.classList.remove('on-rail')}}
+placeActions();wide.addEventListener&&wide.addEventListener('change',placeActions);
+$('summaryBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}copyText(summary(),'Resumo copiado. É só colar no WhatsApp ou no Teams')};
+$('printBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}beforePrint();window.print()};
+
+/* CSV da lista de protocolos com o nome do filtro */
+window.monListName=function(){return'protocolos-'+(uv.outcome||'nao')};
+})();

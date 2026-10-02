@@ -63,12 +63,14 @@ function wrap(n,f){var o=window[n];window[n]=function(){var r=o.apply(this,argum
 
 /* ---------- Pesquisas e Protocolos: ordenação, destaque, cor por nota ---------- */
 var ss='recent',us='recent',note=function(x){return x&&x.note?x.note:0};
-var _sf=window.surveyFiltered;window.surveyFiltered=function(){var rec=function(a,b){return dt(b.date)-dt(a.date)};
-  return _sf().slice().sort(ss==='low'?function(a,b){return(note(a)||9)-(note(b)||9)||rec(a,b)}:ss==='high'?function(a,b){return note(b)-note(a)||rec(a,b)}:ss==='comment'?function(a,b){return(b.comment?1:0)-(a.comment?1:0)||rec(a,b)}:rec)};
-var _un=window.unresolved;window.unresolved=function(){var rec=function(a,b){return dt(b.lastDate)-dt(a.lastDate)},nn=function(x){return note(x.survey)};
+/* mais recentes primeiro; no empate de horário, o protocolo maior (mais novo) vem antes */
+var byProt=function(a,b){return String(b.protocol||'').localeCompare(String(a.protocol||''),undefined,{numeric:true})};
+var _sf=window.surveyFiltered;window.surveyFiltered=function(){var rec=function(a,b){return dt(b.date)-dt(a.date)||byProt(a,b)};
+  return _sf().slice().sort(ss==='old'?function(a,b){return-rec(a,b)}:ss==='low'?function(a,b){return(note(a)||9)-(note(b)||9)||rec(a,b)}:ss==='high'?function(a,b){return note(b)-note(a)||rec(a,b)}:ss==='comment'?function(a,b){return(b.comment?1:0)-(a.comment?1:0)||rec(a,b)}:rec)};
+var _un=window.unresolved;window.unresolved=function(){var rec=function(a,b){return dt(b.lastDate)-dt(a.lastDate)||byProt(a,b)},nn=function(x){return note(x.survey)};
   return _un().slice().sort(us==='low'?function(a,b){return(nn(a)||9)-(nn(b)||9)||rec(a,b)}:us==='agent'?function(a,b){return a.agent.localeCompare(b.agent)||rec(a,b)}:rec)};
 function sel(id,opts,fn,before){var s=document.createElement('select');s.id=id;s.setAttribute('aria-label','Ordenar');s.innerHTML=opts.map(function(o){return'<option value="'+o[0]+'">'+o[1]+'</option>'}).join('');s.onchange=function(){fn(s.value)};before.parentNode.insertBefore(s,before)}
-sel('surveySort',[['recent','Mais recentes'],['low','Menor nota'],['high','Maior nota'],['comment','Com comentário']],function(v){ss=v;sv.page=1;renderSurveyList()},$('surveySize'));
+sel('surveySort',[['recent','Mais recentes'],['old','Mais antigas'],['low','Menor nota'],['high','Maior nota'],['comment','Com comentário']],function(v){ss=v;sv.page=1;renderSurveyList()},$('surveySize'));
 q('#surveySearch').parentNode.classList.add('t5');
 sel('unresolvedSort',[['recent','Mais recentes'],['low','Menor nota'],['agent','Agrupar por IA']],function(v){us=v;uv.page=1;renderUnList()},$('unresolvedSize'));
 function hl(root,term){var src=String(term).trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&');if(!src)return;var re=new RegExp('('+src+')','gi'),w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),a=[],t;

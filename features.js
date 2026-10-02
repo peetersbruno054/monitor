@@ -16,7 +16,7 @@ var DESC={
 function wrap(n,f,before){var o=window[n];window[n]=function(){if(before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}var r=o.apply(this,arguments);if(!before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}return r}}
 function toast(m){if(window.monToast)window.monToast(m)}
 function brDay(iso){var p=String(iso||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:''}
-function dayKey(v){var m=String(v||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);if(m)return m[3]+'-'+m[2]+'-'+m[1];m=String(v||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+'-'+m[2]+'-'+m[3]:''}
+function dayKey(v){var m=String(v||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);m=String(v||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+'-'+m[2]+'-'+m[3]:''}
 function outcomes(){return data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0})}
 function svgIcon(p){return'<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
 function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','button');el.tabIndex=0;if(label)el.setAttribute('aria-label',label);el.addEventListener('click',fn);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(e)}})}
@@ -157,15 +157,19 @@ wrap('renderOverview',function(){
    ====================================================================== */
 var HSER=[['resolvido','Resolvidos','resolved'],['nao','Não resolvidos','bad'],['transferido','Transferidos','transferred'],['outros','Outros desfechos','other']];
 function hourCat(x){if(x.outcome==='resolvido')return'resolvido';if(isUnresolvedProtocol(x))return'nao';if(x.outcome==='transferido')return'transferido';return'outros'}
+/* o cinza "outros" é detalhado na legenda e na dica */
+var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['sem','Sem desfecho']];
+function otherSub(x){return x.outcome==='inatividade'?'inatividade':x.outcome==='possivel'?'possivel':'sem'}
 wrap('renderOverview',function(){
   var p=$('hoursPanel');if(!p)return;
-  var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0});
-  data.r72.protocols.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k].t++;h[k][hourCat(x)]++});
-  var mx=Math.max.apply(null,h.map(function(v){return v.t}).concat(1)),tot={};HSER.forEach(function(s){tot[s[0]]=h.reduce(function(a,v){return a+v[s[0]]},0)});
+  var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0,inatividade:0,possivel:0,sem:0});
+  data.r72.protocols.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours(),c=hourCat(x);h[k].t++;h[k][c]++;if(c==='outros')h[k][otherSub(x)]++});
+  var mx=Math.max.apply(null,h.map(function(v){return v.t}).concat(1)),tot={};HSER.concat(OSUB).forEach(function(s){tot[s[0]]=h.reduce(function(a,v){return a+v[s[0]]},0)});
+  var subTxt=function(v){return OSUB.filter(function(s){return v[s[0]]}).map(function(s){return s[1].toLowerCase()+' '+fmt(v[s[0]])}).join(' · ')};
   var step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=50?10:Math.ceil(mx/5/10)*10,top=Math.ceil(mx/step)*step,grid='';
   for(var g=step;g<=top;g+=step)grid+='<div class="hs-gl" style="bottom:'+(g/top*100)+'%"><span>'+g+'</span></div>';
   p.innerHTML='<div class="panel-head"><div><h2>Atendimentos por hora</h2><p>Quando a IA recebe protocolos e como eles terminam, pela hora de início</p></div></div>'+
-    '<div class="hs-legend">'+HSER.map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+' <b>'+fmt(tot[s[0]])+'</b></span>'}).join('')+'</div>'+
+    '<div class="hs-legend">'+HSER.map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+' <b>'+fmt(tot[s[0]])+'</b>'+(s[0]==='outros'&&tot.outros?'<small>('+subTxt(tot)+')</small>':'')+'</span>'}).join('')+'</div>'+
     '<div class="hs"><div class="hs-plot">'+grid+'<div class="hs-cols">'+h.map(function(v,k){
       var segs=HSER.map(function(s){var n=v[s[0]];return n?'<u class="sg sg-'+s[2]+'" style="height:'+(n/top*100)+'%"></u>':''}).join('');
       var lab=k+'h: '+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+(v.t?' — '+HSER.filter(function(s){return v[s[0]]}).map(function(s){return s[1].toLowerCase()+' '+v[s[0]]}).join(', '):'');
@@ -174,7 +178,8 @@ wrap('renderOverview',function(){
   // dica ao passar o mouse / tocar
   var tip=q('.hs-tip',p),wrapEl=q('.hs',p);
   function showTip(col){var k=+col.dataset.h,v=h[k];if(!v.t){tip.hidden=true;return}
-    tip.innerHTML='<b>'+k+'h às '+k+'h59</b><span class="hs-tt">'+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+'</span>'+HSER.filter(function(s){return v[s[0]]}).map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+'<b>'+fmt(v[s[0]])+' · '+pct(v[s[0]],v.t)+'%</b></span>'}).join('');
+    tip.innerHTML='<b>'+k+'h às '+k+'h59</b><span class="hs-tt">'+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+'</span>'+HSER.filter(function(s){return v[s[0]]}).map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+'<b>'+fmt(v[s[0]])+' · '+pct(v[s[0]],v.t)+'%</b></span>'+
+      (s[0]==='outros'?OSUB.filter(function(o){return v[o[0]]}).map(function(o){return'<span class="hs-sub">'+o[1]+'<b>'+fmt(v[o[0]])+'</b></span>'}).join(''):'')}).join('');
     tip.hidden=false;var r=col.getBoundingClientRect(),w=wrapEl.getBoundingClientRect(),z=parseFloat(getComputedStyle(document.body).zoom)||1,cl=(r.left-w.left)/z,cr=(r.right-w.left)/z,tw=tip.offsetWidth,max=w.width/z;
     // ao lado da coluna (direita; se não couber, esquerda) para não cobrir a barra
     tip.style.left=(cr+8+tw<=max?cr+8:Math.max(0,cl-8-tw))+'px';qa('.hs-col.on',p).forEach(function(c){c.classList.remove('on')});col.classList.add('on')}
@@ -263,4 +268,71 @@ $('printBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');r
 
 /* CSV da lista de protocolos com o nome do filtro */
 window.monListName=function(){return'protocolos-'+(uv.outcome||'nao')};
+
+/* ======================================================================
+   6. Cards de números no mesmo padrão da Visão geral (Pesquisas, Qualidade, Protocolos)
+   ====================================================================== */
+function ico(p){return'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
+var STAR='<path d="M10 3.2l2 4.2 4.6.6-3.3 3.2.8 4.6L10 13.6l-4.1 2.2.8-4.6L3.4 8l4.6-.6z"/>';
+var KICON={
+  chat:ico('<path d="M4 5h12v8.5H9.2L5.5 16.5v-3H4z"/>'),
+  comment:ico('<path d="M4 5h12v8.5H9.2L5.5 16.5v-3H4z"/><path d="M7 8.3h6M7 10.8h3.6"/>'),
+  star:ico(STAR),
+  smile:ico('<circle cx="10" cy="10" r="7"/><path d="M7.2 11.6c.7 1.1 1.7 1.7 2.8 1.7s2.1-.6 2.8-1.7M7.6 8.2h.01M12.4 8.2h.01"/>'),
+  alert:ico('<circle cx="10" cy="10" r="7"/><path d="M10 6.6v4.2M10 13.4h.01"/>'),
+  back:ico('<path d="M7.5 5.5L4 9l3.5 3.5"/><path d="M4.5 9H12a4 4 0 0 1 0 8h-1.5"/>'),
+  pause:ico('<circle cx="10" cy="10" r="7"/><path d="M8.3 7.6v4.8M11.7 7.6v4.8"/>'),
+  x:ico('<circle cx="10" cy="10" r="7"/><path d="M7.7 7.7l4.6 4.6M12.3 7.7l-4.6 4.6"/>'),
+  hour:ico('<path d="M6.5 3.5h7M6.5 16.5h7M7.5 3.5v2.3L10 10l2.5-4.2V3.5M7.5 16.5v-2.3L10 10l2.5 4.2v2.3"/>'),
+  bot:ico('<rect x="4" y="7" width="12" height="9" rx="2.5"/><path d="M10 4v3M8 11.5v.5M12 11.5v.5"/>'),
+  dot:ico('<circle cx="10" cy="10" r="6"/>')
+};
+var KMAP={
+  'pesquisas respondidas':['chat',''],'nota media':['star',''],'satisfacao positiva':['smile','good'],'pontos a melhorar':['alert','bad'],'com comentario':['comment',''],
+  'recontatos em 24h':['back','blue'],'apos inatividade':['pause','inactivity'],'apos nao resolvido':['x','bad'],'apos possivel solucao':['hour','possible'],
+  'nao resolvidos':['x','bad'],'ia com mais ocorrencias':['bot',''],'com nota baixa':['star','bad'],'ponto a melhorar':['alert','bad']
+};
+window.k=function(label,value,sub){
+  var d=KMAP[norm(label)]||['dot',''],txt=!/^[\s\d.,%—–-]*$/.test(String(value));
+  return'<div class="kpi2'+(d[1]?' col':'')+(txt?' txt':'')+'" style="--c:'+(d[1]?'var(--'+d[1]+')':'var(--muted)')+'"><span class="ic">'+KICON[d[0]]+'</span><span class="lb">'+esc(label)+'</span><span class="vl">'+esc(value)+'</span>'+(sub?'<span class="sb">'+esc(sub)+'</span>':'')+'</div>';
+};
+
+/* ---------- Quadro da nota: cinza quando o protocolo não tem pesquisa ---------- */
+function markEmptyScores(){qa('.score-box').forEach(function(b){b.classList.toggle('none',/^\s*—/.test(b.textContent))})}
+wrap('renderSurveyList',markEmptyScores);wrap('renderUnList',markEmptyScores);
+
+/* ======================================================================
+   7. Qualidade: bot points zerados recolhidos + recontatos em números
+   ====================================================================== */
+wrap('renderQuality',function(){
+  var cps=qa('#checkpointList .cp'),withData=cps.filter(function(c){return!c.classList.contains('zero')}).length,b=$('checkpointBadge');
+  if(b)b.textContent=fmt(withData)+' de '+fmt(cps.length)+' com registro';
+  qa('#checkpointList.cp-cols>div').forEach(function(col){
+    var z=qa('.cp.zero',col);if(!z.length)return;
+    var d=document.createElement('details');d.className='cp-zero';d.innerHTML='<summary>Ver '+z.length+' sem registro no período</summary>';
+    z.forEach(function(x){d.appendChild(x)});col.appendChild(d);
+  });
+  var w=$('recontactWindows'),cols=qa(':scope>div',w);if(!cols.length)return;
+  var vals=cols.map(function(c){return{n:+(q('b',c)||{}).textContent||0,l:(q('small',c)||{}).textContent||''}}),tot=vals.reduce(function(a,v){return a+v.n},0);
+  var lab={'≤1h':'até 1 hora','1–6h':'de 1 a 6 horas','6–24h':'de 6 a 24 horas'};
+  w.className='rw-tiles';
+  w.innerHTML=vals.map(function(v){return'<div class="rw"><b>'+fmt(v.n)+'</b><span>'+(lab[v.l]||v.l)+'</span><small>'+pct(v.n,tot)+'% dos recontatos</small></div>'}).join('');
+});
+
+/* ======================================================================
+   8. Pesquisas: filtro por data (lista)
+   ====================================================================== */
+var WD=['dom','seg','ter','qua','qui','sex','sáb'];
+sv.date='';
+var dateSel=document.createElement('select');dateSel.id='surveyDate';dateSel.setAttribute('aria-label','Data da resposta');
+var sTool=$('surveySearch').parentNode;sTool.insertBefore(dateSel,$('surveyAgent'));sTool.classList.remove('t5');sTool.classList.add('t6');
+dateSel.onchange=function(){sv.date=dateSel.value;sv.page=1;renderSurveyList()};
+var _sfd=window.surveyFiltered;window.surveyFiltered=function(){var r=_sfd();return sv.date?r.filter(function(x){return dayKey(x.date)===sv.date}):r};
+wrap('renderSurveys',function(){
+  var c={};data.r74.forEach(function(x){var d=dayKey(x.date);if(d)c[d]=(c[d]||0)+1});
+  var days=Object.keys(c).sort().reverse();if(sv.date&&!c[sv.date])sv.date='';
+  dateSel.innerHTML='<option value="">Todas as datas</option>'+days.map(function(d){var dd=new Date(d+'T12:00:00');return'<option value="'+d+'"'+(d===sv.date?' selected':'')+'>'+brDay(d).slice(0,5)+' · '+WD[dd.getDay()]+' · '+fmt(c[d])+'</option>'}).join('');
+},true);
+/* a lista é re-renderizada pelo renderSurveys: o seletor precisa estar pronto antes */
+var _gs=goSurveys;goSurveys=function(a){sv.date='';_gs(a)};
 })();

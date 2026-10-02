@@ -135,6 +135,52 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 .ss-n{text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}.ss-n b{color:var(--ink)}
 @media(max-width:620px){.ss-pos{text-align:left}.ss-row{grid-template-columns:38px minmax(0,1fr) 70px;gap:8px}.ss-score big{font-size:32px}}
 
+.hs-legend small{margin-left:2px;color:var(--muted);font-size:11px}
+.hs-tip .hs-sub{padding-left:16px;color:var(--muted);font-size:11.5px}
+.hs-tip .hs-sub b{font-weight:500;color:var(--ink2)}
+
+/* ---------- Cards de números (Pesquisas, Qualidade, Protocolos) no padrão da Visão geral ---------- */
+.kpi2 .lb{line-height:1.3}
+.kpi2.txt .vl{font-size:18px;line-height:1.3;letter-spacing:-.01em;margin:3px 0 2px;overflow-wrap:anywhere}
+.kpis-5 .kpi2{padding:14px}
+@media(max-width:620px){.kpi2{grid-template-columns:30px minmax(0,1fr);column-gap:10px;padding:12px}.kpi2 .ic{width:30px;height:30px}.kpi2 .vl{font-size:22px}.kpi2.txt .vl{font-size:15px}}
+
+/* ---------- Nota vazia em cinza (protocolo sem pesquisa) ---------- */
+.score-box.none{background:var(--surface3);color:var(--muted)}
+
+/* ---------- Bot points zerados recolhidos ---------- */
+.cp-zero{margin-top:2px}
+.cp-zero summary{padding:9px 0;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;list-style:none}
+.cp-zero summary::-webkit-details-marker{display:none}
+.cp-zero summary:before{content:"▸";display:inline-block;width:14px;transition:transform .15s}
+.cp-zero[open] summary:before{transform:rotate(90deg)}
+
+/* ---------- Recontatos: tempo até voltar em números ---------- */
+.rw-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rw{padding:14px 12px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}
+.rw b{display:block;font-size:26px;font-weight:600;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.rw span{display:block;margin-top:4px;font-size:12.5px;font-weight:500;color:var(--ink2)}
+.rw small{display:block;margin-top:2px;font-size:11px;color:var(--muted)}
+.recontact-layout{align-items:start}
+
+/* ---------- Pesquisas: barra de filtros com data ---------- */
+@media(min-width:821px){.toolbar.t6{grid-template-columns:minmax(200px,1fr) 165px 150px 160px 150px 80px}}
+
+/* ---------- Celular: cabeçalho compacto ---------- */
+@media(max-width:620px){
+  .topbar-inner{padding:10px 12px;gap:8px}
+  .controls{display:flex!important;flex-wrap:wrap;gap:8px}
+  .controls .btn{width:auto;height:40px;flex:0 0 auto}
+  #periodToggle{order:1;flex:1 1 0}
+  #refresh{order:2;flex:1 1 0}
+  .controls .period{order:3;flex:1 1 100%}
+  .quick-actions{order:4;display:flex!important;flex:1 1 0;gap:8px}
+  .quick-actions #summaryBtn{flex:1 1 auto}
+  .quick-actions .btn{padding:0 12px}
+  #autoBtn{order:5;padding:0 12px}
+  #themeBtn{order:6;flex:0 0 40px!important;width:40px}
+}
+
 /* ---------- Impressão / PDF ---------- */
 #printHead,.print-note{display:none}
 @media print{

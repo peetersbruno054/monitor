@@ -1,4 +1,5 @@
 import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
+import { requireMonitorSession } from '../lib/auth.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const SURVEY_BOTS = ['66666', '393939', '313131', '323232', '676767'];
@@ -407,6 +408,8 @@ async function loadReport(reportId, start, end, session) {
 
 export default async function handler(req, res) {
   res.setHeader('x-monitor-build', '3.3.0');
+
+  if (!requireMonitorSession(req, res)) return;
 
   if (req.method === 'GET') {
     return res.status(200).json({

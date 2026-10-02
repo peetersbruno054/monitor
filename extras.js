@@ -96,7 +96,7 @@ wrap('renderQuality',function(){
   if(g.SPC.length+g.Safe.length){var C=q('#checkpointList');C.className='cp-cols';
     C.innerHTML=[['IA SPC','SPC'],['Assistente Safira','Safe']].map(function(c){return'<div><h3>'+c[0]+'</h3>'+g[c[1]].sort(function(a,b){return b[1]-a[1]}).map(function(x){return'<div class="cp'+(x[1]?'':' zero')+'"><span>'+esc(x[0].replace(/ - IA - (SPC|Safe)$/,''))+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>'}).join('')}
   var all=data.r72.protocols,p=all.filter(function(x){return OUT.indexOf(x.outcome)>=0}),c=function(o){return p.filter(function(x){return x.outcome===o}).length},ini=all.length,
-  st=[['Iniciados',ini,'blue'],['Com desfecho',p.length,'blue'],['Resolvidos',c('resolvido'),'resolved'],['Transferidos',c('transferido'),'transferred'],['Não resolvidos',all.filter(isUnresolvedProtocol).length,'bad'],['Inatividade',c('inatividade'),'inactivity'],['Aguardando',c('possivel'),'possible'],['Finalizado',c('finalizado'),'finished'],['Finaliza SafeNota',c('safenota'),'safenota']].filter(function(r,i){return i<7||r[1]});
+  st=[['Iniciados',ini,'blue'],['Com desfecho',p.length,'blue'],['Resolvidos',c('resolvido'),'resolved'],['Transferidos',c('transferido'),'transferred'],['Não resolvidos',all.filter(isUnresolvedProtocol).length,'bad'],['Inatividade',c('inatividade'),'inactivity'],['Aguardando',c('possivel'),'possible']];
   panel('funnelPanel','#checkpointList','before').innerHTML=head('Funil do atendimento','Do início ao desfecho, em relação aos protocolos iniciados')+
     st.map(function(s){var v=pct(s[1],ini);return'<div class="fn" style="--c:var(--'+s[2]+')"><span>'+s[0]+'</span><div class="tr"><i style="width:'+v+'%"></i></div><span>'+fmt(s[1])+' · '+v+'%</span></div>'}).join('');
 });

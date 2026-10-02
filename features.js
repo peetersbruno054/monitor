@@ -49,7 +49,8 @@ window.analyze72=function(raw){
     var ev=(x.events||[]).slice().sort(function(a,b){return(a.ms&&b.ms&&a.ms!==b.ms)?a.ms-b.ms:a.index-b.index}),hit=null,last=0;
     ev.forEach(function(e){var o=trailRule(e.point);if(o)hit={o:o,point:e.point};last=Math.max(last,e.ms||0)});
     if(hit){x.outcome=hit.o;x.finalPoint=hit.point;x.inferred=true;return}
-    if(ev.length){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
+    // só quem tem "Iniciado atendimento" da IA; linhas sem bot point não viram desfecho
+    if(ev.some(function(e){return norm(e.point).indexOf('iniciado atendimento')>=0})){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
   });
   return r;
 };
@@ -227,7 +228,7 @@ wrap('renderOverview',function(){
   var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0,inatividade:0,possivel:0,finalizado:0,safenota:0,andamento:0,sem:0});
   data.r72.protocols.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours(),c=hourCat(x);h[k].t++;h[k][c]++;if(c==='outros')h[k][otherSub(x)]++});
   var mx=Math.max.apply(null,h.map(function(v){return v.t}).concat(1)),tot={};HSER.concat(OSUB).forEach(function(s){tot[s[0]]=h.reduce(function(a,v){return a+v[s[0]]},0)});
-  var subTxt=function(v){return OSUB.filter(function(s){return v[s[0]]}).map(function(s){return s[1].toLowerCase()+' '+fmt(v[s[0]])}).join(' · ')};
+  var subTxt=function(v){return OSUB.filter(function(s){return v[s[0]]}).map(function(s){return s[1]+' '+fmt(v[s[0]])}).join(' · ')};
   var step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=50?10:Math.ceil(mx/5/10)*10,top=Math.ceil(mx/step)*step,grid='';
   for(var g=step;g<=top;g+=step)grid+='<div class="hs-gl" style="bottom:'+(g/top*100)+'%"><span>'+g+'</span></div>';
   p.innerHTML='<div class="panel-head"><div><h2>Atendimentos por hora</h2><p>Quando a IA recebe protocolos e como eles terminam, pela hora de início</p></div></div>'+
@@ -274,8 +275,8 @@ function summary(){
       avg=ns.length?ns.reduce(function(a,x){return a+x.note},0)/ns.length:0,kf=all.filter(hasFailure).length;
   var L=['Monitor IA · '+periodText(),''];
   L.push(fmt(t)+' atendimento'+(t===1?'':'s')+' da IA com desfecho');
-  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')],['Finalizado (não retomou)',c('finalizado')],['Finaliza SafeNota',c('safenota')]]
-    .forEach(function(r,i){if(i<5||r[1])L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
+  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')]]
+    .forEach(function(r){L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
   var nAnd=all.filter(function(x){return x.outcome==='andamento'}).length;if(nAnd)L.push('Em andamento (menos de 24h): '+fmt(nAnd));
   L.push('');
   L.push(ns.length?'Pesquisa: nota média '+avg.toFixed(2).replace('.',',')+' ('+fmt(ns.length)+' avaliaç'+(ns.length===1?'ão':'ões')+') · '+nPositive(s)+'% positivas':'Pesquisa: sem avaliações no período');
@@ -283,7 +284,7 @@ function summary(){
   var top=Object.keys(imp).sort(function(a,b){return imp[b]-imp[a]})[0];if(top)L.push('Principal ponto a melhorar: '+top+' ('+fmt(imp[top])+')');
   if(kf)L.push('Falhas de conhecimento: '+fmt(kf)+' protocolo'+(kf===1?'':'s'));
   var g={};p.forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,n:[]});o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
-  var names=Object.keys(g).sort(function(a,b){return g[b].t-g[a].t});
+  var names=Object.keys(g).filter(function(n){return n!=='Sem IA identificada'}).sort(function(a,b){return g[b].t-g[a].t});
   if(names.length){L.push('Maior volume: '+names[0]+' ('+fmt(g[names[0]].t)+')');L.push('');L.push('Por IA:');
     names.forEach(function(n){var o=g[n],a=o.n.length?(o.n.reduce(function(x,y){return x+y},0)/o.n.length).toFixed(2).replace('.',','):'';
       L.push('• '+n+': '+fmt(o.t)+' atend. · '+pct(o.r,o.t)+'% resolvidos · '+pct(o.tr,o.t)+'% transferidos'+(a?' · nota '+a:''))})}

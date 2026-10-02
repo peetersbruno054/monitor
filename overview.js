@@ -91,10 +91,8 @@ window.renderOverview=function(){
     ['transferido','Transferidos','encaminhados para fila humana','transferred',false,tr,tr.length],
     ['nao','Não resolvidos','bot point de problema não resolvido','bad',true,un,un.length],
     ['inatividade','Inatividade','cliente parou de responder','inactivity',false,by('inatividade'),by('inatividade').length],
-    ['possivel','Aguardando confirmação','possível solução, ainda dentro das 24h','possible',false,by('possivel'),by('possivel').length],
-    ['finalizado','Finalizado','cliente não retomou o atendimento','finished',false,by('finalizado'),by('finalizado').length],
-    ['safenota','Finaliza SafeNota','fluxo do SafeNota concluído pela IA','safenota',false,by('safenota'),by('safenota').length]
-  ].filter(function(r,i){return i<5||r[6]});
+    ['possivel','Aguardando confirmação','possível solução, ainda dentro das 24h','possible',false,by('possivel'),by('possivel').length]
+  ];
   var ini=all.length;
   $('outcomes').innerHTML=
     '<div class="oc-sum"><big>'+num('sum',fmt(total),total,'')+'</big><div><b>atendimentos da IA com desfecho no período</b><small>'+pct(total,ini)+'% dos '+fmt(ini)+' iniciados</small></div></div>'+
@@ -111,7 +109,7 @@ window.renderOverview=function(){
 /* ---------- Desempenho por IA ---------- */
 window.renderAgents=function(){
   var g={};
-  outcomes().forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,u:0,n:[]});
+  outcomes().filter(function(x){return x.agent!=='Sem IA identificada'}).forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,u:0,n:[]});
     o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(isUnresolvedProtocol(x))o.u++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
   var names=Object.keys(g).sort(function(x,y){return g[y].t-g[x].t}),
       av=function(o){return o.n.length?(o.n.reduce(function(a,v){return a+v},0)/o.n.length).toFixed(2).replace('.',','):'—'};

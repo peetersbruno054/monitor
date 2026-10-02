@@ -3,7 +3,7 @@
 (function(){
 'use strict';
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
-var OUT=['resolvido','transferido','nao','inatividade','possivel'];
+var OUT=DESFECHOS;
 var DESC={
   nao:'Protocolos com o bot point “Problema não resolvido”',
   resolvido:'Protocolos cujo último desfecho foi “Problema resolvido”',
@@ -11,6 +11,10 @@ var DESC={
   inatividade:'Protocolos finalizados porque o cliente parou de responder',
   possivel:'Pesquisa encaminhada como possível solução, ainda sem confirmação',
   falha:'Protocolos em que a IA registrou “Falha de conhecimento”',
+  finalizado:'Protocolos em que o cliente não retomou o atendimento (“Não retomou atendimento”)',
+  safenota:'Protocolos encerrados pelo fluxo “Finaliza SafeNota”',
+  andamento:'Só “Iniciado atendimento” há menos de 24h: viram Inatividade se não houver resposta',
+  sem:'Protocolos que não registraram nenhum ponto de encerramento: veja a trilha de cada um',
   todos:'Todos os protocolos da IA que tiveram desfecho no período'
 };
 function wrap(n,f,before){var o=window[n];window[n]=function(){if(before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}var r=o.apply(this,arguments);if(!before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}return r}}
@@ -20,6 +24,35 @@ function dayKey(v){var m=String(v||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if
 function outcomes(){return data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0})}
 function svgIcon(p){return'<svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>'}
 function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','button');el.tabIndex=0;if(label)el.setAttribute('aria-label',label);el.addEventListener('click',fn);el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fn(e)}})}
+
+/* ======================================================================
+   0. Regras para protocolos sem ponto de encerramento (definidas pela coordenação)
+      Não retomou atendimento .......... Finalizado
+      Finaliza SafeNota ................ Finaliza SafeNota
+      Atendimento retomado / Retomada .. Transferido (fila)
+      Só Falha de conhecimento ......... Transferido (fila)
+      Só Iniciado atendimento .......... Inatividade depois de 24h; antes disso, Em andamento
+      Vale o último desses pontos na trilha. Só se aplica a quem não tem desfecho próprio.
+   ====================================================================== */
+var WAIT_H=24;
+function trailRule(p){var x=norm(p);
+  if(x.indexOf('nao retomou')>=0||x.indexOf('nao retornou')>=0)return'finalizado';
+  if(x.indexOf('finaliza safenota')>=0)return'safenota';
+  if(x.indexOf('retomad')>=0||x.indexOf('retomou')>=0)return'transferido';
+  if(x.indexOf('falha de conhecimento')>=0)return'transferido';
+  return'';}
+var _a72=window.analyze72;
+window.analyze72=function(raw){
+  var r=_a72(raw),now=Date.now();
+  r.protocols.forEach(function(x){
+    if(x.outcome!=='outro')return;
+    var ev=(x.events||[]).slice().sort(function(a,b){return(a.ms&&b.ms&&a.ms!==b.ms)?a.ms-b.ms:a.index-b.index}),hit=null,last=0;
+    ev.forEach(function(e){var o=trailRule(e.point);if(o)hit={o:o,point:e.point};last=Math.max(last,e.ms||0)});
+    if(hit){x.outcome=hit.o;x.finalPoint=hit.point;x.inferred=true;return}
+    if(ev.length){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
+  });
+  return r;
+};
 
 /* Período efetivamente carregado (o seletor pode mudar antes de clicar em Atualizar) */
 var loaded={start:$('start').value,end:$('end').value,label:''};
@@ -41,6 +74,32 @@ wrap('renderProtocols',function(){
   listH.textContent=o==='nao'?'Problemas não resolvidos':OUTCOME_LIST[o];listP.textContent=DESC[o];
   if(o!=='nao'||uv.agent){$('unresolvedChips').insertAdjacentHTML('beforeend','<button type="button" class="chip clear" data-clear-filters>✕ Limpar filtros</button>')}
 });
+wrap('renderUnList',function(){
+  var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);
+    if(x&&x.inferred&&pp&&!q('.rule-pill',pp)){q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill rule-pill" title="Sem ponto de encerramento: classificado pela trilha de bot points">pela trilha</span>');
+      var d=q(':scope>div',pp);if(d&&!/^Trilha/.test(d.textContent))d.textContent='Trilha: '+trail(x)}});
+});
+/* Sem desfecho: agrupado pelo último bot point, para decidir como classificar */
+var RECENT_H=2;
+function lastMs(x){var e=x.events||[],m=0;e.forEach(function(v){m=Math.max(m,dt(v.date)||0)});return m}
+function maybeOpen(x){var m=lastMs(x);return m&&Date.now()-m<RECENT_H*36e5}
+function shortPoint(p){return String(p||'').replace(/\s*-\s*IA\s*-\s*(SPC|Safe)\s*$/i,'').trim()||'(sem bot point)'}
+wrap('renderProtocols',function(){
+  var box=$('semGroups');
+  if((uv.outcome||'nao')!=='sem'){if(box)box.remove();return}
+  if(!box){box=document.createElement('div');box.id='semGroups';$('unresolvedChips').before(box)}
+  var list=listBase(),g={},open=list.filter(maybeOpen).length;
+  list.forEach(function(x){var k=shortPoint(x.finalPoint);(g[k]=g[k]||{n:0,ag:{}}).n++;g[k].ag[x.agent]=(g[k].ag[x.agent]||0)+1});
+  var keys=Object.keys(g).sort(function(a,b){return g[b].n-g[a].n});
+  box.innerHTML='<div class="sg-head"><b>Por último bot point registrado</b><small>Clique para filtrar a lista'+(open?' · '+fmt(open)+' com atividade nas últimas '+RECENT_H+'h (podem estar em andamento)':'')+'</small></div>'+
+    (keys.length?'<div class="sg-rows">'+keys.map(function(k){var o=g[k];return'<button type="button" class="sg-row'+(norm(uv.q)===norm(k)?' on':'')+'" data-sem-point="'+esc(k)+'"><span>'+esc(k)+'<small>'+Object.keys(o.ag).map(function(a){return esc(a)+' '+o.ag[a]}).join(' · ')+'</small></span><b>'+fmt(o.n)+'</b><i>'+pct(o.n,list.length)+'%</i></button>'}).join('')+'</div>':'');
+});
+document.addEventListener('click',function(e){var b=e.target.closest('[data-sem-point]');if(!b)return;var k=b.dataset.semPoint,same=norm(uv.q)===norm(k);uv.q=same?'':k;$('unresolvedSearch').value=uv.q;uv.page=1;renderProtocols()});
+wrap('renderUnList',function(){
+  if((uv.outcome||'nao')!=='sem')return;var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol];if(x&&maybeOpen(x)){var pp=q('.protocol-point',c);if(pp&&!q('.open-pill',pp))q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill open-pill">Atividade recente: pode estar em andamento</span>')}});
+});
 wrap('renderUnList',function(){var a=unresolved().length,b=listBase().length;$('unresolvedBadge').textContent=(a===b?fmt(b):fmt(a)+' de '+fmt(b))+' protocolo'+(b===1?'':'s')});
 document.addEventListener('click',function(e){
   if(!e.target.closest('[data-clear-filters]'))return;
@@ -61,9 +120,11 @@ function goSurveys(agent){
 }
 
 function bindOverview(){
-  var map=['resolvido','transferido','nao','inatividade','possivel'];
-  qa('#outcomes .oc-row').forEach(function(row,i){
-    var o=map[i];if(!o)return;var name=q('.oc-l b',row).textContent;
+  var sm=q('#outcomes .oc-sum small'),cnt=function(o){return data.r72.protocols.filter(function(x){return x.outcome===o}).length},nAnd=cnt('andamento'),nSem=cnt('outro');
+  if(sm&&nAnd)sm.insertAdjacentHTML('beforeend',' · <button type="button" class="link-btn" data-go-out="andamento">'+fmt(nAnd)+' em andamento</button>');
+  if(sm&&nSem)sm.insertAdjacentHTML('beforeend',' · <button type="button" class="link-btn" data-go-out="sem">'+fmt(nSem)+' sem desfecho</button>');
+  qa('#outcomes .oc-row').forEach(function(row){
+    var o=row.dataset.o;if(!o)return;var name=q('.oc-l b',row).textContent;
     keyGo(row,function(e){if(e&&e.target&&e.target.closest('.oc-sp [data-agent]'))return;goProtocols(o)},'Ver protocolos: '+name);
     qa('.oc-sp span',row).forEach(function(sp){
       var ag=sp.firstChild?sp.firstChild.textContent:'';if(!ag)return;sp.dataset.agent=ag;
@@ -86,8 +147,8 @@ function bindAgents(){
 wrap('renderOverview',bindOverview);
 wrap('renderAgents',bindAgents);
 wrap('renderQuality',function(){
-  var map=[null,'todos','resolvido','transferido','nao','inatividade','possivel'];
-  qa('#funnelPanel .fn').forEach(function(r,i){var o=map[i];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
+  var map={'Com desfecho':'todos','Resolvidos':'resolvido','Transferidos':'transferido','Não resolvidos':'nao','Inatividade':'inatividade','Aguardando':'possivel','Finalizado':'finalizado','Finaliza SafeNota':'safenota'};
+  qa('#funnelPanel .fn').forEach(function(r){var o=map[r.firstChild.textContent];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
 });
 
 /* ======================================================================
@@ -113,6 +174,7 @@ wrap('renderQuality',function(){
     (n>recent.length?'<div class="kf-foot"><button type="button" class="btn btn-secondary" data-go-failures>Ver os '+fmt(n)+' protocolos</button></div>':'');
 });
 document.addEventListener('click',function(e){if(e.target.closest('[data-go-failures]'))goProtocols('falha')});
+document.addEventListener('click',function(e){var b=e.target.closest('[data-go-out]');if(b)goProtocols(b.dataset.goOut)});
 
 /* ======================================================================
    3. Tendência por dia nos KPIs da Visão geral (períodos com mais de um dia)
@@ -158,11 +220,11 @@ wrap('renderOverview',function(){
 var HSER=[['resolvido','Resolvidos','resolved'],['nao','Não resolvidos','bad'],['transferido','Transferidos','transferred'],['outros','Outros desfechos','other']];
 function hourCat(x){if(x.outcome==='resolvido')return'resolvido';if(isUnresolvedProtocol(x))return'nao';if(x.outcome==='transferido')return'transferido';return'outros'}
 /* o cinza "outros" é detalhado na legenda e na dica */
-var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['sem','Sem desfecho']];
-function otherSub(x){return x.outcome==='inatividade'?'inatividade':x.outcome==='possivel'?'possivel':'sem'}
+var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['finalizado','Finalizado'],['safenota','Finaliza SafeNota'],['andamento','Em andamento'],['sem','Sem desfecho']];
+function otherSub(x){return['inatividade','possivel','finalizado','safenota','andamento'].indexOf(x.outcome)>=0?x.outcome:'sem'}
 wrap('renderOverview',function(){
   var p=$('hoursPanel');if(!p)return;
-  var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0,inatividade:0,possivel:0,sem:0});
+  var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0,inatividade:0,possivel:0,finalizado:0,safenota:0,andamento:0,sem:0});
   data.r72.protocols.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours(),c=hourCat(x);h[k].t++;h[k][c]++;if(c==='outros')h[k][otherSub(x)]++});
   var mx=Math.max.apply(null,h.map(function(v){return v.t}).concat(1)),tot={};HSER.concat(OSUB).forEach(function(s){tot[s[0]]=h.reduce(function(a,v){return a+v[s[0]]},0)});
   var subTxt=function(v){return OSUB.filter(function(s){return v[s[0]]}).map(function(s){return s[1].toLowerCase()+' '+fmt(v[s[0]])}).join(' · ')};
@@ -212,8 +274,9 @@ function summary(){
       avg=ns.length?ns.reduce(function(a,x){return a+x.note},0)/ns.length:0,kf=all.filter(hasFailure).length;
   var L=['Monitor IA · '+periodText(),''];
   L.push(fmt(t)+' atendimento'+(t===1?'':'s')+' da IA com desfecho');
-  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')]]
-    .forEach(function(r){L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
+  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')],['Finalizado (não retomou)',c('finalizado')],['Finaliza SafeNota',c('safenota')]]
+    .forEach(function(r,i){if(i<5||r[1])L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
+  var nAnd=all.filter(function(x){return x.outcome==='andamento'}).length;if(nAnd)L.push('Em andamento (menos de 24h): '+fmt(nAnd));
   L.push('');
   L.push(ns.length?'Pesquisa: nota média '+avg.toFixed(2).replace('.',',')+' ('+fmt(ns.length)+' avaliaç'+(ns.length===1?'ão':'ões')+') · '+nPositive(s)+'% positivas':'Pesquisa: sem avaliações no período');
   var imp={};s.forEach(function(x){if(x.note&&x.note<=3)x.help.forEach(function(h){if(neg.has(norm(h)))imp[h]=(imp[h]||0)+1})});

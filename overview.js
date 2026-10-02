@@ -58,7 +58,7 @@ function countUp(root){
   });
 }
 
-var OUT=['resolvido','transferido','nao','inatividade','possivel'];
+var OUT=DESFECHOS;
 function outcomes(){return data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0})}
 function avgNote(s){var n=s.filter(function(x){return x.note});return{n:n.length,v:n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0}}
 function kpi(key,label,icon,color,text,to,suf,sub){
@@ -91,13 +91,15 @@ window.renderOverview=function(){
     ['transferido','Transferidos','encaminhados para fila humana','transferred',false,tr,tr.length],
     ['nao','Não resolvidos','bot point de problema não resolvido','bad',true,un,un.length],
     ['inatividade','Inatividade','cliente parou de responder','inactivity',false,by('inatividade'),by('inatividade').length],
-    ['possivel','Aguardando confirmação','possível solução, ainda dentro das 24h','possible',false,by('possivel'),by('possivel').length]
-  ];
+    ['possivel','Aguardando confirmação','possível solução, ainda dentro das 24h','possible',false,by('possivel'),by('possivel').length],
+    ['finalizado','Finalizado','cliente não retomou o atendimento','finished',false,by('finalizado'),by('finalizado').length],
+    ['safenota','Finaliza SafeNota','fluxo do SafeNota concluído pela IA','safenota',false,by('safenota'),by('safenota').length]
+  ].filter(function(r,i){return i<5||r[6]});
   var ini=all.length;
   $('outcomes').innerHTML=
     '<div class="oc-sum"><big>'+num('sum',fmt(total),total,'')+'</big><div><b>atendimentos da IA com desfecho no período</b><small>'+pct(total,ini)+'% dos '+fmt(ini)+' iniciados</small></div></div>'+
     rows.map(function(r,i){var q=r[6],pc=pct(q,total);
-      return'<div class="oc-row'+(r[4]?' col':'')+'" style="--c:var(--'+r[3]+')"><div class="oc-l"><i class="oc-dot"></i><div><b>'+r[1]+'</b><small>'+r[2]+'</small></div></div>'+
+      return'<div class="oc-row'+(r[4]?' col':'')+'" data-o="'+r[0]+'" style="--c:var(--'+r[3]+')"><div class="oc-l"><i class="oc-dot"></i><div><b>'+r[1]+'</b><small>'+r[2]+'</small></div></div>'+
       '<div class="oc-m"><div class="tr"><i style="width:'+pc+'%"></i></div>'+(q?'<div class="oc-sp">'+split(r[5])+'</div>':'')+'</div>'+
       '<div class="oc-r"><strong>'+num('o'+i,pc+'%',pc,'%')+'</strong><small>'+fmt(q)+' atend.</small></div></div>'}).join('');
   $('complement').innerHTML='';

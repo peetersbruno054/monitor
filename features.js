@@ -41,9 +41,32 @@ function trailRule(p){var x=norm(p);
   if(x.indexOf('retomad')>=0||x.indexOf('retomou')>=0)return'transferido';
   if(x.indexOf('falha de conhecimento')>=0)return'transferido';
   return'';}
+/* Limpeza do R72 antes da análise:
+   1) o CSV do Orpen termina com um quadro-resumo ("Pontos de Bot | Qtde") que não são protocolos:
+      a leitura para na linha "Qtde";
+   2) linhas com uma coluna deslocada (o bot point caiu na coluna Agente): o bot point é recuperado. */
+function isBotPoint(v){var x=norm(v);return/\bia\s*-\s*(spc|safe)\b/.test(x)||/iniciado atendimento|transferencia|transfere |problema (nao )?resolvido|inatividade|pesquisa encaminhada|falha de conhecimento|retomad|retomou|safenota/.test(x)}
+function cleanR72(raw){
+  var rows=csvRows(raw);if(!rows.length)return rows;
+  var s=rows[0],cp=col(s,['pontos de bot','bot point','ponto de bot']),pr=col(s,['protocolo']),ag=col(s,['agente','agent']),
+      cpL=Object.keys(s).filter(function(k){return/^(botpoint|pontos de bot)$/i.test(k)}),agL=Object.keys(s).filter(function(k){return/^(agent|agente)$/i.test(k)}),out=[];
+  for(var i=0;i<rows.length;i++){
+    var r=rows[i],vals=Object.keys(r).map(function(k){return norm(r[k])});
+    if(vals.indexOf('qtde')>=0||vals.indexOf('quantidade')>=0)break;          // início do quadro-resumo
+    if(cp&&ag&&!isBotPoint(r[cp])&&isBotPoint(r[ag])){                          // coluna deslocada
+      var c=Object.assign({},r),pt=r[ag],moved=String(r[cp]||'').trim();cpL.forEach(function(k){c[k]=pt});agL.forEach(function(k){c[k]=''});
+      if(/^\+?\d[\d\s()-]{8,}$/.test(moved))Object.keys(c).forEach(function(k){if(/^(contato|contact)$/i.test(k)&&!c[k])c[k]=moved});   // telefone que estava no lugar do bot point
+      r=c;
+    }
+    if(pr&&!/\d{4,}/.test(String(r[pr]||'')))continue;                          // protocolo inválido
+    out.push(r);
+  }
+  return out;
+}
+window.cleanR72=cleanR72;
 var _a72=window.analyze72;
 window.analyze72=function(raw){
-  var r=_a72(raw),now=Date.now();
+  var r=_a72(cleanR72(raw)),now=Date.now();
   r.protocols.forEach(function(x){
     if(x.outcome!=='outro')return;
     var ev=(x.events||[]).slice().sort(function(a,b){return(a.ms&&b.ms&&a.ms!==b.ms)?a.ms-b.ms:a.index-b.index}),hit=null,last=0;

@@ -85,7 +85,7 @@ addExport('surveyCount',function(){
 });
 addExport('unresolvedBadge',function(){
   csv(['Protocolo','IA','Contato','Data','Ponto do bot','Nota','Como a IA ajudou','Comentário'],
-    unresolved().map(function(x){var s=x.survey||{};return[x.protocol,x.agent,x.contact,x.lastDate,x.unresolvedPoint||x.finalPoint,s.note||'',(s.help||[]).join(' | '),s.comment||'']}),'nao-resolvidos');
+    unresolved().map(function(x){var s=x.survey||{};return[x.protocol,x.agent,(window.maskPhone?maskPhone(x.contact):x.contact),x.lastDate,x.unresolvedPoint||x.finalPoint,s.note||'',(s.help||[]).join(' | '),s.comment||'']}),'nao-resolvidos');
 });
 
 /* ---- Tabela de IAs: rótulos para o modo cartão no celular ---- */

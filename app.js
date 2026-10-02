@@ -24,5 +24,45 @@ function renderUnList(){var all=unresolved(),pages=Math.max(1,Math.ceil(all.leng
 function renderQuality(){var p=data.r72.protocols.filter(function(x){return x.contact}),by={};p.forEach(function(x){var c=String(x.contact).replace(/\D/g,'').slice(-11)||norm(x.contact);if(c)(by[c]||(by[c]=[])).push(x)});var rec=[];Object.keys(by).forEach(function(key){var a=by[key].sort(function(x,y){return dt(x.firstDate)-dt(y.firstDate)});for(var i=1;i<a.length;i++){var h=(dt(a[i].firstDate)-dt(a[i-1].firstDate))/36e5;if(h>=0&&h<=24)rec.push({prev:a[i-1],next:a[i],h:h})}});$('qualityKpis').innerHTML=k('Recontatos em 24h',fmt(rec.length),'clientes que voltaram')+k('Após inatividade',fmt(rec.filter(function(x){return x.prev.outcome==='inatividade'}).length),'voltaram depois de parar')+k('Após não resolvido',fmt(rec.filter(function(x){return x.prev.outcome==='nao'}).length),'voltaram sem solução')+k('Após possível solução',fmt(rec.filter(function(x){return x.prev.outcome==='possivel'}).length),'solução não se confirmou');$('recontactBadge').textContent=fmt(rec.length)+' recontatos';$('tabQuality').textContent=rec.length||'';var mx=Math.max(1,rec.length);$('recontactWindows').innerHTML=[['≤1h',function(x){return x<=1}],['1–6h',function(x){return x>1&&x<=6}],['6–24h',function(x){return x>6}]].map(function(b){var q=rec.filter(function(x){return b[1](x.h)}).length;return'<div><i style="height:'+Math.max(4,q/mx*120)+'px"></i><b>'+q+'</b><small>'+b[0]+'</small></div>'}).join('');$('recontactList').innerHTML=rec.slice(0,50).map(function(x){return'<div class="item"><b>'+esc(x.next.protocol)+'</b><span class="pill">'+x.h.toFixed(1).replace('.',',')+'h depois</span><div class="meta">Anterior: '+esc(x.prev.protocol)+' · '+esc(x.next.agent)+' · '+esc(x.next.contact)+'</div></div>'}).join('')||'<div class="empty">Sem dados de contato suficientes para identificar recontatos.</div>';var cp=col(data.r72.rows[0]||{},['pontos de bot','bot point','ponto de bot']),counts={};data.r72.rows.forEach(function(r){var v=norm(r[cp]);if(v)counts[v]=(counts[v]||0)+1});$('checkpointList').innerHTML=bot.map(function(x){var q=counts[norm(x[0])]||0;return'<div class="checkpoint"><b>'+esc(x[0])+'</b><strong>'+q+'</strong><small>'+esc(x[1])+' · '+(q?'registrado':'zerado')+'</small></div>'}).join('')}
 function renderAll(){data.r72.protocols.forEach(function(x){x.survey=data.r74.find(function(s){return s.protocol===x.protocol})||null});renderOverview();renderSurveys();renderQuality();renderProtocols();$('tabSurveys').textContent=data.r74.length||'';$('tabProtocols').textContent=unresolvedBase().length||''}
 function show(v){document.querySelectorAll('[data-panel]').forEach(function(s){s.hidden=s.dataset.panel!==v});document.querySelectorAll('.tabs button').forEach(function(b){b.classList.toggle('active',b.dataset.view===v)})}
-async function load(){var old=$('refresh').textContent;$('refresh').disabled=true;$('refresh').textContent='Consultando…';$('status').textContent='Consultando Orpen…';try{var r=await fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start:$('start').value,end:$('end').value})}),raw=await r.text(),j;try{j=JSON.parse(raw)}catch(_){throw new Error('Servidor respondeu '+r.status+' em vez de JSON: '+raw.slice(0,220))}if(!r.ok||!j.ok)throw new Error(j.error||'Falha ao consultar o Orpen');data={r72:analyze72(j.r72),r74:analyze74(j.r74)};renderAll();$('status').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR');$('notice').hidden=true}catch(e){$('status').textContent='Erro na coleta';$('notice').hidden=false;$('notice').textContent=e.message||'Erro ao consultar o Orpen';console.error(e)}finally{$('refresh').disabled=false;$('refresh').textContent=old}}
-var se=dates('today');$('start').value=se[0];$('end').value=se[1];$('start').disabled=true;$('end').disabled=true;$('preset').onchange=function(){var c=$('preset').value==='custom';$('start').disabled=!c;$('end').disabled=!c;if(!c){var x=dates($('preset').value);$('start').value=x[0];$('end').value=x[1]}};$('refresh').onclick=load;document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){show(b.dataset.view)}});document.querySelectorAll('.mode').forEach(function(b){b.onclick=function(){mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(function(x){x.classList.toggle('active',x===b)});renderAgents()}});$('surveySearch').oninput=function(e){sv.q=e.target.value;sv.page=1;renderSurveyList()};$('surveyAgent').onchange=function(e){sv.agent=e.target.value;sv.page=1;renderSurveyList()};$('surveyOption').onchange=function(e){sv.option=e.target.value;sv.page=1;renderSurveyList()};$('surveySize').onchange=function(e){sv.size=+e.target.value;sv.page=1;renderSurveyList()};$('unresolvedSearch').oninput=function(e){uv.q=e.target.value;uv.page=1;renderUnList()};$('unresolvedAgent').onchange=function(e){uv.agent=e.target.value;uv.page=1;renderUnList()};$('unresolvedSize').onchange=function(e){uv.size=+e.target.value;uv.page=1;renderUnList()};document.addEventListener('click',function(e){var a=e.target.closest('[data-sfilter]');if(a){sv.filter=a.dataset.sfilter;sv.page=1;renderSurveyList()}var b=e.target.closest('[data-ufilter]');if(b){uv.filter=b.dataset.ufilter;uv.page=1;renderProtocols()}var sp=e.target.closest('[data-sp]');if(sp){sv.page+=+sp.dataset.sp;renderSurveyList()}var up=e.target.closest('[data-up]');if(up){uv.page+=+up.dataset.up;renderUnList()}});show('overview');
+function setAuthUI(ok){
+  $('loginView').hidden=ok;
+  document.querySelector('.topbar').hidden=!ok;
+  document.querySelector('.rail').hidden=!ok;
+  $('main').hidden=!ok;
+}
+function showLoginError(message){
+  $('loginError').textContent=message||'Não foi possível entrar.';
+  $('loginError').hidden=false;
+}
+async function bootAuth(){
+  setAuthUI(false);
+  try{
+    var r=await fetch('/api/auth',{cache:'no-store'});
+    if(r.ok){
+      setAuthUI(true);
+      load();
+      return;
+    }
+  }catch(_){}
+  $('loginEmail').focus();
+}
+$('loginForm').onsubmit=async function(e){
+  e.preventDefault();
+  $('loginError').hidden=true;
+  var btn=$('loginBtn'),old=btn.textContent;
+  btn.disabled=true;btn.textContent='Entrando…';
+  try{
+    var r=await fetch('/api/auth',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('loginEmail').value})});
+    var raw=await r.text(),j;
+    try{j=JSON.parse(raw)}catch(_){throw new Error('Servidor respondeu de forma inválida.')}
+    if(!r.ok||!j.ok)throw new Error(j.error||'E-mail não autorizado.');
+    setAuthUI(true);
+    await load();
+  }catch(e){
+    showLoginError(e.message||'Não foi possível entrar.');
+  }finally{
+    btn.disabled=false;btn.textContent=old;
+  }
+};
+async function load(){var old=$('refresh').textContent;$('refresh').disabled=true;$('refresh').textContent='Consultando…';$('status').textContent='Consultando Orpen…';try{var r=await fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start:$('start').value,end:$('end').value})}),raw=await r.text(),j;try{j=JSON.parse(raw)}catch(_){throw new Error('Servidor respondeu '+r.status+' em vez de JSON: '+raw.slice(0,220))}if(r.status===401){setAuthUI(false);showLoginError('Sessão expirada. Informe o e-mail novamente.');throw new Error('Sessão expirada.')}if(!r.ok||!j.ok)throw new Error(j.error||'Falha ao consultar o Orpen');data={r72:analyze72(j.r72),r74:analyze74(j.r74)};renderAll();$('status').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR');$('notice').hidden=true}catch(e){$('status').textContent='Erro na coleta';$('notice').hidden=false;$('notice').textContent=e.message||'Erro ao consultar o Orpen';console.error(e)}finally{$('refresh').disabled=false;$('refresh').textContent=old}}
+var se=dates('today');$('start').value=se[0];$('end').value=se[1];$('start').disabled=true;$('end').disabled=true;$('preset').onchange=function(){var c=$('preset').value==='custom';$('start').disabled=!c;$('end').disabled=!c;if(!c){var x=dates($('preset').value);$('start').value=x[0];$('end').value=x[1]}};$('refresh').onclick=load;document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){show(b.dataset.view)}});document.querySelectorAll('.mode').forEach(function(b){b.onclick=function(){mode=b.dataset.mode;document.querySelectorAll('.mode').forEach(function(x){x.classList.toggle('active',x===b)});renderAgents()}});$('surveySearch').oninput=function(e){sv.q=e.target.value;sv.page=1;renderSurveyList()};$('surveyAgent').onchange=function(e){sv.agent=e.target.value;sv.page=1;renderSurveyList()};$('surveyOption').onchange=function(e){sv.option=e.target.value;sv.page=1;renderSurveyList()};$('surveySize').onchange=function(e){sv.size=+e.target.value;sv.page=1;renderSurveyList()};$('unresolvedSearch').oninput=function(e){uv.q=e.target.value;uv.page=1;renderUnList()};$('unresolvedAgent').onchange=function(e){uv.agent=e.target.value;uv.page=1;renderUnList()};$('unresolvedSize').onchange=function(e){uv.size=+e.target.value;uv.page=1;renderUnList()};document.addEventListener('click',function(e){var a=e.target.closest('[data-sfilter]');if(a){sv.filter=a.dataset.sfilter;sv.page=1;renderSurveyList()}var b=e.target.closest('[data-ufilter]');if(b){uv.filter=b.dataset.ufilter;uv.page=1;renderProtocols()}var sp=e.target.closest('[data-sp]');if(sp){sv.page+=+sp.dataset.sp;renderSurveyList()}var up=e.target.closest('[data-up]');if(up){uv.page+=+up.dataset.up;renderUnList()}});show('overview');bootAuth();

@@ -152,6 +152,53 @@ wrap('renderOverview',function(){
 });
 
 /* ======================================================================
+   3b. Atendimentos por hora: barras empilhadas por desfecho
+       (cada protocolo entra uma vez, na hora em que começou)
+   ====================================================================== */
+var HSER=[['resolvido','Resolvidos','resolved'],['nao','Não resolvidos','bad'],['transferido','Transferidos','transferred'],['outros','Outros desfechos','other']];
+function hourCat(x){if(x.outcome==='resolvido')return'resolvido';if(isUnresolvedProtocol(x))return'nao';if(x.outcome==='transferido')return'transferido';return'outros'}
+wrap('renderOverview',function(){
+  var p=$('hoursPanel');if(!p)return;
+  var h=[],i;for(i=0;i<24;i++)h.push({t:0,resolvido:0,nao:0,transferido:0,outros:0});
+  data.r72.protocols.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k].t++;h[k][hourCat(x)]++});
+  var mx=Math.max.apply(null,h.map(function(v){return v.t}).concat(1)),tot={};HSER.forEach(function(s){tot[s[0]]=h.reduce(function(a,v){return a+v[s[0]]},0)});
+  var step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=50?10:Math.ceil(mx/5/10)*10,top=Math.ceil(mx/step)*step,grid='';
+  for(var g=step;g<=top;g+=step)grid+='<div class="hs-gl" style="bottom:'+(g/top*100)+'%"><span>'+g+'</span></div>';
+  p.innerHTML='<div class="panel-head"><div><h2>Atendimentos por hora</h2><p>Quando a IA recebe protocolos e como eles terminam, pela hora de início</p></div></div>'+
+    '<div class="hs-legend">'+HSER.map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+' <b>'+fmt(tot[s[0]])+'</b></span>'}).join('')+'</div>'+
+    '<div class="hs"><div class="hs-plot">'+grid+'<div class="hs-cols">'+h.map(function(v,k){
+      var segs=HSER.map(function(s){var n=v[s[0]];return n?'<u class="sg sg-'+s[2]+'" style="height:'+(n/top*100)+'%"></u>':''}).join('');
+      var lab=k+'h: '+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+(v.t?' — '+HSER.filter(function(s){return v[s[0]]}).map(function(s){return s[1].toLowerCase()+' '+v[s[0]]}).join(', '):'');
+      return'<div class="hs-col" data-h="'+k+'" tabindex="'+(v.t?0:-1)+'" aria-label="'+esc(lab)+'"><div class="hs-stack">'+segs+'</div></div>'}).join('')+'</div></div>'+
+    '<div class="hs-x">'+h.map(function(v,k){return'<span>'+(k%3?'':k+'h')+'</span>'}).join('')+'</div><div class="hs-tip" hidden></div></div>';
+  // dica ao passar o mouse / tocar
+  var tip=q('.hs-tip',p),wrapEl=q('.hs',p);
+  function showTip(col){var k=+col.dataset.h,v=h[k];if(!v.t){tip.hidden=true;return}
+    tip.innerHTML='<b>'+k+'h às '+k+'h59</b><span class="hs-tt">'+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+'</span>'+HSER.filter(function(s){return v[s[0]]}).map(function(s){return'<span><i class="sw sw-'+s[2]+'"></i>'+s[1]+'<b>'+fmt(v[s[0]])+' · '+pct(v[s[0]],v.t)+'%</b></span>'}).join('');
+    tip.hidden=false;var r=col.getBoundingClientRect(),w=wrapEl.getBoundingClientRect(),z=parseFloat(getComputedStyle(document.body).zoom)||1,cl=(r.left-w.left)/z,cr=(r.right-w.left)/z,tw=tip.offsetWidth,max=w.width/z;
+    // ao lado da coluna (direita; se não couber, esquerda) para não cobrir a barra
+    tip.style.left=(cr+8+tw<=max?cr+8:Math.max(0,cl-8-tw))+'px';qa('.hs-col.on',p).forEach(function(c){c.classList.remove('on')});col.classList.add('on')}
+  function hide(){tip.hidden=true;qa('.hs-col.on',p).forEach(function(c){c.classList.remove('on')})}
+  qa('.hs-col',p).forEach(function(c){c.addEventListener('mouseenter',function(){showTip(c)});c.addEventListener('focus',function(){showTip(c)});c.addEventListener('click',function(){showTip(c)});c.addEventListener('blur',hide)});
+  q('.hs-plot',p).addEventListener('mouseleave',hide);
+});
+
+/* ======================================================================
+   3c. Pesquisas: resumo da satisfação mais legível (nota, estrelas e distribuição)
+   ====================================================================== */
+wrap('renderSurveys',function(){
+  var n=data.r74.filter(function(x){return x.note}),N=n.length,avg=N?n.reduce(function(a,x){return a+x.note},0)/N:0,pos=n.filter(function(x){return x.note>=4}).length,
+      c=[0,0,0,0,0,0];n.forEach(function(x){c[x.note]++});
+  var full=Math.floor(avg),half=avg-full>=.25&&avg-full<.75?1:0;if(avg-full>=.75)full++;
+  var stars='';for(var i=1;i<=5;i++)stars+='<i class="st'+(i<=full?' on':i===full+1&&half?' half':'')+'"></i>';
+  var box=$('satDist'),sum=$('satSummary');
+  if(!sum){sum=document.createElement('div');sum.id='satSummary';box.parentNode.insertBefore(sum,box)}
+  sum.innerHTML=N?'<div class="ss-score"><big>'+avg.toFixed(2).replace('.',',')+'</big><div><span class="ss-stars" role="img" aria-label="'+avg.toFixed(1).replace('.',',')+' de 5 estrelas">'+stars+'</span><small>média de '+fmt(N)+' avaliaç'+(N===1?'ão':'ões')+'</small></div></div>'+
+    '<div class="ss-pos"><b>'+pct(pos,N)+'%</b><small>notas 4 ou 5</small></div>':'<div class="empty">Sem avaliações no período.</div>';
+  box.innerHTML=N?[5,4,3,2,1].map(function(v){var tone=v>=4?'good':v===3?'mid':'bad';return'<div class="ss-row ss-'+tone+'"><span class="ss-l">'+v+'<i class="st on"></i></span><div class="bar"><i style="width:'+pct(c[v],N)+'%"></i></div><span class="ss-n"><b>'+fmt(c[v])+'</b> · '+pct(c[v],N)+'%</span></div>'}).join(''):'';
+});
+
+/* ======================================================================
    4. Resumo para copiar (WhatsApp / Teams)
    ====================================================================== */
 function summary(){

@@ -7,7 +7,26 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<header class="topbar">
+<section id="loginView" class="login-view">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-logo-text">safeweb</div>
+      <span class="brand-sep"></span>
+      <div class="brand-text"><h1>Monitor IA</h1><p>Acesso restrito</p></div>
+    </div>
+    <div class="login-copy">
+      <h2>Entrar no Monitor</h2>
+      <p>Informe seu e-mail corporativo para continuar.</p>
+    </div>
+    <form id="loginForm" class="login-form">
+      <label for="loginEmail">E-mail</label>
+      <input id="loginEmail" type="email" autocomplete="email" placeholder="seu.nome@safeweb.com.br" required>
+      <button id="loginBtn" class="btn btn-primary" type="submit">Continuar</button>
+      <div id="loginError" class="login-error" hidden></div>
+    </form>
+  </div>
+</section>
+<header class="topbar" hidden>
   <div class="topbar-inner">
     <div class="brand">
       <div class="brand-logo-text">safeweb</div>

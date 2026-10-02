@@ -95,7 +95,7 @@ window.renderOverview=function(){
   ];
   var ini=all.length;
   $('outcomes').innerHTML=
-    '<div class="oc-sum"><big>'+num('sum',fmt(total),total,'')+'</big><div><b>atendimentos da IA com desfecho no período</b><small>'+pct(total,ini)+'% dos '+fmt(ini)+' iniciados. Cada protocolo conta uma vez, pelo último bot point relevante.</small></div></div>'+
+    '<div class="oc-sum"><big>'+num('sum',fmt(total),total,'')+'</big><div><b>atendimentos da IA com desfecho no período</b><small>'+pct(total,ini)+'% dos '+fmt(ini)+' iniciados</small></div></div>'+
     rows.map(function(r,i){var q=r[6],pc=pct(q,total);
       return'<div class="oc-row'+(r[4]?' col':'')+'" style="--c:var(--'+r[3]+')"><div class="oc-l"><i class="oc-dot"></i><div><b>'+r[1]+'</b><small>'+r[2]+'</small></div></div>'+
       '<div class="oc-m"><div class="tr"><i style="width:'+pc+'%"></i></div>'+(q?'<div class="oc-sp">'+split(r[5])+'</div>':'')+'</div>'+

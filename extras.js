@@ -2,7 +2,6 @@
 (function(){
 'use strict';
 var CONVO_URL='';/* link da conversa no Orpen, ex.: 'https://.../protocolo/{protocol}'. Vazio = botão "Copiar protocolo" */
-var TH={transfer:70,unresolved:15,inactivity:25,minTotal:10,minAgent:5};/* limites dos alertas (%) */
 var OUT=['resolvido','transferido','nao','inatividade','possivel'],
 LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',retomado:'Retomado',outro:'Sem desfecho'};
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -13,8 +12,6 @@ var css='#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12p
 'mark{background:rgba(255,200,0,.35);color:inherit;border-radius:3px;padding:0 1px}.clamp{max-height:5.4em;overflow:hidden}.clamp.open{max-height:none}'+
 '.more-btn{margin:4px 0 0;padding:0;border:0;background:none;color:var(--blue);font-size:12px;font-weight:600}.stars{margin-right:4px;color:#e0a640;font-size:16px;letter-spacing:1px}'+
 '.ph{padding:0;border:0;background:none;color:var(--blue);font:inherit;text-decoration:underline dotted;cursor:pointer}'+
-'#alerts{display:grid;gap:8px}.al{display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:12px;background:var(--badbg);border:1px solid color-mix(in srgb,var(--bad) 35%,transparent);color:var(--bad);font-size:13px;font-weight:500}'+
-'.al span{display:grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:var(--bad);color:#fff;font-size:12px;font-weight:700}'+
 '.dl{margin-left:8px;font-size:11px;font-weight:600;color:var(--muted)}.dl.up{color:var(--good)}.dl.dn{color:var(--bad)}'+
 '.hc{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;align-items:end}.hcol{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}.hbar{display:flex;align-items:flex-end;justify-content:center;width:100%;height:120px}'+
 '.hbar i{display:block;position:relative;width:78%;max-width:22px;min-height:2px;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--blue) 28%,transparent);transform-origin:bottom;animation:growY .7s both}'+
@@ -101,16 +98,7 @@ function loadPrev(){
 }
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){
-  var all=data.r72.protocols,p=all.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,L=[],pc=function(n){return pct(n,t)},
-  c=function(o){return p.filter(function(x){return x.outcome===o}).length},un=all.filter(isUnresolvedProtocol).length,ag={};
-  if(t>=TH.minTotal){
-    if(pc(c('transferido'))>=TH.transfer)L.push('Transferências para humano em '+pc(c('transferido'))+'% (limite '+TH.transfer+'%).');
-    if(pc(un)>=TH.unresolved)L.push('Problemas não resolvidos em '+pc(un)+'% (limite '+TH.unresolved+'%).');
-    if(pc(c('inatividade'))>=TH.inactivity)L.push('Inatividade em '+pc(c('inatividade'))+'% (limite '+TH.inactivity+'%).')}
-  p.forEach(function(x){var o=ag[x.agent]||(ag[x.agent]={t:0,n:0});o.t++;if(x.survey&&x.survey.note)o.n++});
-  Object.keys(ag).forEach(function(k){if(ag[k].t>=TH.minAgent&&!ag[k].n)L.push(k+' sem nenhuma avaliação em '+ag[k].t+' atendimentos.')});
-  var al=q('#alerts');if(!al){al=document.createElement('div');al.id='alerts';q('#overviewKpis').before(al)}
-  al.hidden=!L.length;al.innerHTML=L.map(function(m){return'<div class="al"><span>!</span>'+esc(m)+'</div>'}).join('');
+  var all=data.r72.protocols;
   var h=[],i,mx;for(i=0;i<24;i++)h.push([0,0]);
   all.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k][0]++;if(x.outcome==='transferido')h[k][1]++});
   mx=Math.max.apply(null,h.map(function(v){return v[0]}).concat(1));

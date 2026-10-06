@@ -1,4 +1,7 @@
+import { requireMonitorSession } from '../lib/auth.js';
+
 export default function handler(req, res) {
+  if (!requireMonitorSession(req, res)) return;
   const username = process.env.ORPEN_USERNAME || '';
   const password = process.env.ORPEN_PASSWORD || '';
   const device = process.env.ORPEN_DEVICE_UNIQUE_ID || '';
@@ -6,7 +9,7 @@ export default function handler(req, res) {
   res.status(200).json({
     ok: true,
     route: 'check-config',
-    build: '3.1.0',
+    build: '3.1.1',
     usernamePresent: Boolean(username),
     usernameMasked: username ? `${username.slice(0, 2)}***${username.slice(-3)}` : '',
     passwordPresent: Boolean(password),

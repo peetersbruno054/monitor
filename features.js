@@ -66,6 +66,8 @@ function cleanR72(raw){
 window.cleanR72=cleanR72;
 var _a72=window.analyze72;
 window.analyze72=function(raw){
+  // contexto do período (vem do fetch estendido): as linhas do dia seguinte servem só para o cruzamento de 24h
+  var ctx=null;if(Array.isArray(raw)&&raw[0]&&raw[0].__ctx){ctx=CTX[raw[0].__ctx]||null;raw=raw.slice(1)}
   var r=_a72(cleanR72(raw)),now=Date.now();
   r.protocols.forEach(function(x){
     if(x.outcome!=='outro')return;
@@ -75,7 +77,68 @@ window.analyze72=function(raw){
     // só quem tem "Iniciado atendimento" da IA; linhas sem bot point não viram desfecho
     if(ev.some(function(e){return norm(e.point).indexOf('iniciado atendimento')>=0})){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
   });
+  applyReturnRule(r.protocols,now);
+  if(ctx&&ctx.end){   // mostra só os protocolos abertos dentro do período escolhido
+    var keep={};r.protocols=r.protocols.filter(function(x){var d=dayKey(x.firstDate);var ok=!d||d<=ctx.end;if(ok)keep[x.protocol]=1;return ok});
+    var pr=col(r.rows[0]||{},['protocolo']);if(pr)r.rows=r.rows.filter(function(row){return keep[String(row[pr]||'').trim()]});
+  }
   return r;
+};
+
+/* ======================================================================
+   0b. Retorno do cliente em até 24h (cruzamento pelo telefone do R72)
+       • voltou em até 24h com outro protocolo → o protocolo anterior assume o desfecho do mais recente
+         (em cadeia: x → y → z, x e y ficam com o desfecho de z)
+       • "Aguardando confirmação" sem retorno depois de 24h → Resolvido (confirmado)
+   ====================================================================== */
+function contactKey(v){var d=String(v||'').replace(/\D/g,'');return d.length>=8?d.slice(-11):''}
+function bounds(x){var a=Infinity,b=0;(x.events||[]).forEach(function(e){var m=e.ms||dt(e.date);if(m){a=Math.min(a,m);b=Math.max(b,m)}});return{a:a===Infinity?0:a,b:b}}
+function applyReturnRule(list,now){
+  var by={};
+  list.forEach(function(x){x.ownOutcome=x.outcome;x.ownUnresolved=!!x.hasProblemUnresolved;var t=bounds(x);x._a=t.a;x._b=t.b;var k=contactKey(x.contact);if(k&&x._a)(by[k]=by[k]||[]).push(x)});
+  Object.keys(by).forEach(function(k){
+    var a=by[k].sort(function(p,q){return p._a-q._a});
+    for(var i=a.length-1;i>=0;i--){   // de trás para frente: cada um já conhece o desfecho final do seguinte
+      var x=a[i],y=null;
+      for(var j=i+1;j<a.length;j++){var gap=a[j]._a-x._b;if(gap>=0&&gap<=WAIT_H*36e5){y=a[j];break}if(gap>WAIT_H*36e5)break}
+      if(!y)continue;
+      var fin=y.returnedTo||y;
+      x.returnedTo=fin;x.returnNext=y;x.returnHours=(y._a-x._b)/36e5;
+      x.outcome=fin.outcome;x.hasProblemUnresolved=fin.outcome==='nao'||!!fin.hasProblemUnresolved;x.finalPoint=fin.finalPoint;
+    }
+  });
+  list.forEach(function(x){
+    if(x.returnedTo)return;
+    if(x.outcome==='possivel'&&x._b&&now-x._b>=WAIT_H*36e5){x.outcome='resolvido';x.confirmed24=true}
+  });
+}
+
+/* Busca estendida: para confirmar as 24h é preciso ver o dia seguinte ao fim do período */
+var CTX={},ctxN=0,_fetch=window.fetch.bind(window);
+function addDay(iso){var d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+1);return ymdLocal(d)}
+window.fetch=function(url,opt){
+  if(String(url).indexOf('/api/reports')<0||!opt||String(opt.method||'').toUpperCase()!=='POST')return _fetch(url,opt);
+  var body={};try{body=JSON.parse(opt.body||'{}')}catch(_){}
+  if(!body.start||!body.end)return _fetch(url,opt);
+  var today=ymdLocal(new Date()),ext=body.end<today?addDay(body.end):body.end,o2=Object.assign({},opt,{body:JSON.stringify({start:body.start,end:ext})});
+  return _fetch(url,o2).then(function(res){
+    return res.text().then(function(t){
+      var j=null;try{j=JSON.parse(t)}catch(_){}
+      if(j&&j.ok&&Array.isArray(j.r72)){
+        var id='c'+(++ctxN);CTX[id]={start:body.start,end:body.end};
+        // pesquisas: tira as dos protocolos abertos depois do período
+        var s0=j.r72[0]||{},pr=col(s0,['protocolo']),da=col(s0,['data/hora','data hora','data']),first={};
+        j.r72.forEach(function(row){var p=String(row[pr]||'').trim(),d=dayKey(row[da]);if(p&&d&&(!first[p]||d<first[p]))first[p]=d});
+        if(Array.isArray(j.r74)){var s1=j.r74[0]||{},p74=col(s1,['protocolo','protocol']);j.r74=j.r74.filter(function(row){var f=first[String(row[p74]||'').trim()];return!f||f<=body.end})}
+        j.r72=[{__ctx:id}].concat(j.r72);j.period={start:body.start,end:body.end};
+        // aviso do servidor (ex.: Orpen fora do ar, mostrando dados já guardados)
+        if(j.warning&&!body.__prev){var w=j.warning;setTimeout(function(){var n=$('notice');if(n){n.textContent=w;n.classList.add('warn');n.hidden=false}},0)}
+        else setTimeout(function(){var n=$('notice');if(n)n.classList.remove('warn')},0);
+        t=JSON.stringify(j);
+      }
+      return new Response(t,{status:res.status,statusText:res.statusText,headers:{'content-type':'application/json; charset=utf-8'}});
+    });
+  });
 };
 
 /* Período efetivamente carregado (o seletor pode mudar antes de clicar em Atualizar) */
@@ -103,6 +166,17 @@ wrap('renderUnList',function(){
   qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);
     if(x&&x.inferred&&pp&&!q('.rule-pill',pp)){q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill rule-pill" title="Sem ponto de encerramento: classificado pela trilha de bot points">pela trilha</span>');
       var d=q(':scope>div',pp);if(d&&!/^Trilha/.test(d.textContent))d.textContent='Trilha: '+trail(x)}});
+});
+/* marca nos cartões: desfecho herdado do retorno em 24h ou confirmado por não retorno */
+wrap('renderUnList',function(){
+  var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);if(!x||!pp||q('.ret-pill',pp))return;
+    var h='';
+    if(x.returnedTo){var hrs=x.returnHours<1?Math.max(1,Math.round(x.returnHours*60))+' min':x.returnHours.toFixed(1).replace('.',',')+'h';
+      h='<span class="pill ret-pill" title="Antes: '+esc(OUTCOME_ONE[x.ownOutcome]||x.ownOutcome)+'">Voltou em '+hrs+' · protocolo '+esc(x.returnNext.protocol)+(x.returnedTo!==x.returnNext?' → '+esc(x.returnedTo.protocol):'')+'</span>'}
+    else if(x.confirmed24)h='<span class="pill ret-pill ok">Confirmado: não voltou em 24h</span>';
+    if(h)q('.pill',pp).insertAdjacentHTML('afterend',h);
+  });
 });
 /* Sem desfecho: agrupado pelo último bot point, para decidir como classificar */
 var RECENT_H=2;

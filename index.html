@@ -22,11 +22,15 @@
     </div>
     <div class="login-copy">
       <h2>Entrar no Monitor</h2>
-      <p>Informe seu e-mail corporativo para continuar.</p>
+      <p id="loginHint">Entre com seu e-mail corporativo e sua senha.</p>
     </div>
     <form id="loginForm" class="login-form">
       <label for="loginEmail">E-mail</label>
       <input id="loginEmail" type="email" autocomplete="email" placeholder="seu.nome@safeweb.com.br" required>
+      <div id="loginPassWrap" class="login-pass">
+        <label for="loginPassword">Senha</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Sua senha">
+      </div>
       <button id="loginBtn" class="btn btn-primary" type="submit">Continuar</button>
       <div id="loginError" class="login-error" hidden></div>
     </form>

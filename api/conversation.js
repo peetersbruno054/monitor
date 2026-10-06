@@ -1,4 +1,5 @@
 import { authenticate, orpenFetch } from '../lib/orpen.js';
+import { requireMonitorSession } from '../lib/auth.js';
 
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
 const CONVERSATION_URL = `${BASE}/ContactCenter/ajax.php?getMessagesFromProtocol`;
@@ -105,7 +106,9 @@ function parseBody(req) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('x-monitor-build', '3.4.0');
+  res.setHeader('x-monitor-build', '3.4.1');
+
+  if (!requireMonitorSession(req, res)) return;
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({

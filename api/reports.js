@@ -1,6 +1,6 @@
 import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
 import { requireMonitorSession } from '../lib/auth.js';
-import { isSupabaseConfigured, saveReportSnapshot, saveSyncRun } from '../lib/supabase.js';
+import { isSupabaseConfigured, saveReportSnapshot, saveSyncRun, getLatestReportSnapshot } from '../lib/supabase.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const SURVEY_BOTS = ['66666', '393939', '313131', '323232', '676767'];
@@ -9,6 +9,30 @@ const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
 function brDate(iso) {
   const [y, m, d] = String(iso || '').split('-');
   return y && m && d ? `${d}/${m}/${y}` : '';
+}
+
+function saoPauloDate() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const get = (type) => parts.find((part) => part.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+function previousDate(iso) {
+  const [y, m, d] = String(iso || '').split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function isClosedRange(end) {
+  const yesterday = previousDate(saoPauloDate());
+  return Boolean(end && yesterday && end < yesterday);
 }
 
 function payload(reportId, start, end) {
@@ -454,35 +478,61 @@ export default async function handler(req, res) {
     }
 
     let r72;
-
-    try {
-      r72 = await loadReport(72, start, end, session);
-    } catch (error) {
-      console.error('Monitor IA R72:', error);
-      return res.status(502).json({
-        ok: false,
-        stage: 'r72',
-        error: error?.message || String(error),
-        name: error?.name || 'Error'
-      });
-    }
-
     let r74;
+    let loadedFromSupabase = false;
 
-    try {
-      r74 = await loadReport(74, start, end, session);
-    } catch (error) {
-      console.error('Monitor IA R74:', error);
-      return res.status(502).json({
-        ok: false,
-        stage: 'r74',
-        error: error?.message || String(error),
-        name: error?.name || 'Error'
-      });
+    if (isSupabaseConfigured() && isClosedRange(end)) {
+      try {
+        const [saved72, saved74] = await Promise.all([
+          getLatestReportSnapshot({ reportId: 72, start, end }),
+          getLatestReportSnapshot({ reportId: 74, start, end })
+        ]);
+
+        if (saved72?.rows && saved74?.rows) {
+          r72 = { rows: Array.isArray(saved72.rows) ? saved72.rows : [] };
+          r74 = { rows: Array.isArray(saved74.rows) ? saved74.rows : [] };
+          loadedFromSupabase = true;
+        }
+      } catch (error) {
+        console.error('Monitor IA Supabase read:', error);
+      }
     }
 
-    let supabase = { configured: isSupabaseConfigured(), saved: false };
-    if (supabase.configured) {
+    if (!r72) {
+      try {
+        r72 = await loadReport(72, start, end, session);
+      } catch (error) {
+        console.error('Monitor IA R72:', error);
+        return res.status(502).json({
+          ok: false,
+          stage: 'r72',
+          error: error?.message || String(error),
+          name: error?.name || 'Error'
+        });
+      }
+    }
+
+    if (!r74) {
+      try {
+        r74 = await loadReport(74, start, end, session);
+      } catch (error) {
+        console.error('Monitor IA R74:', error);
+        return res.status(502).json({
+          ok: false,
+          stage: 'r74',
+          error: error?.message || String(error),
+          name: error?.name || 'Error'
+        });
+      }
+    }
+
+    let supabase = {
+      configured: isSupabaseConfigured(),
+      saved: false,
+      source: loadedFromSupabase ? 'supabase' : 'orpen'
+    };
+
+    if (supabase.configured && !loadedFromSupabase) {
       try {
         await Promise.all([
           saveReportSnapshot({ reportId: 72, start, end, rows: r72.rows }),

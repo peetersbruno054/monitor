@@ -24,7 +24,7 @@ var css=
 '.oc-m .tr i{display:block;height:100%;border-radius:999px;background:var(--c);transform-origin:left;animation:ocg .7s cubic-bezier(.2,.8,.2,1) both}'+
 '.oc-sp{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11px;color:var(--muted)}.oc-sp span+span{padding-left:12px;border-left:1px solid var(--line)}.oc-sp b{margin-left:2px;color:var(--ink)}'+
 '.oc-r{text-align:right}.oc-r strong{display:block;font-size:20px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}.oc-row.col .oc-r strong{color:var(--c)}.oc-r small{color:var(--muted);font-size:11px}'+
-'.ag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:14px}'+
+'.ag-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}@media(max-width:900px){.ag-grid{grid-template-columns:1fr}}'+
 '.ag2{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface2)}'+
 '.ag2-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}.ag2-h .ic{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface);border:1px solid var(--line);color:var(--ink2)}.ag2-h .ic svg{width:17px;height:17px}'+
 '.ag2-h b{font-size:14px}.ag2-h small{margin-left:auto;color:var(--muted);font-size:11.5px;text-align:right}'+
@@ -111,14 +111,17 @@ window.renderAgents=function(){
   var g={};
   outcomes().filter(function(x){return x.agent!=='Sem IA identificada'}).forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,u:0,n:[]});
     o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(isUnresolvedProtocol(x))o.u++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
-  var names=Object.keys(g).sort(function(x,y){return g[y].t-g[x].t}),
+  // só as 4 IAs, sempre na mesma ordem (cards aparecem mesmo sem atendimento no período)
+  var IAS=['Assistente Safira','IA SPC','SPC AGE','SPC ACI'];
+  IAS.forEach(function(n){g[n]=g[n]||{t:0,r:0,tr:0,u:0,n:[]}});
+  var names=IAS,
       av=function(o){return o.n.length?(o.n.reduce(function(a,v){return a+v},0)/o.n.length).toFixed(2).replace('.',','):'—'};
   function stat(label,color,q,t){var pc=pct(q,t);return'<div class="ag-stat"><small>'+label+'</small><strong style="color:var(--'+color+')">'+pc+'%</strong><em>'+fmt(q)+' atend.</em><i class="mb"><u style="width:'+pc+'%;background:var(--'+color+')"></u></i></div>'}
   if(mode==='cards'){
     $('agentCards').hidden=false;$('agentTable').hidden=true;
     $('agentCards').className='ag-grid';
     $('agentCards').innerHTML=names.map(function(n){var o=g[n];
-      return'<div class="ag2"><div class="ag2-h"><span class="ic">'+IC.bot+'</span><b>'+esc(n)+'</b><small>'+fmt(o.t)+' atendimentos com desfecho</small></div><div class="ag2-s">'+
+      return'<div class="ag2"><div class="ag2-h"><span class="ic">'+IC.bot+'</span><b>'+esc(n)+'</b><small>'+(o.t?fmt(o.t)+' atendimento'+(o.t===1?'':'s')+' com desfecho':'sem atendimentos no período')+'</small></div><div class="ag2-s">'+
         stat('Resolvidos','resolved',o.r,o.t)+stat('Transferidos','transferred',o.tr,o.t)+stat('Não resolvidos','bad',o.u,o.t)+
         '<div class="ag-stat"><small>Nota média</small><strong>'+av(o)+'</strong><em>'+(o.n.length?fmt(o.n.length)+' avaliações':'sem avaliações')+'</em></div></div></div>'}).join('')||'<div class="empty">Nenhuma IA encontrada.</div>';
   }else{

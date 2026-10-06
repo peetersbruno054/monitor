@@ -1,1 +1,3 @@
-export { default } from './ping.js';
+import handler from './ping.js';
+
+export default handler;

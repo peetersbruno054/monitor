@@ -1,5 +1,6 @@
 import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
 import { requireMonitorSession } from '../lib/auth.js';
+import { isSupabaseConfigured, saveReportSnapshot, saveSyncRun } from '../lib/supabase.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const SURVEY_BOTS = ['66666', '393939', '313131', '323232', '676767'];
@@ -480,6 +481,27 @@ export default async function handler(req, res) {
       });
     }
 
+    let supabase = { configured: isSupabaseConfigured(), saved: false };
+    if (supabase.configured) {
+      try {
+        await Promise.all([
+          saveReportSnapshot({ reportId: 72, start, end, rows: r72.rows }),
+          saveReportSnapshot({ reportId: 74, start, end, rows: r74.rows })
+        ]);
+        supabase.saved = true;
+        await saveSyncRun({
+          success: true,
+          start,
+          end,
+          r72Rows: r72.rows.length,
+          r74Rows: r74.rows.length
+        });
+      } catch (error) {
+        console.error('Monitor IA Supabase:', error);
+        supabase.error = 'Falha ao salvar no Supabase.';
+      }
+    }
+
     return res.status(200).json({
       ok: true,
       version: '3.3.0',
@@ -500,6 +522,7 @@ export default async function handler(req, res) {
             .filter((row) => row.outcome === 'nao' && row.protocol)
             .map((row) => row.protocol)
         ).size,
+        supabase,
         r72ProblemUnresolvedPoints: [...new Set(
           r72.rows
             .filter((row) => row.outcome === 'nao')

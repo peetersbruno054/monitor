@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { isSupabaseAuthConfigured, signInWithPassword } from '../lib/supabase.js';
 
 const AUTH_EMAIL = 'bruno.lumertz@safeweb.com.br';
 const COOKIE_NAME = '__Host-monitor_session';
@@ -84,8 +85,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const session = getMonitorSession(req);
     return session
-      ? res.status(200).json({ ok: true, email: session.email })
-      : res.status(401).json({ ok: false, error: 'Sessão não encontrada ou expirada.' });
+      ? res.status(200).json({ ok: true, email: session.email, mode: isSupabaseAuthConfigured() ? 'password' : 'email' })
+      : res.status(401).json({ ok: false, error: 'Sessão não encontrada ou expirada.', mode: isSupabaseAuthConfigured() ? 'password' : 'email' });
   }
 
   if (req.method !== 'POST') {
@@ -105,6 +106,25 @@ export default async function handler(req, res) {
       });
     }
 
+    if (isSupabaseAuthConfigured()) {
+      const password = String(body.password || '');
+      if (!password) {
+        return res.status(401).json({
+          ok: false,
+          error: 'Informe a senha.'
+        });
+      }
+
+      try {
+        await signInWithPassword(email, password);
+      } catch (error) {
+        return res.status(401).json({
+          ok: false,
+          error: error?.message || 'E-mail ou senha inválidos.'
+        });
+      }
+    }
+
     const expiresAt = expiryAtEndOfDay();
     const token = sessionToken(expiresAt);
 
@@ -112,6 +132,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       email: AUTH_EMAIL,
+      mode: isSupabaseAuthConfigured() ? 'password' : 'email',
       expiresAt
     });
   } catch (error) {

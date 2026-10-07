@@ -100,9 +100,13 @@ html[data-theme=dark] .panel,html[data-theme=dark] .kpi{box-shadow:none}
  .shell{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 }
 @media(max-width:620px){
- #autoBtn{flex:0 0 76px!important;width:76px!important;min-width:76px;max-width:76px;white-space:nowrap;overflow:hidden}
- #autoBtn .dot{flex:0 0 8px}
- #themeBtn{flex:0 0 42px!important;width:42px!important;min-width:42px;max-width:42px;white-space:nowrap}
+ .controls{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 42px;gap:8px}
+ #periodToggle{grid-column:1;grid-row:1}
+ #refresh{grid-column:2;grid-row:1}
+ .quick-actions{grid-column:1/-1;grid-row:2;min-width:0}
+ .quick-actions .btn{min-width:0}
+ #autoBtn{grid-column:2;grid-row:3;justify-self:stretch;min-width:0;width:auto!important;max-width:none;white-space:nowrap}
+ #themeBtn{grid-column:3;grid-row:3;justify-self:stretch;flex:0 0 auto!important;width:42px!important;min-width:42px;max-width:42px;white-space:nowrap}
  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:0 2px 2px}
  .chips::-webkit-scrollbar{display:none}.chip{flex:0 0 auto}
  .kpis-4,.kpis-5{grid-template-columns:repeat(2,minmax(0,1fr))}

@@ -1,65 +1,114 @@
 # Monitor IA · Safeweb
 
-Versão web do Monitor IA na Vercel. Consulta o Orpen (R72 e R74), guarda os dados no Supabase e funciona no computador e no celular.
+Versão web do Monitor IA na Vercel. Consulta o Orpen (R72 e R74), pode persistir os resultados no Supabase e funciona no computador e no celular.
+
+## Arquitetura atual
 
 ```
- GitHub Actions (a cada 30 min) ──► /api/sync ──┐
-                                                ├─► Orpen (R72/R74) ──► Supabase (São Paulo)
- Tela: "Atualizar dados" ─────────► /api/reports┘                         │
-                                        ▲                                  │
-                                        └──────── lê os dias já guardados ◄┘
+Tela: "Atualizar dados"
+          │
+          ▼
+     /api/reports
+          │
+     ┌────┴────┐
+     │         │
+  histórico   período novo
+  fechado     / hoje / ontem
+     │         │
+     ▼         ▼
+  Supabase    Orpen
+                │
+             R72 + R74
+                │
+                ▼
+             Supabase
 ```
 
-- **Dias fechados** (até anteontem) são lidos do banco, sem consultar o Orpen de novo.
-- **Hoje e ontem** são atualizados no Orpen quando a última busca tem mais de 3 minutos, e a cada 30 minutos pelo agendamento.
-- Se o Orpen cair, a tela mostra o que já está guardado, com um aviso.
-- Sem as variáveis do Supabase, o site funciona como antes (direto no Orpen, login só com e-mail).
+- **Não existe atualização automática do Monitor por padrão.** O Orpen é consultado quando uma coleta é solicitada pela tela.
+- Quando o Supabase está configurado, as coletas são salvas como snapshots.
+- **Períodos fechados** (até antes de ontem) podem ser reutilizados do snapshot exato.
+- Para validar a regra de retorno em até 24h, a tela pode solicitar também o dia seguinte ao período; esse dia extra é usado como contexto e **não altera o período exibido**.
+- O snapshot continua identificado pelo período solicitado, mesmo quando contém linhas extras usadas somente para o cruzamento de 24h.
 
-## 1. Supabase
+## Supabase
 
-1. Crie um projeto em [supabase.com](https://supabase.com) na região **South America (São Paulo)**.
-2. **SQL Editor** → cole `supabase/schema.sql` → **Run**.
-3. **Authentication → Sign In / Providers → Email**: desligue **Allow new users to sign up**.
-4. **Authentication → Users → Add user**: crie o login de cada pessoa (marque *Auto Confirm User*). Para trocar uma senha, use o mesmo menu.
-5. Em **Project Settings → API Keys**, copie a chave **secret** (`sb_secret_...`) ou, na aba *Legacy API Keys*, a `service_role`. A `Project URL` aparece no botão **Connect** do topo do projeto (formato `https://xxxx.supabase.co`).
+1. Crie um projeto no Supabase.
+2. No **SQL Editor**, execute `supabase/schema.sql`.
+3. Em **Authentication → Sign In / Providers → Email**, desative o cadastro público de novos usuários.
+4. Crie o usuário autorizado em **Authentication → Users**.
+5. Em **Project Settings → API Keys**, use no backend uma chave secreta e, para o login por senha, uma chave publicável/compatível com Auth.
 
-## 2. Vercel → Settings → Environment Variables
+O código aceita tanto as chaves atuais quanto as legadas:
 
-| Variável | Valor |
+- `SUPABASE_SECRET_KEY` ou `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PUBLISHABLE_KEY` ou `SUPABASE_ANON_KEY`
+
+## Variáveis da Vercel
+
+Configure em **Settings → Environment Variables**:
+
+| Variável | Uso |
 |---|---|
-| `SUPABASE_URL` | Project URL do Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | chave **secret** `sb_secret_...` (ou a `service_role` antiga) |
-| `SUPABASE_ANON_KEY` | chave **publishable** `sb_publishable_...` ou `anon` (opcional, usada no login) |
-| `MONITOR_AUTH_SECRET` | um texto longo e aleatório (assina o cookie de sessão) |
-| `SYNC_SECRET` | outro texto longo e aleatório (protege a sincronização) |
-| `ORPEN_*` | as mesmas de antes |
+| `SUPABASE_URL` | URL do projeto Supabase, sem `/rest/v1` ou `/auth/v1` |
+| `SUPABASE_SECRET_KEY` | chave secreta do backend |
+| `SUPABASE_SERVICE_ROLE_KEY` | fallback para a chave legada |
+| `SUPABASE_PUBLISHABLE_KEY` | chave para autenticação por senha |
+| `SUPABASE_ANON_KEY` | fallback para autenticação |
+| `MONITOR_AUTH_SECRET` | segredo usado para assinar a sessão diária |
+| `ORPEN_*` | variáveis de conexão com o Orpen |
 
-Faça um novo deploy depois de salvar. A partir daí o login pede **e-mail e senha** (as contas do passo 1.4).
+Depois de alterar variáveis da Vercel, faça um novo deploy.
 
-## 3. GitHub → Settings → Secrets and variables → Actions
+## Login
 
-| Secret | Valor |
-|---|---|
-| `SITE_URL` | endereço do site, ex.: `https://monitor-ia.vercel.app` |
-| `SYNC_SECRET` | o mesmo valor colocado na Vercel |
+O Monitor aceita apenas o e-mail autorizado configurado no backend. Quando o Supabase Auth está configurado, a senha é validada pelo Supabase.
 
-Teste em **Actions → Sincronizar Orpen → Run workflow**. Horários: a cada 30 min das 07:00 às 21:30 e às 00:10 (Brasília).
+Depois da validação, o Monitor cria uma sessão própria em cookie `HttpOnly`, válida até o fim do dia.
+
+O navegador nunca recebe a chave secreta do Supabase.
+
+## Regra de retorno em até 24h
+
+A regra está centralizada em um único fluxo para evitar dupla aplicação.
+
+O cálculo usa:
+
+- mesmo telefone/contato normalizado;
+- fim do último evento do protocolo anterior;
+- início do primeiro evento do protocolo seguinte;
+- intervalo de até 24 horas;
+- cadeia de retornos (por exemplo: protocolo A → B → C).
+
+Regras principais:
+
+- Retorno dentro de 24h marca o protocolo anterior com o contexto do retorno e propaga o desfecho final da cadeia quando aplicável.
+- **“Problema não resolvido” é sticky**: depois que esse bot point aparece em um protocolo, ele continua como “Não resolvido”, mesmo que depois exista retomada, transferência ou outro evento.
+- “Aguardando confirmação” só vira “Resolvido” depois que as 24 horas realmente passaram sem retorno.
+- Protocolos sem telefone suficiente não são considerados recontato verificável.
+
+## Rotas
+
+- `/api/auth` — login e sessão
+- `/api/reports` — R72/R74
+- `/api/conversation` — consulta de conversa por protocolo
+- `/api/check-config` — diagnóstico protegido
+- `/api/health` — verificação simples do serviço
+
+As rotas que retornam dados do Orpen exigem sessão válida do Monitor.
 
 ## Segurança
 
-- O navegador nunca acessa o banco: as tabelas não têm acesso para `anon`/`authenticated`; só as funções da Vercel, com a `service_role`.
-- Todas as rotas de dados exigem login (`/api/reports`, `/api/conversation`, `/api/check-config`).
-- Login com até 8 tentativas a cada 10 minutos por e-mail e por IP.
-- Recomendado: deixar este repositório **privado**.
-- Para apagar dados antigos: `select public.monitor_ia_cleanup(365);` no SQL Editor (mantém 1 ano).
+- Chaves secretas ficam somente no servidor.
+- As tabelas do Supabase têm RLS habilitado e acesso revogado para `anon` e `authenticated`; o backend usa a credencial administrativa.
+- `/api/reports`, `/api/conversation` e `/api/check-config` exigem login.
+- O navegador não consulta diretamente o banco.
 
-## Limites dos planos gratuitos (conferir antes)
+## Limpeza
 
-- **Supabase Free**: 500 MB de banco; projetos sem atividade por 7 dias são pausados (o agendamento mantém ativo).
-- **GitHub Actions**: grátis em repositório público; em privado, 2.000 min/mês (este agendamento usa cerca de 900).
-- **Vercel Hobby**: só para uso pessoal/não comercial; para uso da empresa, plano Pro.
+Para remover snapshots e registros antigos:
 
-## Diagnóstico
+```sql
+select public.monitor_ia_cleanup(365);
+```
 
-- `/api/check-config` (logado): mostra quais variáveis estão configuradas, sem revelar valores.
-- Tabela `sync_runs` no Supabase: cada sincronização, com sucesso ou erro.
+Isso mantém aproximadamente um ano de histórico.

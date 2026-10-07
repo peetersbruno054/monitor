@@ -179,7 +179,7 @@ window.fetch=function(url,opt){
   if(String(url).indexOf('/api/reports')<0||!opt||String(opt.method||'').toUpperCase()!=='POST')return _fetch(url,opt);
   var body={};try{body=JSON.parse(opt.body||'{}')}catch(_){}
   if(!body.start||!body.end)return _fetch(url,opt);
-  var today=ymdLocal(new Date()),ext=body.end<today?addDay(body.end):body.end,o2=Object.assign({},opt,{body:JSON.stringify({start:body.start,end:ext})});
+  var today=ymdLocal(new Date()),originalEnd=body.end,ext=body.end<today?addDay(body.end):body.end,o2=Object.assign({},opt,{body:JSON.stringify({start:body.start,end:ext,__monitorOriginalEnd:originalEnd})});
   return _fetch(url,o2).then(function(res){
     return res.text().then(function(t){
       var j=null;try{j=JSON.parse(t)}catch(_){}

@@ -44,6 +44,48 @@ window.copyText=function(s,msg){
   var p=navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(s).then(function(){return true},function(){return legacyCopy(s)}):Promise.resolve(legacyCopy(s));
   return p.then(function(ok){toast(ok?(msg||'Copiado'):s.length>40?'O navegador bloqueou a cópia. Tente de novo.':'Não foi possível copiar: '+s);return ok});
 };
+function ensureConversationModal(){
+  var m=q('#conversationModal');if(m)return m;
+  m=document.createElement('div');m.id='conversationModal';m.className='conv-modal';m.hidden=true;
+  m.innerHTML='<div class="conv-backdrop" data-conv-close></div><section class="conv-card" role="dialog" aria-modal="true" aria-labelledby="convTitle"><header class="conv-head"><div><h2 id="convTitle">Conversa</h2><p id="convMeta"></p></div><button type="button" class="conv-close" data-conv-close aria-label="Fechar">×</button></header><div id="convBody" class="conv-body"></div><footer class="conv-foot"><button type="button" class="btn btn-secondary" id="convCopy">Copiar protocolo</button><button type="button" class="btn btn-primary" data-conv-close>Fechar</button></footer></section>';
+  document.body.appendChild(m);
+  m.addEventListener('click',function(e){if(e.target.closest('[data-conv-close]'))closeConversation();});
+  return m;
+}
+function closeConversation(){
+  var m=q('#conversationModal');if(!m)return;m.hidden=true;document.body.classList.remove('conv-open');
+}
+function renderConversation(protocol,payload){
+  var body=q('#convBody'),meta=q('#convMeta');if(!body||!meta)return;
+  meta.textContent=fmt(payload.totalMessages||0)+' mensagens · protocolo '+protocol;
+  if(!payload.messages||!payload.messages.length){body.innerHTML='<div class="empty">Nenhuma mensagem encontrada para este protocolo.</div>';return}
+  body.innerHTML=payload.messages.map(function(m){
+    var who=m.direction==='in'?'Cliente':(m.sender||'IA / atendimento');
+    var cls=m.direction==='in'?'in':'out';
+    var when=m.timestamp?esc(m.timestamp):'';
+    return'<div class="conv-row '+cls+'"><div class="conv-bubble"><div class="conv-who">'+esc(who)+'<small>'+when+'</small></div><div class="conv-text">'+esc(m.text)+'</div></div></div>';
+  }).join('');
+  body.scrollTop=body.scrollHeight;
+}
+async function openConversation(protocol,button){
+  var m=ensureConversationModal(),body=q('#convBody'),meta=q('#convMeta'),copyBtn=q('#convCopy');
+  m.hidden=false;document.body.classList.add('conv-open');
+  q('#convTitle').textContent='Protocolo '+protocol;
+  if(meta)meta.textContent='Consultando conversa…';
+  if(body)body.innerHTML='<div class="conv-loading"><span></span>Carregando mensagens…</div>';
+  if(copyBtn)copyBtn.onclick=function(){copy(protocol,copyBtn)};
+  try{
+    var r=await fetch('/api/conversation?protocol='+encodeURIComponent(protocol),{cache:'no-store'});
+    var j=await r.json();
+    if(!r.ok||!j.ok)throw new Error(j.error||'Não foi possível carregar a conversa.');
+    renderConversation(protocol,j);
+  }catch(e){
+    if(body)body.innerHTML='<div class="empty">Não foi possível carregar a conversa.<br><small>'+esc(e.message||'Erro desconhecido')+'</small></div>';
+    if(meta)meta.textContent='Protocolo '+protocol;
+  }finally{
+    if(button)button.blur();
+  }
+}
 function copy(s,btn){
   copyText(s,'Protocolo '+s+' copiado').then(function(ok){
     if(!btn||!ok)return;var old=btn.textContent;btn.classList.add('done');btn.textContent='✓ Copiado';
@@ -53,7 +95,7 @@ function copy(s,btn){
 document.addEventListener('click',function(e){
   var b=e.target.closest('.view-btn'),m=e.target.closest('.more-btn'),p=e.target.closest('.ph');
   if(b){var id=b.dataset.protocol;if(!id){var t=q('.row-top b',b.closest('.survey-row,.protocol-card'));id=t?t.textContent.replace(/^Protocolo\s*/,'').trim():''}
-    if(id)CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):copy(id,b)}
+    if(id)CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):openConversation(id,b)}
   if(m){var c=m.previousElementSibling;c.classList.toggle('open');m.textContent=c.classList.contains('open')?'ver menos':'ver mais'}
   if(p){var on=p.dataset.on==='1';p.textContent=on?maskPhone(p.dataset.f):p.dataset.f;p.dataset.on=on?'0':'1'}
   if(e.target.closest('#retryBtn'))q('#refresh').click();

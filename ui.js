@@ -11,9 +11,13 @@ function mk(id,cls,html,title){var b=document.createElement('button');b.id=id;b.
 var controls=q('.controls'),fresh=q('.freshness'),
     theme=mk('themeBtn','btn btn-ghost icon-only','☾','Alternar tema (T)'),
     auto=mk('autoBtn','btn btn-ghost','<span class="dot"></span> Auto','Atualizar automaticamente a cada 5 minutos'),
-    ptog=mk('periodToggle','btn btn-secondary','Hoje ▾','Mostrar ou ocultar o período');
+    ptog=mk('periodToggle','btn btn-secondary','Hoje ▾','Mostrar ou ocultar o período'),
+    mobileTools=document.createElement('div');
+mobileTools.className='mobile-tools';
+mobileTools.appendChild(auto);
+mobileTools.appendChild(theme);
 controls.insertBefore(ptog,controls.firstChild);
-controls.insertBefore(auto,fresh);controls.insertBefore(theme,fresh);
+controls.insertBefore(mobileTools,fresh);
 ptog.onclick=function(){controls.classList.toggle('open')};
 
 /* ---- Tema claro/escuro (segue o sistema até a pessoa escolher) ---- */

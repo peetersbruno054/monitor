@@ -111,54 +111,41 @@ function preserveUnresolved(x,source){
 }
 function applyReturnRule(list,now){
   var by={};
+
+  /* Primeira passada: guarda o estado original e monta os grupos por contato.
+     Nenhum desfecho é alterado ainda. */
   list.forEach(function(x){
     x.ownOutcome=x.outcome;
     x.ownUnresolved=!!x.hasProblemUnresolved||x.outcome==='nao';
     var t=bounds(x);x._a=t.a;x._b=t.b;
     var k=contactKey(x.contact);
+    x.noContact=!k;
     if(k&&x._a)(by[k]=by[k]||[]).push(x);
   });
 
+  /* Segunda passada: encontra somente o próximo protocolo que realmente
+     começou depois do fim do anterior e em até 24h. */
   Object.keys(by).forEach(function(k){
     var a=by[k].sort(function(p,q){return p._a-q._a});
-    for(var i=a.length-1;i>=0;i--){
+    for(var i=0;i<a.length;i++){
       var x=a[i],y=null;
       for(var j=i+1;j<a.length;j++){
         var gap=a[j]._a-x._b;
         if(gap>=0&&gap<=WAIT_H*36e5){y=a[j];break}
         if(gap>WAIT_H*36e5)break;
       }
-      if(!y)continue;
-
-      var fin=y.returnedTo||y;
-      x.returnedTo=fin;
-      x.returnNext=y;
-      x.returnHours=Math.max(0,(y._a-x._b)/36e5);
-
-      /* Regra crítica: qualquer "Problema não resolvido" nunca é sobrescrito. */
-      if(x.ownUnresolved){
-        preserveUnresolved(x,x);
-        continue;
+      if(y){
+        x.returnNext=y;
+        x.returnHours=Math.max(0,(y._a-x._b)/36e5);
       }
-
-      /* Se a cadeia seguinte terminou em não resolvido, a condição também
-         é herdada pelo protocolo anterior. */
-      if(fin.outcome==='nao'||fin.hasProblemUnresolved){
-        preserveUnresolved(x,fin);
-        continue;
-      }
-
-      x.outcome=fin.outcome;
-      x.hasProblemUnresolved=false;
-      x.finalPoint=fin.finalPoint;
     }
   });
 
-  /* Possível solução só vira resolvido depois que 24h realmente passaram.
-     Para períodos históricos, isso já estará confirmado; para hoje, a
-     janela permanece aberta. */
+  /* Terceira passada: fecha primeiro os protocolos terminais de "Possível
+     solução". Assim, numa cadeia A → B → C, o desfecho de C já está definido
+     antes de ser herdado por B e A. */
   list.forEach(function(x){
-    if(x.returnedTo)return;
+    if(x.returnNext)return;
     if(x.outcome==='possivel'&&x._b){
       var elapsed=now-x._b;
       if(elapsed>=WAIT_H*36e5){
@@ -168,6 +155,33 @@ function applyReturnRule(list,now){
       }else{
         x.window24=true;
       }
+    }
+  });
+
+  /* Quarta passada: propaga o desfecho final para trás, respeitando a regra
+     sticky de "Problema não resolvido". */
+  Object.keys(by).forEach(function(k){
+    var a=by[k].sort(function(p,q){return p._a-q._a});
+    for(var i=a.length-1;i>=0;i--){
+      var x=a[i],y=x.returnNext;
+      if(!y)continue;
+
+      var fin=y.returnedTo||y;
+      x.returnedTo=fin;
+
+      if(x.ownUnresolved){
+        preserveUnresolved(x,x);
+        continue;
+      }
+
+      if(fin.outcome==='nao'||fin.hasProblemUnresolved){
+        preserveUnresolved(x,fin);
+        continue;
+      }
+
+      x.outcome=fin.outcome;
+      x.hasProblemUnresolved=false;
+      x.finalPoint=fin.finalPoint;
     }
   });
 }

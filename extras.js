@@ -149,10 +149,63 @@ wrap('renderQuality',function(){
 /* ---------- Visão geral: alertas, gráfico por hora, comparação ---------- */
 var cache={};
 function ns(s){var n=s.filter(function(x){return x.note});return{n:n.length,v:n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0}}
-function stats(r72,r74){var p=r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},a=ns(r74);return{t:t,res:pct(c('resolvido'),t),tr:pct(c('transferido'),t),un:r72.protocols.filter(isUnresolvedProtocol).length,avg:a.v,n:a.n,pos:nPositive(r74)}}
-function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-function prevRange(s,e){var a=new Date(s+'T00:00:00'),b=new Date(e+'T00:00:00'),n=Math.round((b-a)/864e5)+1,pe=new Date(a);pe.setDate(pe.getDate()-1);var ps=new Date(pe);ps.setDate(ps.getDate()-(n-1));return[ymd(ps),ymd(pe)]}
-function renderAttention(){
+function recontactCount(list){
+  var by={},count=0;
+  (list||[]).filter(function(x){return x.contact}).forEach(function(x){
+    var k=String(x.contact).replace(/\D/g,'').slice(-11)||norm(x.contact);
+    if(k)(by[k]=by[k]||[]).push(x);
+  });
+  Object.keys(by).forEach(function(k){
+    var a=by[k].slice().sort(function(x,y){return dt(x.firstDate)-dt(y.firstDate)});
+    for(var i=1;i<a.length;i++){
+      var h=(dt(a[i].firstDate)-dt(a[i-1].firstDate))/36e5;
+      if(h>=0&&h<=24)count++;
+    }
+  });
+  return count;
+}
+function stats(r72,r74){
+  var p=r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,
+      c=function(o){return p.filter(function(x){return x.outcome===o}).length},
+      a=ns(r74),notes=r74.filter(function(x){return x.note}),low=notes.filter(function(x){return x.note<=3});
+  return{
+    t:t,
+    res:pct(c('resolvido'),t),
+    tr:pct(c('transferido'),t),
+    un:r72.protocols.filter(isUnresolvedProtocol).length,
+    failures:r72.protocols.filter(hasFailure).length,
+    recontacts:recontactCount(r72.protocols),
+    low:low.length,
+    lowPct:notes.length?low.length/notes.length*100:0,
+    avg:a.v,n:a.n,pos:nPositive(r74)
+  };
+}
+function prevDelta(cur,old){
+  if(old==null)return{delta:null,pct:null};
+  var delta=cur-old;
+  return{delta:delta,pct:old?delta/Math.abs(old)*100:null};
+}
+function trendText(cur,old,unit){
+  if(old==null)return'';
+  var d=prevDelta(cur,old),v=Math.round(d.delta);
+  if(unit==='pp')v=Math.round(d.delta*10)/10;
+  if(!d.delta)return'· estável vs. período anterior';
+  return'· '+(d.delta>0?'▲ +':'▼ −')+String(Math.abs(v)).replace('.',',')+(unit==='pp'?' pp':'')+' vs. período anterior'+(d.pct!=null?' ('+(d.pct>0?'+':'')+Math.round(d.pct)+'%)':'');
+}
+function attentionAction(key){
+  if(key==='nao')return function(){goProtocols('nao')};
+  if(key==='falha')return function(){goProtocols('falha')};
+  if(key==='satisfacao'||key==='nota')return function(){goSurveys()};
+  if(key==='recontato')return function(){location.hash='quality';setTimeout(function(){show('quality')},0)};
+  if(key==='possivel')return function(){goProtocols('possivel')};
+  return function(){};
+}
+function topAgent(list){
+  var by={};
+  (list||[]).forEach(function(x){by[x.agent]=(by[x.agent]||0)+1});
+  return Object.keys(by).sort(function(a,b){return by[b]-by[a]})[0]||'';
+}
+function renderAttention(prev){
   var box=q('#attentionList'),badge=q('#attentionBadge');
   if(!box||!badge||!data)return;
 
@@ -162,49 +215,70 @@ function renderAttention(){
       unresolved=p.filter(isUnresolvedProtocol).length,
       failures=p.filter(hasFailure).length,
       waiting=p.filter(function(x){return x.outcome==='possivel'}).length,
-      recontacts=recs().length,
+      recontacts=recontactCount(p),
       notes=data.r74.filter(function(x){return x.note}),
       low=notes.filter(function(x){return x.note<=3}),
       avg=notes.length?notes.reduce(function(a,x){return a+x.note},0)/notes.length:0,
-      lowPct=notes.length?pct(low.length,notes.length):0;
+      lowPct=notes.length?low.length/notes.length*100:0,
+      prior=prev&&prev.s?prev.s:null,
+      items=[];
 
-  var items=[];
-  function add(level,title,text,action,label){
-    items.push({level:level,title:title,text:text,action:action,label:label});
+  function add(key,level,title,text,extra,actionLabel,score){
+    items.push({key:key,level:level,title:title,text:text,extra:extra||'',label:actionLabel,score:score});
   }
 
+  var du=prevDelta(unresolved,prior&&prior.un),
+      df=prevDelta(failures,prior&&prior.failures),
+      dr=prevDelta(recontacts,prior&&prior.recontacts),
+      da=prevDelta(avg,prior&&prior.avg),
+      dl=prevDelta(lowPct,prior&&prior.lowPct);
+
   if(unresolved){
-    add('high','Não resolvidos',
-      fmt(unresolved)+' protocolo'+(unresolved===1?'':'s')+' com “Problema não resolvido”. Essa é a prioridade de análise.',
-      function(){goProtocols('nao')},'Ver não resolvidos');
+    var ua=topAgent(p.filter(isUnresolvedProtocol));
+    add('nao',du.delta>0||!prior?'high':'medium','Não resolvidos',
+      fmt(unresolved)+' protocolo'+(unresolved===1?'':'s')+' com “Problema não resolvido”.'+(ua?' Maior concentração: '+ua+'.':''),
+      trendText(unresolved,prior&&prior.un,''),
+      'Ver não resolvidos',
+      100+(du.delta>0?Math.min(50,du.delta*5):0)+(du.pct>0?Math.min(40,du.pct/2):0));
   }
 
   if(failures){
-    add(unresolved?'high':'medium','Falhas de conhecimento',
-      fmt(failures)+' protocolo'+(failures===1?'':'s')+' registraram falha de conhecimento. Vale revisar conteúdo e treinamento da IA.',
-      function(){goProtocols('falha')},'Ver falhas');
+    var fa=topAgent(p.filter(hasFailure));
+    add('falha',df.delta>0||!prior?'high':'medium','Falhas de conhecimento',
+      fmt(failures)+' protocolo'+(failures===1?'':'s')+' registraram falha de conhecimento.'+(fa?' Maior concentração: '+fa+'.':''),
+      trendText(failures,prior&&prior.failures,''),
+      'Ver falhas',
+      85+(df.delta>0?Math.min(45,df.delta*5):0)+(df.pct>0?Math.min(35,df.pct/2):0));
   }
 
-  if(notes.length&&avg<4){
-    add('medium','Satisfação abaixo de 4,0',
-      'A nota média está em '+avg.toFixed(2).replace('.',',')+' com '+fmt(notes.length)+' avaliações.',
-      function(){goSurveys()},'Ver pesquisas');
-  }else if(lowPct>=20){
-    add('medium','Muitas notas baixas',
-      fmt(low.length)+' de '+fmt(notes.length)+' avaliações ('+lowPct+'%) ficaram entre 1 e 3.',
-      function(){goSurveys()},'Ver notas');
+  if(notes.length&&(avg<4||(da.delta!=null&&da.delta<=-0.2))){
+    add('satisfacao','medium','Satisfação em queda',
+      'Nota média de '+avg.toFixed(2).replace('.',',')+' com '+fmt(notes.length)+' avaliações.',
+      trendText(avg,prior&&prior.avg,'pp').replace(' pp vs. período anterior',' ponto(s) vs. período anterior'),
+      'Ver pesquisas',
+      75+(avg<4?20:0)+(da.delta!=null&&da.delta<0?Math.min(30,Math.abs(da.delta)*30):0));
+  }else if(notes.length&&lowPct>=20){
+    add('nota','medium','Notas baixas',
+      fmt(low.length)+' de '+fmt(notes.length)+' avaliações ('+Math.round(lowPct)+'%) ficaram entre 1 e 3.',
+      trendText(lowPct,prior&&prior.lowPct,'pp'),
+      'Ver notas',
+      65+(dl.delta>0?Math.min(30,dl.delta*2):0));
   }
 
-  if(recontacts){
-    add('medium','Recontatos em até 24h',
-      fmt(recontacts)+' recontato'+(recontacts===1?'':'s')+' identificado'+(recontacts===1?'':'s')+'. Isso indica atendimentos que voltaram a exigir atenção.',
-      function(){location.hash='quality';setTimeout(function(){show('quality')},0)},'Ver qualidade');
+  if(recontacts&&(dr.delta==null||dr.delta>0)){
+    add('recontato','medium','Recontatos em até 24h',
+      fmt(recontacts)+' recontato'+(recontacts===1?'':'s')+' identificado'+(recontacts===1?'':'s')+'.',
+      trendText(recontacts,prior&&prior.recontacts,''),
+      'Ver qualidade',
+      55+(dr.delta>0?Math.min(35,dr.delta*4):0));
   }
 
   if(waiting){
-    add('low','Aguardando confirmação',
+    add('possivel','low','Aguardando confirmação',
       fmt(waiting)+' protocolo'+(waiting===1?'':'s')+' ainda estão dentro da janela de 24h aguardando confirmação.',
-      function(){goProtocols('possivel')},'Ver em acompanhamento');
+      '· acompanhamento da janela de 24h',
+      'Ver em acompanhamento',
+      20);
   }
 
   if(!items.length){
@@ -214,25 +288,30 @@ function renderAttention(){
     return;
   }
 
-  var rank={high:0,medium:1,low:2};
-  items.sort(function(a,b){return rank[a.level]-rank[b.level]});
-  badge.className='badge '+(items.some(function(x){return x.level==='high'})?'attention-bad':'attention-warn');
-  badge.textContent=fmt(items.length)+' ponto'+(items.length===1?'':'s')+' de atenção';
+  items.sort(function(a,b){return b.score-a.score});
+  var principal=items[0],secondary=items.slice(1,4);
+  badge.className='badge '+(principal.level==='high'?'attention-bad':'attention-warn');
+  badge.textContent=items.length+' ponto'+(items.length===1?'':'s')+' de atenção';
 
-  box.innerHTML=items.slice(0,4).map(function(x){
+  function card(x,main){
     var icon=x.level==='high'?'!':x.level==='medium'?'△':'•';
-    return'<article class="attention-item '+x.level+'"><div class="attention-icon" aria-hidden="true">'+icon+'</div><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span></div><button type="button" class="attention-action">'+esc(x.label)+'</button></article>';
-  }).join('');
+    return'<article class="'+(main?'attention-primary ':'')+'attention-item '+x.level+'"><div class="attention-icon" aria-hidden="true">'+icon+'</div><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span><small>'+esc(x.extra)+'</small></div><button type="button" class="attention-action" data-att-action="'+x.key+'">'+esc(x.label)+'</button></article>';
+  }
 
-  qa('.attention-action',box).forEach(function(btn,i){btn.onclick=function(){items.slice(0,4)[i].action()}});
+  box.innerHTML='<div class="attention-primary-wrap"><div class="attention-kicker">Principal ponto de atenção</div>'+card(principal,true)+'</div>'+
+    (secondary.length?'<div class="attention-secondary">'+secondary.map(function(x){return card(x,false)}).join('')+'</div>':'');
+  qa('[data-att-action]',box).forEach(function(btn){btn.onclick=attentionAction(btn.dataset.attAction)});
 }
 
 function applyDeltas(){
   qa('.kpi2 .dl').forEach(function(x){x.remove()});
-  var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data)return;
+  var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data){renderAttention();return}
   var a=stats(data.r72,data.r74),P=c.s,ok=a.n&&P.n,d=[[a.res-P.res,1,1],[a.tr-P.tr,1,0],[ok?a.avg-P.avg:null,0,1],[ok?a.pos-P.pos:null,1,1]];
   qa('#overviewKpis .kpi2').forEach(function(card,i){var di=d[i];if(!di||di[0]==null)return;var r=di[1]?Math.round(di[0]):Math.round(di[0]*100)/100,cls=r&&di[2]?(r>0?'up':'dn'):'';
-    q('.vl',card).insertAdjacentHTML('beforeend','<small class="dl '+cls+'" title="vs. período anterior ('+c.r[0]+' a '+c.r[1]+')">'+(r>0?'▲ +':r<0?'▼ −':'= ')+String(Math.abs(r)).replace('.',',')+(di[1]?' pp':'')+'</small>')});renderExecutiveSummary(c)}
+    q('.vl',card).insertAdjacentHTML('beforeend','<small class="dl '+cls+'" title="vs. período anterior ('+c.r[0]+' a '+c.r[1]+')">'+(r>0?'▲ +':r<0?'▼ −':'= ')+String(Math.abs(r)).replace('.',',')+(di[1]?' pp':'')+'</small>')});
+  renderAttention(c);
+}
+
 function loadPrev(){
   var s=$('start').value,e=$('end').value,k=s+'|'+e;if(cache[k]&&Date.now()-cache[k].t<6e5)return applyDeltas();
   var r=prevRange(s,e);

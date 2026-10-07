@@ -1,0 +1,31 @@
+/* efeitos.css — somente animações. Não altera tamanhos, cores, posições nem o layout.
+   Uso: um único <link rel="stylesheet" href="/efeitos.css"> logo depois do styles.css */
+
+@keyframes ef-in{from{opacity:0;transform:translateY(4px)}}
+@keyframes ef-grow{from{transform:scaleX(0)}}
+@keyframes ef-growY{from{transform:scaleY(0)}}
+@keyframes ef-shimmer{to{background-position:-100% 0}}
+@keyframes ef-slide{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+
+/* Transição ao trocar de aba e ao alternar Resumo/Tabela */
+.view:not([hidden]),#agentCards:not([hidden]),#agentTable:not([hidden]){animation:ef-in .22s ease-out}
+
+/* Barras de status e de satisfação crescem ao carregar */
+.bar i{transform-origin:left;animation:ef-grow .7s cubic-bezier(.2,.8,.2,1) both}
+.columns-chart i{transform-origin:bottom;animation:ef-growY .7s cubic-bezier(.2,.8,.2,1) both}
+
+/* Esqueleto brilhando enquanto as áreas ainda estão vazias */
+.kpis:empty,#outcomes:empty,#agentCards:empty,#satDist:empty,#helpBody:empty,#surveyList:empty,#unresolvedList:empty,#checkpointList:empty{
+  min-height:92px;border-radius:14px;
+  background:linear-gradient(90deg,#e8eef2 30%,#f3f7f9 50%,#e8eef2 70%);background-size:300% 100%;
+  animation:ef-shimmer 1.4s linear infinite}
+
+/* Barrinha de progresso no topo enquanto o botão Atualizar está consultando */
+body:has(#refresh:disabled):before{content:"";position:fixed;top:0;left:0;z-index:100;height:3px;width:35%;background:var(--cyan,#00a7c7);animation:ef-slide 1s ease-in-out infinite}
+
+/* Suavidade nos botões, abas e chips */
+.btn,.chip,.mode,.tabs button,.view-btn,.pager button{transition:background .15s,color .15s,border-color .15s,transform .1s}
+.btn:active,.chip:active,.mode:active,.view-btn:active,.pager button:active{transform:scale(.97)}
+
+/* Quem pede "reduzir movimento" no sistema não vê nenhuma animação */
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}

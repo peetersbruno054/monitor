@@ -104,15 +104,46 @@ wrap('renderQuality',function(){
 /* ---------- Visão geral: alertas, gráfico por hora, comparação ---------- */
 var cache={};
 function ns(s){var n=s.filter(function(x){return x.note});return{n:n.length,v:n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0}}
-function stats(r72,r74){var p=r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},a=ns(r74);return{t:t,res:pct(c('resolvido'),t),tr:pct(c('transferido'),t),avg:a.v,n:a.n,pos:nPositive(r74)}}
+function stats(r72,r74){var p=r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},a=ns(r74);return{t:t,res:pct(c('resolvido'),t),tr:pct(c('transferido'),t),un:r72.protocols.filter(isUnresolvedProtocol).length,avg:a.v,n:a.n,pos:nPositive(r74)}}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function prevRange(s,e){var a=new Date(s+'T00:00:00'),b=new Date(e+'T00:00:00'),n=Math.round((b-a)/864e5)+1,pe=new Date(a);pe.setDate(pe.getDate()-1);var ps=new Date(pe);ps.setDate(ps.getDate()-(n-1));return[ymd(ps),ymd(pe)]}
+function executiveData(){
+  var p=data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,
+      res=p.filter(function(x){return x.outcome==='resolvido'}).length,
+      tr=p.filter(function(x){return x.outcome==='transferido'}).length,
+      un=data.r72.protocols.filter(isUnresolvedProtocol).length,
+      n=data.r74.filter(function(x){return x.note}),avg=n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0;
+  return{t:t,res:res,tr:tr,un:un,n:n.length,avg:avg,pos:nPositive(data.r74)};
+}
+function renderExecutiveSummary(prev){
+  var box=q('#executiveSummary');if(!box||!data)return;
+  var x=executiveData(),total=x.t||0,resPct=pct(x.res,total),trPct=pct(x.tr,total),unPct=pct(x.un,total);
+  $('executivePeriod').textContent=periodText();
+  $('executiveSignal').className='badge'+(x.un?' executive-bad':' executive-good');
+  $('executiveSignal').textContent=x.un?'Atenção nos não resolvidos':'Sem não resolvidos no período';
+  function metric(label,value,sub,cls){
+    return'<div class="exec-item '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+sub+'</small></div>';
+  }
+  var compare='';
+  if(prev&&prev.s){
+    var dUn=x.un-prev.s.un,dRes=resPct-prev.s.res,dTr=trPct-prev.s.tr;
+    compare='<div class="exec-compare"><b>Variação vs. período anterior</b><span>Resolvidos '+(dRes>0?'▲ +':dRes<0?'▼ −':'= ')+Math.abs(dRes)+' pp</span><span>Transferidos '+(dTr>0?'▲ +':dTr<0?'▼ −':'= ')+Math.abs(dTr)+' pp</span><span>Não resolvidos '+(dUn>0?'▲ +':dUn<0?'▼ −':'= ')+Math.abs(dUn)+'</span></div>';
+  }
+  box.innerHTML=
+    metric('Atendimentos',fmt(total),'com desfecho','exec-info')+
+    metric('Resolvidos',fmt(x.res),resPct+'% do total','exec-good')+
+    metric('Não resolvidos',fmt(x.un),unPct+'% do total','exec-bad')+
+    metric('Transferidos',fmt(x.tr),trPct+'% do total','exec-transfer')+
+    metric('Satisfação',x.n?x.avg.toFixed(2).replace('.',','):'—',x.n?fmt(x.n)+' avaliações · '+x.pos+'% positivas':'sem avaliações','exec-score')+
+    '<div class="exec-reading"><b>Leitura do período</b><span>'+resPct+'% resolvidos · '+trPct+'% transferidos · '+unPct+'% não resolvidos</span></div>'+
+    compare;
+}
 function applyDeltas(){
   qa('.kpi2 .dl').forEach(function(x){x.remove()});
   var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data)return;
   var a=stats(data.r72,data.r74),P=c.s,ok=a.n&&P.n,d=[[a.res-P.res,1,1],[a.tr-P.tr,1,0],[ok?a.avg-P.avg:null,0,1],[ok?a.pos-P.pos:null,1,1]];
   qa('#overviewKpis .kpi2').forEach(function(card,i){var di=d[i];if(!di||di[0]==null)return;var r=di[1]?Math.round(di[0]):Math.round(di[0]*100)/100,cls=r&&di[2]?(r>0?'up':'dn'):'';
-    q('.vl',card).insertAdjacentHTML('beforeend','<small class="dl '+cls+'" title="vs. período anterior ('+c.r[0]+' a '+c.r[1]+')">'+(r>0?'▲ +':r<0?'▼ −':'= ')+String(Math.abs(r)).replace('.',',')+(di[1]?' pp':'')+'</small>')})}
+    q('.vl',card).insertAdjacentHTML('beforeend','<small class="dl '+cls+'" title="vs. período anterior ('+c.r[0]+' a '+c.r[1]+')">'+(r>0?'▲ +':r<0?'▼ −':'= ')+String(Math.abs(r)).replace('.',',')+(di[1]?' pp':'')+'</small>')});renderExecutiveSummary(c)}
 function loadPrev(){
   var s=$('start').value,e=$('end').value,k=s+'|'+e;if(cache[k]&&Date.now()-cache[k].t<6e5)return applyDeltas();
   var r=prevRange(s,e);
@@ -121,6 +152,7 @@ function loadPrev(){
 }
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){
+  renderExecutiveSummary();
   var all=data.r72.protocols;
   var h=[],i,mx;for(i=0;i<24;i++)h.push([0,0]);
   all.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k][0]++;if(x.outcome==='transferido')h[k][1]++});

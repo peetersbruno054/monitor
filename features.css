@@ -237,3 +237,24 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
   .survey-row,.protocol-card{grid-template-columns:42px minmax(0,1fr)!important}
   a{color:inherit;text-decoration:none}
 }
+
+
+/* ---------- Resumo executivo ---------- */
+.executive-panel{overflow:hidden}
+.executive-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.exec-item{min-width:0;padding:13px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}
+.exec-item>span{display:block;color:var(--muted);font-size:11.5px;font-weight:500}
+.exec-item>strong{display:block;margin-top:5px;color:var(--ink);font-size:22px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.exec-item>small{display:block;margin-top:3px;color:var(--muted);font-size:10.5px}
+.exec-good>strong{color:var(--good)}.exec-bad>strong{color:var(--bad)}.exec-transfer>strong{color:var(--transferred)}
+.exec-score>strong{color:var(--ink)}
+.executive-bad{color:var(--bad)!important;background:var(--badbg)!important;border-color:color-mix(in srgb,var(--bad) 24%,transparent)!important}
+.executive-good{color:var(--good)!important;background:var(--goodbg)!important;border-color:color-mix(in srgb,var(--good) 24%,transparent)!important}
+.exec-reading,.exec-compare{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:2px;color:var(--muted);font-size:11.5px}
+.exec-reading b,.exec-compare b{color:var(--ink2);font-weight:600}
+.exec-reading span{overflow-wrap:anywhere}
+.exec-compare{padding:10px 12px;border-top:1px solid var(--line2);margin-top:2px}
+.exec-compare span{padding-left:10px;border-left:1px solid var(--line)}
+@media(max-width:980px){.executive-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:620px){.executive-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.exec-item{padding:11px 12px}.exec-item>strong{font-size:19px}.exec-reading,.exec-compare{display:grid;grid-template-columns:1fr;gap:5px}.exec-compare span{padding-left:0;border-left:0}.exec-compare{padding:9px 0}}
+@media(max-width:400px){.executive-summary{grid-template-columns:1fr}.exec-reading,.exec-compare{font-size:11px}}

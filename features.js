@@ -236,14 +236,14 @@ wrap('renderProtocols',function(){
 });
 wrap('renderUnList',function(){
   var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
-  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.copy-protocol-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);
     if(x&&x.inferred&&pp&&!q('.rule-pill',pp)){q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill rule-pill" title="Sem ponto de encerramento: classificado pela trilha de bot points">pela trilha</span>');
       var d=q(':scope>div',pp);if(d&&!/^Trilha/.test(d.textContent))d.textContent='Trilha: '+trail(x)}});
 });
 /* marca nos cartões: desfecho herdado do retorno em 24h ou confirmado por não retorno */
 wrap('renderUnList',function(){
   var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
-  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);if(!x||!pp||q('.ret-pill',pp))return;
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.copy-protocol-btn',c),x=b&&by[b.dataset.protocol],pp=q('.protocol-point',c);if(!x||!pp||q('.ret-pill',pp))return;
     var h='';
     if(x.returnedTo){var hrs=x.returnHours<1?Math.max(1,Math.round(x.returnHours*60))+' min':x.returnHours.toFixed(1).replace('.',',')+'h';
       h='<span class="pill ret-pill" title="Antes: '+esc(OUTCOME_ONE[x.ownOutcome]||x.ownOutcome)+'">Voltou em '+hrs+' · protocolo '+esc(x.returnNext.protocol)+(x.returnedTo!==x.returnNext?' → '+esc(x.returnedTo.protocol):'')+'</span>'}
@@ -269,7 +269,7 @@ wrap('renderProtocols',function(){
 document.addEventListener('click',function(e){var b=e.target.closest('[data-sem-point]');if(!b)return;var k=b.dataset.semPoint,same=norm(uv.q)===norm(k);uv.q=same?'':k;$('unresolvedSearch').value=uv.q;uv.page=1;renderProtocols()});
 wrap('renderUnList',function(){
   if((uv.outcome||'nao')!=='sem')return;var by={};data.r72.protocols.forEach(function(x){by[x.protocol]=x});
-  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.view-btn',c),x=b&&by[b.dataset.protocol];if(x&&maybeOpen(x)){var pp=q('.protocol-point',c);if(pp&&!q('.open-pill',pp))q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill open-pill">Atividade recente: pode estar em andamento</span>')}});
+  qa('#unresolvedList .protocol-card').forEach(function(c){var b=q('.copy-protocol-btn',c),x=b&&by[b.dataset.protocol];if(x&&maybeOpen(x)){var pp=q('.protocol-point',c);if(pp&&!q('.open-pill',pp))q('.pill',pp).insertAdjacentHTML('afterend','<span class="pill open-pill">Atividade recente: pode estar em andamento</span>')}});
 });
 wrap('renderUnList',function(){var a=unresolved().length,b=listBase().length;$('unresolvedBadge').textContent=(a===b?fmt(b):fmt(a)+' de '+fmt(b))+' protocolo'+(b===1?'':'s')});
 document.addEventListener('click',function(e){

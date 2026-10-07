@@ -15,7 +15,7 @@ html{scroll-padding-top:12px}
 .btn-secondary:hover,.btn-ghost:hover{background:var(--surface3)}
 .btn:disabled{opacity:.65;cursor:progress}
 .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink2)}
-.icon-only{width:36px;padding:0;font-size:16px}
+.icon-only{width:36px;min-width:36px;max-width:36px;padding:0;font-size:16px;white-space:nowrap}
 #autoBtn .dot{width:8px;height:8px;border-radius:50%;background:var(--muted2)}
 #autoBtn.on{color:var(--good);border-color:var(--good)}
 #autoBtn.on .dot{background:var(--good);animation:pulse 2s infinite}
@@ -65,7 +65,7 @@ html[data-theme=dark]{color-scheme:dark;
  --ink:#e8f0f6;--ink2:#c5d3de;--muted:#8da2b3;--muted2:#6f8596;--good:#4fcf9a;--goodbg:rgba(79,207,154,.14);
  --bad:#ff7d8a;--badbg:rgba(255,125,138,.14);--blue:#2f95d8;--blue2:#2582c0;--navy:#0e2a3d;--navy2:#123650;
  --resolved:#9a86f0;--transferred:#4a9de0;--inactivity:#e0a640;--possible:#35bfd9}
-html[data-theme=dark] :is(.topbar,.panel,.kpi,.login-card,.chip,.view-btn,.pager button,.btn-secondary,.mode.active,select,input[type=date],input[type=search],input[type=email]){background:var(--surface)}
+html[data-theme=dark] :is(.topbar,.panel,.kpi,.login-card,.chip,.view-btn,.copy-protocol-btn,.pager button,.btn-secondary,.mode.active,select,input[type=date],input[type=search],input[type=email]){background:var(--surface)}
 html[data-theme=dark] .agent span{background:var(--surface3)}
 html[data-theme=dark] .brand-text h1,html[data-theme=dark] .brand-logo-text{color:var(--ink)}
 html[data-theme=dark] .bar{background:var(--surface3)}
@@ -100,6 +100,9 @@ html[data-theme=dark] .panel,html[data-theme=dark] .kpi{box-shadow:none}
  .shell{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 }
 @media(max-width:620px){
+ #autoBtn{flex:0 0 76px!important;width:76px!important;min-width:76px;max-width:76px;white-space:nowrap;overflow:hidden}
+ #autoBtn .dot{flex:0 0 8px}
+ #themeBtn{flex:0 0 42px!important;width:42px!important;min-width:42px;max-width:42px;white-space:nowrap}
  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-2px;padding:0 2px 2px}
  .chips::-webkit-scrollbar{display:none}.chip{flex:0 0 auto}
  .kpis-4,.kpis-5{grid-template-columns:repeat(2,minmax(0,1fr))}

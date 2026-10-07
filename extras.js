@@ -67,8 +67,9 @@ function renderConversation(protocol,payload){
   }).join('');
   body.scrollTop=body.scrollHeight;
 }
+var convReq=0;
 async function openConversation(protocol,button){
-  var m=ensureConversationModal(),body=q('#convBody'),meta=q('#convMeta'),copyBtn=q('#convCopy');
+  var requestId=++convReq,m=ensureConversationModal(),body=q('#convBody'),meta=q('#convMeta'),copyBtn=q('#convCopy');
   m.hidden=false;document.body.classList.add('conv-open');
   q('#convTitle').textContent='Protocolo '+protocol;
   if(meta)meta.textContent='Consultando conversa…';
@@ -77,9 +78,11 @@ async function openConversation(protocol,button){
   try{
     var r=await fetch('/api/conversation?protocol='+encodeURIComponent(protocol),{cache:'no-store'});
     var j=await r.json();
+    if(requestId!==convReq)return;
     if(!r.ok||!j.ok)throw new Error(j.error||'Não foi possível carregar a conversa.');
     renderConversation(protocol,j);
   }catch(e){
+    if(requestId!==convReq)return;
     if(body)body.innerHTML='<div class="empty">Não foi possível carregar a conversa.<br><small>'+esc(e.message||'Erro desconhecido')+'</small></div>';
     if(meta)meta.textContent='Protocolo '+protocol;
   }finally{

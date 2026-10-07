@@ -4,6 +4,8 @@
 'use strict';
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var OUT=DESFECHOS;
+if(!OUTCOME_LIST.voltou)OUTCOME_LIST.voltou='Voltou em até 24h';
+if(!OUTCOME_ONE.voltou)OUTCOME_ONE.voltou='Voltou em até 24h';
 var DESC={
   nao:'Protocolos com o bot point “Problema não resolvido”',
   resolvido:'Protocolos cujo último desfecho foi “Problema resolvido”',
@@ -15,6 +17,7 @@ var DESC={
   safenota:'Protocolos encerrados pelo fluxo “Finaliza SafeNota”',
   andamento:'Só “Iniciado atendimento” há menos de 24h: viram Inatividade se não houver resposta',
   sem:'Protocolos que não registraram nenhum ponto de encerramento: veja a trilha de cada um',
+  voltou:'Protocolos que tiveram retorno do cliente em até 24h',
   todos:'Todos os protocolos da IA que tiveram desfecho no período'
 };
 function wrap(n,f,before){var o=window[n];window[n]=function(){if(before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}var r=o.apply(this,arguments);if(!before)try{f.apply(this,arguments)}catch(e){console.error(n,e)}return r}}
@@ -87,29 +90,85 @@ window.analyze72=function(raw){
 
 /* ======================================================================
    0b. Retorno do cliente em até 24h (cruzamento pelo telefone do R72)
-       • voltou em até 24h com outro protocolo → o protocolo anterior assume o desfecho do mais recente
-         (em cadeia: x → y → z, x e y ficam com o desfecho de z)
-       • "Aguardando confirmação" sem retorno depois de 24h → Resolvido (confirmado)
+       • outro protocolo iniciado até 24h após o fim do anterior → marca o retorno;
+       • a cadeia x → y → z propaga o desfecho final para trás;
+       • "Problema não resolvido" é STICKY: se o protocolo já registrou esse
+         bot point, ele continua "Não resolvido" mesmo que depois haja retorno,
+         retomada, transferência ou outro desfecho;
+       • "Aguardando confirmação" sem retorno depois de 24h → Resolvido.
    ====================================================================== */
 function contactKey(v){var d=String(v||'').replace(/\D/g,'');return d.length>=8?d.slice(-11):''}
 function bounds(x){var a=Infinity,b=0;(x.events||[]).forEach(function(e){var m=e.ms||dt(e.date);if(m){a=Math.min(a,m);b=Math.max(b,m)}});return{a:a===Infinity?0:a,b:b}}
+function preserveUnresolved(x,source){
+  var point=x.unresolvedPoint||'';
+  if(!point&&source)point=source.unresolvedPoint||'';
+  if(!point&&source&&source.outcome==='nao')point=source.finalPoint||'';
+  x.outcome='nao';
+  x.hasProblemUnresolved=true;
+  if(point)x.unresolvedPoint=point;
+  if(!x.unresolvedDate&&source)x.unresolvedDate=source.unresolvedDate||'';
+  x.finalPoint=x.unresolvedPoint||x.finalPoint||point||'Problema não resolvido';
+}
 function applyReturnRule(list,now){
   var by={};
-  list.forEach(function(x){x.ownOutcome=x.outcome;x.ownUnresolved=!!x.hasProblemUnresolved;var t=bounds(x);x._a=t.a;x._b=t.b;var k=contactKey(x.contact);if(k&&x._a)(by[k]=by[k]||[]).push(x)});
+  list.forEach(function(x){
+    x.ownOutcome=x.outcome;
+    x.ownUnresolved=!!x.hasProblemUnresolved||x.outcome==='nao';
+    var t=bounds(x);x._a=t.a;x._b=t.b;
+    var k=contactKey(x.contact);
+    if(k&&x._a)(by[k]=by[k]||[]).push(x);
+  });
+
   Object.keys(by).forEach(function(k){
     var a=by[k].sort(function(p,q){return p._a-q._a});
-    for(var i=a.length-1;i>=0;i--){   // de trás para frente: cada um já conhece o desfecho final do seguinte
+    for(var i=a.length-1;i>=0;i--){
       var x=a[i],y=null;
-      for(var j=i+1;j<a.length;j++){var gap=a[j]._a-x._b;if(gap>=0&&gap<=WAIT_H*36e5){y=a[j];break}if(gap>WAIT_H*36e5)break}
+      for(var j=i+1;j<a.length;j++){
+        var gap=a[j]._a-x._b;
+        if(gap>=0&&gap<=WAIT_H*36e5){y=a[j];break}
+        if(gap>WAIT_H*36e5)break;
+      }
       if(!y)continue;
+
       var fin=y.returnedTo||y;
-      x.returnedTo=fin;x.returnNext=y;x.returnHours=(y._a-x._b)/36e5;
-      x.outcome=fin.outcome;x.hasProblemUnresolved=fin.outcome==='nao'||!!fin.hasProblemUnresolved;x.finalPoint=fin.finalPoint;
+      x.returnedTo=fin;
+      x.returnNext=y;
+      x.returnHours=Math.max(0,(y._a-x._b)/36e5);
+
+      /* Regra crítica: qualquer "Problema não resolvido" nunca é sobrescrito. */
+      if(x.ownUnresolved){
+        preserveUnresolved(x,x);
+        continue;
+      }
+
+      /* Se a cadeia seguinte terminou em não resolvido, a condição também
+         é herdada pelo protocolo anterior. */
+      if(fin.outcome==='nao'||fin.hasProblemUnresolved){
+        preserveUnresolved(x,fin);
+        continue;
+      }
+
+      x.outcome=fin.outcome;
+      x.hasProblemUnresolved=false;
+      x.finalPoint=fin.finalPoint;
     }
   });
+
+  /* Possível solução só vira resolvido depois que 24h realmente passaram.
+     Para períodos históricos, isso já estará confirmado; para hoje, a
+     janela permanece aberta. */
   list.forEach(function(x){
     if(x.returnedTo)return;
-    if(x.outcome==='possivel'&&x._b&&now-x._b>=WAIT_H*36e5){x.outcome='resolvido';x.confirmed24=true}
+    if(x.outcome==='possivel'&&x._b){
+      var elapsed=now-x._b;
+      if(elapsed>=WAIT_H*36e5){
+        x.outcome='resolvido';
+        x.confirmed24=true;
+        x.window24=false;
+      }else{
+        x.window24=true;
+      }
+    }
   });
 }
 

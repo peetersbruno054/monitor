@@ -341,9 +341,10 @@ wrap('renderQuality',function(){
     '<div class="kf-list">'+recent.map(function(x){var f=failurePoint(x),o=isUnresolvedProtocol(x)?'nao':x.outcome,s=x.survey;
       return'<div class="item"><div class="kf-top"><b>Protocolo '+esc(x.protocol)+'</b><span class="pill">'+esc(x.agent)+'</span><span class="pill o-'+esc(o)+'">Terminou: '+esc(OUTLBL[o]||'Sem desfecho')+'</span></div>'+
         '<div class="meta">'+esc(f?f.date:x.firstDate)+(s&&s.note?' · nota '+s.note:'')+(s&&s.comment?' · “'+esc(s.comment.length>140?s.comment.slice(0,137)+'…':s.comment)+'”':'')+'</div>'+
-        '<button type="button" class="view-btn" data-protocol="'+esc(x.protocol)+'">⧉ Copiar protocolo</button></div>'}).join('')+'</div>'+
+        '<button type="button" class="copy-protocol-btn" data-protocol="'+esc(x.protocol)+'">⧉ Copiar protocolo</button></div>'}).join('')+'</div>'+
     (n>recent.length?'<div class="kf-foot"><button type="button" class="btn btn-secondary" data-go-failures>Ver os '+fmt(n)+' protocolos</button></div>':'');
 });
+document.addEventListener('click',function(e){var b=e.target.closest('.copy-protocol-btn');if(!b)return;copyText(b.dataset.protocol,'Protocolo '+b.dataset.protocol+' copiado')});
 document.addEventListener('click',function(e){if(e.target.closest('[data-go-failures]'))goProtocols('falha')});
 document.addEventListener('click',function(e){var b=e.target.closest('[data-go-out]');if(b)goProtocols(b.dataset.goOut)});
 

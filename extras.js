@@ -160,10 +160,15 @@ function executiveData(){
       n=data.r74.filter(function(x){return x.note}),avg=n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0;
   return{t:t,res:res,tr:tr,un:un,n:n.length,avg:avg,pos:nPositive(data.r74)};
 }
+function execPeriodText(){
+  var s=q('#start')?q('#start').value:'',e=q('#end')?q('#end').value:'';
+  function d(v){var p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v||''}
+  return s&&e?(s===e?'Período · '+d(s):'Período · '+d(s)+' a '+d(e)):'Resumo do período';
+}
 function renderExecutiveSummary(prev){
   var box=q('#executiveSummary');if(!box||!data)return;
   var x=executiveData(),total=x.t||0,resPct=pct(x.res,total),trPct=pct(x.tr,total),unPct=pct(x.un,total);
-  $('executivePeriod').textContent=periodText();
+  $('executivePeriod').textContent=execPeriodText();
   $('executiveSignal').className='badge'+(x.un?' executive-bad':' executive-good');
   $('executiveSignal').textContent=x.un?'Atenção nos não resolvidos':'Sem não resolvidos no período';
   function metric(label,value,sub,cls){

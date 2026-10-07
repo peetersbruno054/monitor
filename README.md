@@ -30,6 +30,13 @@ Tela: "Atualizar dados"
 - Para validar a regra de retorno em até 24h, a tela pode solicitar também o dia seguinte ao período; esse dia extra é usado como contexto e **não altera o período exibido**.
 - O snapshot continua identificado pelo período solicitado, mesmo quando contém linhas extras usadas somente para o cruzamento de 24h.
 
+## Melhorias de performance e uso
+
+- O vínculo entre protocolos do R72 e pesquisas do R74 usa um índice por protocolo no navegador, evitando buscas repetidas e reduzindo o custo quando há muitos registros.
+- A Visão geral ganhou um **Resumo executivo** com volume, resolvidos, não resolvidos, transferidos, satisfação e comparação com o período anterior quando disponível.
+- O botão **Ver conversa** abre a conversa real do protocolo no Monitor, com mensagens agrupadas por cliente/atendimento; o código continua permitindo copiar o número do protocolo.
+- O cache de períodos fechados no Supabase continua sendo reutilizado, enquanto o dia extra da regra de 24h permanece apenas como contexto de cálculo.
+
 ## Supabase
 
 1. Crie um projeto no Supabase.

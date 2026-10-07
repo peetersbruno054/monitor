@@ -33,7 +33,8 @@ Tela: "Atualizar dados"
 ## Melhorias de performance e uso
 
 - O vínculo entre protocolos do R72 e pesquisas do R74 usa um índice por protocolo no navegador, evitando buscas repetidas e reduzindo o custo quando há muitos registros.
-- A Visão geral ganhou o painel **O que merece atenção**, que prioriza automaticamente não resolvidos, falhas de conhecimento, satisfação baixa, recontatos e protocolos aguardando confirmação.
+- A Visão geral ganhou o painel **O que merece atenção**, no final da aba, que prioriza automaticamente não resolvidos, falhas de conhecimento, satisfação baixa, recontatos e protocolos aguardando confirmação.
+- Quando o período anterior está disponível, o radar considera **tendência** (alta/queda) além do volume absoluto e destaca um **Principal ponto de atenção**.
 - Os alertas levam diretamente para a lista/painel correspondente, para reduzir o tempo entre detectar um problema e investigá-lo.
 - O botão **Ver conversa** abre a conversa real do protocolo no Monitor, com mensagens agrupadas por cliente/atendimento; o código continua permitindo copiar o número do protocolo.
 - O cache de períodos fechados no Supabase continua sendo reutilizado, enquanto o dia extra da regra de 24h permanece apenas como contexto de cálculo.

@@ -152,42 +152,81 @@ function ns(s){var n=s.filter(function(x){return x.note});return{n:n.length,v:n.
 function stats(r72,r74){var p=r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},a=ns(r74);return{t:t,res:pct(c('resolvido'),t),tr:pct(c('transferido'),t),un:r72.protocols.filter(isUnresolvedProtocol).length,avg:a.v,n:a.n,pos:nPositive(r74)}}
 function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function prevRange(s,e){var a=new Date(s+'T00:00:00'),b=new Date(e+'T00:00:00'),n=Math.round((b-a)/864e5)+1,pe=new Date(a);pe.setDate(pe.getDate()-1);var ps=new Date(pe);ps.setDate(ps.getDate()-(n-1));return[ymd(ps),ymd(pe)]}
-function executiveData(){
-  var p=data.r72.protocols.filter(function(x){return OUT.indexOf(x.outcome)>=0}),t=p.length,
-      res=p.filter(function(x){return x.outcome==='resolvido'}).length,
-      tr=p.filter(function(x){return x.outcome==='transferido'}).length,
-      un=data.r72.protocols.filter(isUnresolvedProtocol).length,
-      n=data.r74.filter(function(x){return x.note}),avg=n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0;
-  return{t:t,res:res,tr:tr,un:un,n:n.length,avg:avg,pos:nPositive(data.r74)};
-}
-function execPeriodText(){
-  var s=q('#start')?q('#start').value:'',e=q('#end')?q('#end').value:'';
-  function d(v){var p=String(v||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v||''}
-  return s&&e?(s===e?'Período · '+d(s):'Período · '+d(s)+' a '+d(e)):'Resumo do período';
-}
-function renderExecutiveSummary(prev){
-  var box=q('#executiveSummary');if(!box||!data)return;
-  var x=executiveData(),total=x.t||0,resPct=pct(x.res,total),trPct=pct(x.tr,total),unPct=pct(x.un,total);
-  $('executivePeriod').textContent=execPeriodText();
-  $('executiveSignal').className='badge'+(x.un?' executive-bad':' executive-good');
-  $('executiveSignal').textContent=x.un?'Atenção nos não resolvidos':'Sem não resolvidos no período';
-  function metric(label,value,sub,cls){
-    return'<div class="exec-item '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+sub+'</small></div>';
+function renderAttention(){
+  var box=q('#attentionList'),badge=q('#attentionBadge');
+  if(!box||!badge||!data)return;
+
+  var p=data.r72.protocols,
+      outcomeP=p.filter(function(x){return OUT.indexOf(x.outcome)>=0}),
+      total=outcomeP.length||0,
+      unresolved=p.filter(isUnresolvedProtocol).length,
+      failures=p.filter(hasFailure).length,
+      waiting=p.filter(function(x){return x.outcome==='possivel'}).length,
+      recontacts=recs().length,
+      notes=data.r74.filter(function(x){return x.note}),
+      low=notes.filter(function(x){return x.note<=3}),
+      avg=notes.length?notes.reduce(function(a,x){return a+x.note},0)/notes.length:0,
+      lowPct=notes.length?pct(low.length,notes.length):0;
+
+  var items=[];
+  function add(level,title,text,action,label){
+    items.push({level:level,title:title,text:text,action:action,label:label});
   }
-  var compare='';
-  if(prev&&prev.s){
-    var dUn=x.un-prev.s.un,dRes=resPct-prev.s.res,dTr=trPct-prev.s.tr;
-    compare='<div class="exec-compare"><b>Variação vs. período anterior</b><span>Resolvidos '+(dRes>0?'▲ +':dRes<0?'▼ −':'= ')+Math.abs(dRes)+' pp</span><span>Transferidos '+(dTr>0?'▲ +':dTr<0?'▼ −':'= ')+Math.abs(dTr)+' pp</span><span>Não resolvidos '+(dUn>0?'▲ +':dUn<0?'▼ −':'= ')+Math.abs(dUn)+'</span></div>';
+
+  if(unresolved){
+    add('high','Não resolvidos',
+      fmt(unresolved)+' protocolo'+(unresolved===1?'':'s')+' com “Problema não resolvido”. Essa é a prioridade de análise.',
+      function(){goProtocols('nao')},'Ver não resolvidos');
   }
-  box.innerHTML=
-    metric('Atendimentos',fmt(total),'com desfecho','exec-info')+
-    metric('Resolvidos',fmt(x.res),resPct+'% do total','exec-good')+
-    metric('Não resolvidos',fmt(x.un),unPct+'% do total','exec-bad')+
-    metric('Transferidos',fmt(x.tr),trPct+'% do total','exec-transfer')+
-    metric('Satisfação',x.n?x.avg.toFixed(2).replace('.',','):'—',x.n?fmt(x.n)+' avaliações · '+x.pos+'% positivas':'sem avaliações','exec-score')+
-    '<div class="exec-reading"><b>Leitura do período</b><span>'+resPct+'% resolvidos · '+trPct+'% transferidos · '+unPct+'% não resolvidos</span></div>'+
-    compare;
+
+  if(failures){
+    add(unresolved?'high':'medium','Falhas de conhecimento',
+      fmt(failures)+' protocolo'+(failures===1?'':'s')+' registraram falha de conhecimento. Vale revisar conteúdo e treinamento da IA.',
+      function(){goProtocols('falha')},'Ver falhas');
+  }
+
+  if(notes.length&&avg<4){
+    add('medium','Satisfação abaixo de 4,0',
+      'A nota média está em '+avg.toFixed(2).replace('.',',')+' com '+fmt(notes.length)+' avaliações.',
+      function(){goSurveys()},'Ver pesquisas');
+  }else if(lowPct>=20){
+    add('medium','Muitas notas baixas',
+      fmt(low.length)+' de '+fmt(notes.length)+' avaliações ('+lowPct+'%) ficaram entre 1 e 3.',
+      function(){goSurveys()},'Ver notas');
+  }
+
+  if(recontacts){
+    add('medium','Recontatos em até 24h',
+      fmt(recontacts)+' recontato'+(recontacts===1?'':'s')+' identificado'+(recontacts===1?'':'s')+'. Isso indica atendimentos que voltaram a exigir atenção.',
+      function(){location.hash='quality';setTimeout(function(){show('quality')},0)},'Ver qualidade');
+  }
+
+  if(waiting){
+    add('low','Aguardando confirmação',
+      fmt(waiting)+' protocolo'+(waiting===1?'':'s')+' ainda estão dentro da janela de 24h aguardando confirmação.',
+      function(){goProtocols('possivel')},'Ver em acompanhamento');
+  }
+
+  if(!items.length){
+    badge.className='badge attention-ok';
+    badge.textContent='Tudo normal';
+    box.innerHTML='<div class="attention-empty"><b>Nenhum alerta relevante no período.</b><span>Os indicadores estão sem ocorrências que exijam atenção imediata.</span></div>';
+    return;
+  }
+
+  var rank={high:0,medium:1,low:2};
+  items.sort(function(a,b){return rank[a.level]-rank[b.level]});
+  badge.className='badge '+(items.some(function(x){return x.level==='high'})?'attention-bad':'attention-warn');
+  badge.textContent=fmt(items.length)+' ponto'+(items.length===1?'':'s')+' de atenção';
+
+  box.innerHTML=items.slice(0,4).map(function(x){
+    var icon=x.level==='high'?'!':x.level==='medium'?'△':'•';
+    return'<article class="attention-item '+x.level+'"><div class="attention-icon" aria-hidden="true">'+icon+'</div><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span></div><button type="button" class="attention-action">'+esc(x.label)+'</button></article>';
+  }).join('');
+
+  qa('.attention-action',box).forEach(function(btn,i){btn.onclick=function(){items.slice(0,4)[i].action()}});
 }
+
 function applyDeltas(){
   qa('.kpi2 .dl').forEach(function(x){x.remove()});
   var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data)return;
@@ -202,7 +241,7 @@ function loadPrev(){
 }
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){
-  renderExecutiveSummary();
+  renderAttention();
   var all=data.r72.protocols;
   var h=[],i,mx;for(i=0;i<24;i++)h.push([0,0]);
   all.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k][0]++;if(x.outcome==='transferido')h[k][1]++});

@@ -4,6 +4,11 @@ import { requireMonitorSession } from '../lib/auth.js';
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
 const CONVERSATION_URL = `${BASE}/ContactCenter/ajax.php?getMessagesFromProtocol`;
 
+function maskSensitive(text = '') {
+  return String(text)
+    .replace(/\b(\d{2})[\s.-]?(\d{4,5})[\s.-]?(\d{4})\b/g, '$1 ***** $3');
+}
+
 function extractMessageText(message = {}) {
   const candidates = [
     message.MESSAGE,

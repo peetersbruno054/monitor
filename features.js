@@ -485,6 +485,7 @@ function placeActions(){if(wide.matches){var sp=q('.rail-spacer');sp.appendChild
 placeActions();wide.addEventListener&&wide.addEventListener('change',placeActions);
 $('summaryBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}copyText(summary(),'Resumo copiado. É só colar no WhatsApp ou no Teams')};
 $('printBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}beforePrint();window.print()};
+var reportBtn=q('#reportBtn');if(reportBtn)reportBtn.onclick=function(){if(!data){toast('Carregue os dados primeiro');return}beforePrint();window.print()};
 
 /* CSV da lista de protocolos com o nome do filtro */
 window.monListName=function(){return'protocolos-'+(uv.outcome||'nao')};

@@ -1,7 +1,7 @@
 /* extras.js — carregar DEPOIS de app.js, ui.js e overview.js */
 (function(){
 'use strict';
-var CONVO_URL='';/* link da conversa no Orpen, ex.: 'https://.../protocolo/{protocol}'. Vazio = botão "Copiar protocolo" */
+var CONVO_URL='';/* opcional: link da conversa no Orpen. Vazio = visualizar pela rota interna do Monitor */
 var OUT=DESFECHOS,
 LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',retomado:'Retomado',finalizado:'Finalizado',safenota:'Finaliza SafeNota',andamento:'Em andamento',outro:'Sem desfecho'};
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -120,7 +120,7 @@ function hl(root,term){var src=String(term).trim().replace(/[.*+?^${}()|[\]\\]/g
   a.forEach(function(t){var p=t.nodeValue.split(re);if(p.length<2)return;var f=document.createDocumentFragment();p.forEach(function(s,i){if(!s)return;if(i%2){var m=document.createElement('mark');m.textContent=s;f.appendChild(m)}else f.appendChild(document.createTextNode(s))});t.replaceWith(f)})}
 function rows(term){qa('.survey-row,.protocol-card').forEach(function(r){
   var n=parseInt(q('.score-box',r).textContent)||0;r.classList.remove('n-good','n-mid','n-bad');if(n)r.classList.add(n>=4?'n-good':n===3?'n-mid':'n-bad');
-  var b=q('.view-btn',r);if(b)b.textContent=CONVO_URL?'Ver conversa ↗':'⧉ Copiar protocolo';
+  var b=q('.view-btn',r);if(b)b.textContent='Ver conversa'+(CONVO_URL?' ↗':'');
   var c=q('.row-content',r);if(c&&c.textContent.length>260){c.classList.add('clamp');c.insertAdjacentHTML('afterend','<button class="more-btn" type="button">ver mais</button>')}
   if(term)hl(r,term)})}
 wrap('renderSurveyList',function(){rows(sv.q)});wrap('renderUnList',function(){rows(uv.q)});

@@ -2,8 +2,9 @@
 (function(){
 'use strict';
 var CONVO_URL='';/* link da conversa no Orpen, ex.: 'https://.../protocolo/{protocol}'. Vazio = botão "Copiar protocolo" */
-var OUT=DESFECHOS,
-LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',retomado:'Retomado',finalizado:'Finalizado',safenota:'Finaliza SafeNota',andamento:'Em andamento',outro:'Sem desfecho'};
+window.CONVO_URL=CONVO_URL;
+var OUT=['resolvido','transferido','nao','inatividade','possivel','voltou'],
+LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',voltou:'Voltou em até 24h',retomado:'Retomado',outro:'Sem desfecho'};
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 
 var css='#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);padding:9px 16px;border-radius:999px;background:var(--ink);color:var(--surface);font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200}#toast.show{opacity:1;transform:translate(-50%,0)}'+
@@ -28,32 +29,11 @@ document.head.appendChild(Object.assign(document.createElement('style'),{textCon
 window.maskPhone=function(v){var d=String(v||'').replace(/\D/g,'');if(d.length<8)return String(v||'');return(d.length>=10?'('+(d.length>=11?d.slice(-11,-9):d.slice(0,2))+') ':'')+'•••••-'+d.slice(-4)};
 
 /* ---------- Aviso rápido + copiar ---------- */
-var tt;function toast(m){var t=q('#toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',role:'status'}));t.textContent=m;t.className='show';clearTimeout(tt);tt=setTimeout(function(){t.className=''},1800)}window.monToast=toast;
-/* Copia texto: tenta a API do navegador e, se ela for bloqueada, usa o método antigo.
-   Só mostra "copiado" quando a cópia realmente aconteceu. */
-function legacyCopy(s){
-  var a=document.createElement('textarea'),sel=document.getSelection(),prev=sel&&sel.rangeCount?sel.getRangeAt(0):null,ok=false;
-  a.value=s;a.setAttribute('readonly','');a.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
-  document.body.appendChild(a);a.focus({preventScroll:true});a.select();a.setSelectionRange(0,s.length);
-  try{ok=document.execCommand('copy')}catch(_){ok=false}
-  a.remove();if(prev&&sel){sel.removeAllRanges();sel.addRange(prev)}
-  return ok;
-}
-window.copyText=function(s,msg){
-  s=String(s||'');if(!s)return Promise.resolve(false);
-  var p=navigator.clipboard&&window.isSecureContext?navigator.clipboard.writeText(s).then(function(){return true},function(){return legacyCopy(s)}):Promise.resolve(legacyCopy(s));
-  return p.then(function(ok){toast(ok?(msg||'Copiado'):s.length>40?'O navegador bloqueou a cópia. Tente de novo.':'Não foi possível copiar: '+s);return ok});
-};
-function copy(s,btn){
-  copyText(s,'Protocolo '+s+' copiado').then(function(ok){
-    if(!btn||!ok)return;var old=btn.textContent;btn.classList.add('done');btn.textContent='✓ Copiado';
-    setTimeout(function(){btn.classList.remove('done');btn.textContent=old},1500);
-  });
-}
+var tt;function toast(m){var t=q('#toast')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'toast',role:'status'}));t.textContent=m;t.className='show';clearTimeout(tt);tt=setTimeout(function(){t.className=''},1800)}
+function copy(s){(navigator.clipboard?navigator.clipboard.writeText(s):Promise.reject()).catch(function(){var a=document.createElement('textarea');a.value=s;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}).then(function(){toast('Protocolo copiado')})}
 document.addEventListener('click',function(e){
   var b=e.target.closest('.view-btn'),m=e.target.closest('.more-btn'),p=e.target.closest('.ph');
-  if(b){var id=b.dataset.protocol;if(!id){var t=q('.row-top b',b.closest('.survey-row,.protocol-card'));id=t?t.textContent.replace(/^Protocolo\s*/,'').trim():''}
-    if(id)CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):copy(id,b)}
+  if(b){var id=q('.row-top b',b.closest('.survey-row,.protocol-card')).textContent.replace(/^Protocolo\s*/,'').trim();CONVO_URL?window.open(CONVO_URL.replace('{protocol}',encodeURIComponent(id)),'_blank','noopener'):copy(id)}
   if(m){var c=m.previousElementSibling;c.classList.toggle('open');m.textContent=c.classList.contains('open')?'ver menos':'ver mais'}
   if(p){var on=p.dataset.on==='1';p.textContent=on?maskPhone(p.dataset.f):p.dataset.f;p.dataset.on=on?'0':'1'}
   if(e.target.closest('#retryBtn'))q('#refresh').click();
@@ -63,14 +43,12 @@ function wrap(n,f){var o=window[n];window[n]=function(){var r=o.apply(this,argum
 
 /* ---------- Pesquisas e Protocolos: ordenação, destaque, cor por nota ---------- */
 var ss='recent',us='recent',note=function(x){return x&&x.note?x.note:0};
-/* mais recentes primeiro; no empate de horário, o protocolo maior (mais novo) vem antes */
-var byProt=function(a,b){return String(b.protocol||'').localeCompare(String(a.protocol||''),undefined,{numeric:true})};
-var _sf=window.surveyFiltered;window.surveyFiltered=function(){var rec=function(a,b){return dt(b.date)-dt(a.date)||byProt(a,b)};
-  return _sf().slice().sort(ss==='old'?function(a,b){return-rec(a,b)}:ss==='low'?function(a,b){return(note(a)||9)-(note(b)||9)||rec(a,b)}:ss==='high'?function(a,b){return note(b)-note(a)||rec(a,b)}:ss==='comment'?function(a,b){return(b.comment?1:0)-(a.comment?1:0)||rec(a,b)}:rec)};
-var _un=window.unresolved;window.unresolved=function(){var rec=function(a,b){return dt(b.lastDate)-dt(a.lastDate)||byProt(a,b)},nn=function(x){return note(x.survey)};
+var _sf=window.surveyFiltered;window.surveyFiltered=function(){var rec=function(a,b){return dt(b.date)-dt(a.date)};
+  return _sf().slice().sort(ss==='low'?function(a,b){return(note(a)||9)-(note(b)||9)||rec(a,b)}:ss==='high'?function(a,b){return note(b)-note(a)||rec(a,b)}:ss==='comment'?function(a,b){return(b.comment?1:0)-(a.comment?1:0)||rec(a,b)}:rec)};
+var _un=window.unresolved;window.unresolved=function(){var rec=function(a,b){return dt(b.lastDate)-dt(a.lastDate)},nn=function(x){return note(x.survey)};
   return _un().slice().sort(us==='low'?function(a,b){return(nn(a)||9)-(nn(b)||9)||rec(a,b)}:us==='agent'?function(a,b){return a.agent.localeCompare(b.agent)||rec(a,b)}:rec)};
 function sel(id,opts,fn,before){var s=document.createElement('select');s.id=id;s.setAttribute('aria-label','Ordenar');s.innerHTML=opts.map(function(o){return'<option value="'+o[0]+'">'+o[1]+'</option>'}).join('');s.onchange=function(){fn(s.value)};before.parentNode.insertBefore(s,before)}
-sel('surveySort',[['recent','Mais recentes'],['old','Mais antigas'],['low','Menor nota'],['high','Maior nota'],['comment','Com comentário']],function(v){ss=v;sv.page=1;renderSurveyList()},$('surveySize'));
+sel('surveySort',[['recent','Mais recentes'],['low','Menor nota'],['high','Maior nota'],['comment','Com comentário']],function(v){ss=v;sv.page=1;renderSurveyList()},$('surveySize'));
 q('#surveySearch').parentNode.classList.add('t5');
 sel('unresolvedSort',[['recent','Mais recentes'],['low','Menor nota'],['agent','Agrupar por IA']],function(v){us=v;uv.page=1;renderUnList()},$('unresolvedSize'));
 function hl(root,term){var src=String(term).trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&');if(!src)return;var re=new RegExp('('+src+')','gi'),w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),a=[],t;
@@ -91,12 +69,12 @@ function panel(id,anchor,where){var p=q('#'+id);if(!p){p=document.createElement(
 function head(t,s){return'<div class="panel-head"><div><h2>'+t+'</h2><p>'+s+'</p></div></div>'}
 wrap('renderQuality',function(){
   var L=q('#recontactList'),r=recs().slice(0,50);
-  if(r.length)L.innerHTML=r.map(function(x){return'<div class="item"><b>'+esc(x.next.protocol)+'</b> <span class="pill">'+x.h.toFixed(1).replace('.',',')+'h depois</span> <span class="pill'+((x.prev.ownOutcome||x.prev.outcome)==='nao'?' bad':'')+'">Antes: '+(LBL[(x.prev.ownOutcome||x.prev.outcome)]||'Sem desfecho')+'</span><div class="meta">Anterior: '+esc(x.prev.protocol)+' · '+esc(x.next.agent)+' · <button type="button" class="ph" data-f="'+esc(x.next.contact)+'" title="Tocar para revelar">'+esc(maskPhone(x.next.contact))+'</button></div></div>'}).join('');
+  if(r.length)L.innerHTML=r.map(function(x){return'<div class="item"><b>'+esc(x.next.protocol)+'</b> <span class="pill">'+x.h.toFixed(1).replace('.',',')+'h depois</span> <span class="pill'+(x.prev.outcome==='nao'?' bad':'')+'">Antes: '+(LBL[x.prev.ownOutcome||x.prev.outcome]||'Sem desfecho')+'</span><div class="meta">Anterior: '+esc(x.prev.protocol)+' · '+esc(x.next.agent)+' · <button type="button" class="ph" data-f="'+esc(x.next.contact)+'" title="Tocar para revelar">'+esc(maskPhone(x.next.contact))+'</button></div></div>'}).join('');
   var g={SPC:[],Safe:[]};qa('#checkpointList .checkpoint').forEach(function(c){g[/^SPC/.test(q('small',c).textContent)?'SPC':'Safe'].push([q('b',c).textContent,+q('strong',c).textContent])});
   if(g.SPC.length+g.Safe.length){var C=q('#checkpointList');C.className='cp-cols';
     C.innerHTML=[['IA SPC','SPC'],['Assistente Safira','Safe']].map(function(c){return'<div><h3>'+c[0]+'</h3>'+g[c[1]].sort(function(a,b){return b[1]-a[1]}).map(function(x){return'<div class="cp'+(x[1]?'':' zero')+'"><span>'+esc(x[0].replace(/ - IA - (SPC|Safe)$/,''))+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>'}).join('')}
   var all=data.r72.protocols,p=all.filter(function(x){return OUT.indexOf(x.outcome)>=0}),c=function(o){return p.filter(function(x){return x.outcome===o}).length},ini=all.length,
-  st=[['Iniciados',ini,'blue'],['Com desfecho',p.length,'blue'],['Resolvidos',c('resolvido'),'resolved'],['Transferidos',c('transferido'),'transferred'],['Não resolvidos',all.filter(isUnresolvedProtocol).length,'bad'],['Inatividade',c('inatividade'),'inactivity'],['Aguardando',c('possivel'),'possible']];
+  st=[['Iniciados',ini,'blue'],['Com desfecho',p.length,'blue'],['Resolvidos',c('resolvido'),'resolved'],['Transferidos',c('transferido'),'transferred'],['Não resolvidos',all.filter(isUnresolvedProtocol).length,'bad'],['Inatividade',c('inatividade'),'inactivity'],['Aguardando',c('possivel'),'possible'],['Voltaram em 24h',c('voltou'),'back']];
   panel('funnelPanel','#checkpointList','before').innerHTML=head('Funil do atendimento','Do início ao desfecho, em relação aos protocolos iniciados')+
     st.map(function(s){var v=pct(s[1],ini);return'<div class="fn" style="--c:var(--'+s[2]+')"><span>'+s[0]+'</span><div class="tr"><i style="width:'+v+'%"></i></div><span>'+fmt(s[1])+' · '+v+'%</span></div>'}).join('');
 });

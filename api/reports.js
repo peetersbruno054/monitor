@@ -432,7 +432,7 @@ async function loadReport(reportId, start, end, session) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('x-monitor-build', '3.3.0');
+  res.setHeader('x-monitor-build', '3.4.0');
 
   if (!requireMonitorSession(req, res)) return;
 
@@ -455,8 +455,9 @@ export default async function handler(req, res) {
       : (req.body || {});
 
     const { start, end } = body;
+    const requestedEnd = String(body.__monitorOriginalEnd || end || '').trim();
 
-    if (!start || !end) {
+    if (!start || !end || !requestedEnd) {
       return res.status(400).json({
         ok: false,
         error: 'Informe start e end.'
@@ -481,11 +482,11 @@ export default async function handler(req, res) {
     let r74;
     let loadedFromSupabase = false;
 
-    if (isSupabaseConfigured() && isClosedRange(end)) {
+    if (isSupabaseConfigured() && isClosedRange(requestedEnd)) {
       try {
         const [saved72, saved74] = await Promise.all([
-          getLatestReportSnapshot({ reportId: 72, start, end }),
-          getLatestReportSnapshot({ reportId: 74, start, end })
+          getLatestReportSnapshot({ reportId: 72, start, end: requestedEnd }),
+          getLatestReportSnapshot({ reportId: 74, start, end: requestedEnd })
         ]);
 
         if (saved72?.rows && saved74?.rows) {
@@ -535,14 +536,14 @@ export default async function handler(req, res) {
     if (supabase.configured && !loadedFromSupabase) {
       try {
         await Promise.all([
-          saveReportSnapshot({ reportId: 72, start, end, rows: r72.rows }),
-          saveReportSnapshot({ reportId: 74, start, end, rows: r74.rows })
+          saveReportSnapshot({ reportId: 72, start, end: requestedEnd, rows: r72.rows }),
+          saveReportSnapshot({ reportId: 74, start, end: requestedEnd, rows: r74.rows })
         ]);
         supabase.saved = true;
         await saveSyncRun({
           success: true,
           start,
-          end,
+          end: requestedEnd,
           r72Rows: r72.rows.length,
           r74Rows: r74.rows.length
         });
@@ -554,8 +555,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      version: '3.3.0',
-      period: { start, end },
+      version: '3.4.0',
+      period: { start, end: requestedEnd },
       auth: {
         authMethod: session.authMethod || 'unknown',
         userId: session.userId || null,

@@ -96,7 +96,7 @@ function copy(s,btn){
   });
 }
 document.addEventListener('click',function(e){
-  var b=e.target.closest('.view-btn'),m=e.target.closest('.more-btn'),p=e.target.closest('.ph');
+  var m=e.target.closest('.more-btn'),p=e.target.closest('.ph');
   if(m){var c=m.previousElementSibling;c.classList.toggle('open');m.textContent=c.classList.contains('open')?'ver menos':'ver mais'}
   if(p){var on=p.dataset.on==='1';p.textContent=on?maskPhone(p.dataset.f):p.dataset.f;p.dataset.on=on?'0':'1'}
   if(e.target.closest('#retryBtn'))q('#refresh').click();

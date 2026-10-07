@@ -242,43 +242,127 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 /* ---------- O que merece atenção ---------- */
 .attention-panel{overflow:hidden}
 .attention-list{display:grid;gap:8px}
-.attention-item{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 12px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}
-.attention-item.high{border-left:3px solid var(--bad)}.attention-item.medium{border-left:3px solid var(--inactivity)}.attention-item.low{border-left:3px solid var(--possible)}
-.attention-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:14px;color:var(--muted)}
+.attention-item{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr) 148px;
+  gap:12px;
+  align-items:center;
+  min-height:76px;
+  padding:11px 12px;
+  border:1px solid var(--line2);
+  border-radius:12px;
+  background:var(--surface2);
+  box-sizing:border-box;
+}
+.attention-item.high{border-left:3px solid var(--bad)}
+.attention-item.medium{border-left:3px solid var(--inactivity)}
+.attention-item.low{border-left:3px solid var(--possible)}
+.attention-icon{
+  display:grid;
+  place-items:center;
+  width:32px;
+  height:32px;
+  border-radius:9px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  font-weight:700;
+  font-size:14px;
+  color:var(--muted);
+}
 .attention-item.high .attention-icon{color:var(--bad);background:var(--badbg);border-color:color-mix(in srgb,var(--bad) 20%,transparent)}
 .attention-item.medium .attention-icon{color:var(--inactivity);background:color-mix(in srgb,var(--inactivity) 10%,var(--surface));border-color:color-mix(in srgb,var(--inactivity) 20%,transparent)}
 .attention-item.low .attention-icon{color:var(--possible);background:color-mix(in srgb,var(--possible) 10%,var(--surface));border-color:color-mix(in srgb,var(--possible) 20%,transparent)}
-.attention-main{min-width:0;display:grid;gap:2px}
-.attention-main b{color:var(--ink);font-size:12.5px}
-.attention-main span{color:var(--muted);font-size:11px;line-height:1.4;overflow-wrap:anywhere}
-.attention-action{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:var(--ctl);background:var(--surface);color:var(--blue);font-size:11px;font-weight:600;white-space:nowrap}
+.attention-main{
+  min-width:0;
+  min-height:48px;
+  display:grid;
+  grid-template-rows:auto minmax(0,2.8em);
+  align-content:center;
+  gap:2px;
+}
+.attention-main b{
+  display:block;
+  min-width:0;
+  color:var(--ink);
+  font-size:12.5px;
+  line-height:1.25;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.attention-main span{
+  display:-webkit-box;
+  min-width:0;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.4;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+.attention-main>small{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip:rect(0 0 0 0);
+  clip-path:inset(50%);
+}
+.attention-action{
+  width:148px;
+  height:32px;
+  padding:0 10px;
+  border:1px solid var(--line);
+  border-radius:var(--ctl);
+  background:var(--surface);
+  color:var(--blue);
+  font-size:11px;
+  font-weight:600;
+  white-space:nowrap;
+  box-sizing:border-box;
+}
 .attention-action:hover{border-color:var(--blue)}
 .attention-bad{color:var(--bad)!important;background:var(--badbg)!important;border-color:color-mix(in srgb,var(--bad) 24%,transparent)!important}
 .attention-warn{color:var(--inactivity)!important;background:color-mix(in srgb,var(--inactivity) 10%,var(--surface))!important;border-color:color-mix(in srgb,var(--inactivity) 24%,transparent)!important}
 .attention-ok{color:var(--good)!important;background:var(--goodbg)!important;border-color:color-mix(in srgb,var(--good) 24%,transparent)!important}
 .attention-empty{display:flex;align-items:center;gap:8px;padding:14px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:11.5px;flex-wrap:wrap}
 .attention-empty b{color:var(--ink2)}
-@media(max-width:620px){
-  .attention-item{grid-template-columns:30px minmax(0,1fr);gap:9px;padding:10px}
-  .attention-action{grid-column:2;width:max-content}
-}
-@media(max-width:400px){
-  .attention-item{grid-template-columns:1fr}
-  .attention-action{grid-column:1}
-  .attention-icon{width:28px;height:28px}
-}
 
-/* ---------- Radar de atenção: destaque do principal ponto ---------- */
 .attention-primary-wrap{display:grid;gap:6px}
 .attention-kicker{text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-size:10px;font-weight:700}
-.attention-primary-wrap .attention-item{padding:13px 14px}
-.attention-primary-wrap .attention-main b{font-size:13px}
-.attention-primary-wrap .attention-main span{font-size:11.5px}
-.attention-main>small{color:var(--muted);font-size:10.5px;line-height:1.35;overflow-wrap:anywhere}
-.attention-secondary{display:grid;gap:8px;margin-top:2px}
-.attention-secondary .attention-item{background:var(--surface);padding:10px 12px}
-@media(min-width:900px){
-  .attention-secondary{grid-template-columns:repeat(2,minmax(0,1fr))}
+.attention-primary-wrap .attention-item{background:var(--surface2)}
+.attention-primary-wrap .attention-main b{font-size:12.5px}
+.attention-secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:2px}
+.attention-secondary .attention-item{background:var(--surface)}
+
+@media(max-width:900px){
+  .attention-secondary{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .attention-item{
+    grid-template-columns:34px minmax(0,1fr);
+    gap:9px 10px;
+    min-height:0;
+    padding:10px 11px;
+  }
+  .attention-icon{width:30px;height:30px}
+  .attention-main{min-height:46px}
+  .attention-action{
+    grid-column:2;
+    width:148px;
+    justify-self:start;
+  }
+}
+@media(max-width:400px){
+  .attention-item{
+    grid-template-columns:1fr;
+    min-height:0;
+  }
+  .attention-action{
+    grid-column:1;
+    width:148px;
+  }
 }
 /* ---------- Visualizador de conversa por protocolo ---------- */
 .conv-modal{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:18px}

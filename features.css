@@ -241,14 +241,16 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 
 /* ---------- O que merece atenção ---------- */
 .attention-panel{overflow:hidden}
-.attention-list{display:grid;gap:8px}
+.attention-panel .panel-head{margin-bottom:12px}
+.attention-list{display:grid;gap:10px}
 .attention-item{
+  position:relative;
   display:grid;
-  grid-template-columns:36px minmax(0,1fr) 148px;
-  gap:12px;
+  grid-template-columns:40px minmax(0,1fr) auto;
+  gap:13px;
   align-items:center;
-  min-height:76px;
-  padding:11px 12px;
+  min-height:78px;
+  padding:13px 14px;
   border:1px solid var(--line2);
   border-radius:12px;
   background:var(--surface2);
@@ -260,9 +262,9 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 .attention-icon{
   display:grid;
   place-items:center;
-  width:32px;
-  height:32px;
-  border-radius:9px;
+  width:36px;
+  height:36px;
+  border-radius:10px;
   background:var(--surface);
   border:1px solid var(--line);
   font-weight:700;
@@ -274,18 +276,17 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 .attention-item.low .attention-icon{color:var(--possible);background:color-mix(in srgb,var(--possible) 10%,var(--surface));border-color:color-mix(in srgb,var(--possible) 20%,transparent)}
 .attention-main{
   min-width:0;
-  min-height:58px;
   display:grid;
-  grid-template-rows:16px 31px 13px;
+  gap:3px;
   align-content:center;
-  gap:2px;
 }
 .attention-main b{
   display:block;
   min-width:0;
   color:var(--ink);
-  font-size:12.5px;
-  line-height:16px;
+  font-size:13px;
+  line-height:17px;
+  font-weight:650;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -293,9 +294,9 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 .attention-main span{
   display:-webkit-box;
   min-width:0;
-  color:var(--muted);
-  font-size:11px;
-  line-height:15.5px;
+  color:var(--ink2);
+  font-size:11.5px;
+  line-height:16px;
   overflow:hidden;
   overflow-wrap:anywhere;
   -webkit-line-clamp:2;
@@ -306,15 +307,16 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
   min-width:0;
   color:var(--muted);
   font-size:10.5px;
-  line-height:13px;
+  line-height:14px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 .attention-action{
-  width:148px;
-  height:32px;
-  padding:0 10px;
+  width:auto;
+  min-width:122px;
+  height:34px;
+  padding:0 12px;
   border:1px solid var(--line);
   border-radius:var(--ctl);
   background:var(--surface);
@@ -323,22 +325,30 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
   font-weight:600;
   white-space:nowrap;
   box-sizing:border-box;
+  transition:background .15s,border-color .15s,transform .15s;
 }
-.attention-action:hover{border-color:var(--blue)}
+.attention-action:hover{border-color:var(--blue);background:var(--surface2)}
+.attention-action:active{transform:translateY(1px)}
 .attention-bad{color:var(--bad)!important;background:var(--badbg)!important;border-color:color-mix(in srgb,var(--bad) 24%,transparent)!important}
 .attention-warn{color:var(--inactivity)!important;background:color-mix(in srgb,var(--inactivity) 10%,var(--surface))!important;border-color:color-mix(in srgb,var(--inactivity) 24%,transparent)!important}
 .attention-ok{color:var(--good)!important;background:var(--goodbg)!important;border-color:color-mix(in srgb,var(--good) 24%,transparent)!important}
 .attention-empty{display:flex;align-items:center;gap:8px;padding:14px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:11.5px;flex-wrap:wrap}
 .attention-empty b{color:var(--ink2)}
 
-.attention-primary-wrap{display:grid;gap:6px}
-.attention-kicker{text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-size:10px;font-weight:700}
-.attention-primary-wrap .attention-item{background:var(--surface2)}
-.attention-primary-wrap .attention-main b{font-size:12.5px}
-.attention-secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:2px}
+.attention-primary-wrap{display:block}
+.attention-kicker{display:none}
+.attention-primary-wrap .attention-item{min-height:84px;background:color-mix(in srgb,var(--bad) 2.5%,var(--surface2));border-color:color-mix(in srgb,var(--bad) 22%,var(--line2))}
+.attention-primary-wrap .attention-item.high{border-left-width:3px}
+.attention-primary-wrap .attention-main b{font-size:13.5px}
+.attention-secondary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:10px;
+  margin-top:10px;
+}
 .attention-secondary .attention-item{background:var(--surface)}
 
-@media(max-width:900px){
+@media(max-width:720px){
   .attention-secondary{grid-template-columns:1fr}
 }
 @media(max-width:620px){
@@ -346,25 +356,21 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
     grid-template-columns:34px minmax(0,1fr);
     gap:9px 10px;
     min-height:0;
-    padding:10px 11px;
+    padding:11px 12px;
   }
-  .attention-icon{width:30px;height:30px}
-  .attention-main{min-height:58px}
+  .attention-icon{width:30px;height:30px;border-radius:9px}
   .attention-action{
     grid-column:2;
-    width:148px;
+    width:max-content;
+    min-width:122px;
     justify-self:start;
   }
+  .attention-primary-wrap .attention-item{min-height:0}
 }
 @media(max-width:400px){
-  .attention-item{
-    grid-template-columns:1fr;
-    min-height:0;
-  }
-  .attention-action{
-    grid-column:1;
-    width:148px;
-  }
+  .attention-item{grid-template-columns:1fr}
+  .attention-icon{display:none}
+  .attention-action{grid-column:1}
 }
 /* ---------- Visualizador de conversa por protocolo ---------- */
 .conv-modal{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:18px}

@@ -288,3 +288,5 @@ body.conv-open{overflow:hidden}
   .conv-foot{justify-content:stretch}.conv-foot .btn{flex:1}
 }
 @media(prefers-reduced-motion:reduce){.conv-loading span{animation:none}}
+
+.copy-protocol-btn{width:118px;max-width:100%;height:32px;border:1px solid var(--line);background:#fff;border-radius:var(--ctl);color:var(--blue);font-size:11px;font-weight:600;cursor:pointer}

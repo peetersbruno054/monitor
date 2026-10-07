@@ -187,7 +187,7 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
  .help-columns{grid-template-columns:1fr}
  .toolbar{grid-template-columns:1fr}.toolbar input{grid-column:auto}
  .survey-row{grid-template-columns:40px minmax(0,1fr)}
- .view-btn{grid-column:2;width:max-content}
+ .copy-protocol-btn{grid-column:2;width:max-content}
  .checkpoints{grid-template-columns:1fr}
 }
 @media(max-width:400px){
@@ -421,7 +421,7 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
   min-width:0;
   align-self:start;
 }
-.protocol-card-actions .view-btn{
+.protocol-card-actions .copy-protocol-btn{
   width:118px;
   max-width:100%;
 }
@@ -473,7 +473,7 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
   .protocol-card-actions{
     margin:9px 0 0 48px;
   }
-  .protocol-card-actions .view-btn{
+  .protocol-card-actions .copy-protocol-btn{
     width:max-content;
   }
 }
@@ -551,7 +551,7 @@ th{color:var(--muted);font-weight:600;background:var(--surface2)}
     white-space:normal;
     line-height:1.3;
   }
-  .survey-row .view-btn{
+  .survey-row .copy-protocol-btn{
     grid-column:2;
     width:max-content;
     max-width:100%;

@@ -102,6 +102,14 @@ document.addEventListener('click',function(e){
   if(e.target.closest('#retryBtn'))q('#refresh').click();
 });
 
+
+
+/* feedback visual ao copiar protocolo */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('.copy-protocol-btn');
+  if(!b)return;
+  copy(b.dataset.protocol,b);
+});
 function wrap(n,f){var o=window[n];window[n]=function(){var r=o.apply(this,arguments);try{f()}catch(e){console.error(n,e)}return r}}
 
 /* ---------- Pesquisas e Protocolos: ordenação, destaque, cor por nota ---------- */

@@ -498,3 +498,84 @@ html[data-theme=dark] .panel,html[data-theme=dark] .kpi{box-shadow:none}
   #autoBtn{width:84px!important;min-width:84px!important;max-width:84px!important}
   #themeBtn{width:38px!important;min-width:38px!important;max-width:38px!important}
 }
+
+
+/* ---------- Ajuste final: ações compactas na mesma linha ---------- */
+@media(max-width:620px){
+  .quick-actions,
+  .mobile-tools{
+    display:contents!important;
+  }
+
+  .controls{
+    grid-template-columns:minmax(0,1.45fr) minmax(0,.85fr) minmax(0,.85fr) 40px;
+    gap:8px;
+  }
+
+  #periodToggle{
+    grid-column:1 / span 2;
+    grid-row:1;
+  }
+
+  #refresh{
+    grid-column:3 / span 2;
+    grid-row:1;
+  }
+
+  #summaryBtn{
+    grid-column:1;
+    grid-row:2;
+  }
+
+  #printBtn{
+    grid-column:2;
+    grid-row:2;
+  }
+
+  #autoBtn{
+    grid-column:3;
+    grid-row:2;
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:40px;
+    padding:0 7px;
+    font-size:11.5px;
+    white-space:nowrap;
+  }
+
+  #themeBtn{
+    grid-column:4;
+    grid-row:2;
+    width:40px!important;
+    min-width:40px!important;
+    max-width:40px!important;
+    height:40px;
+    padding:0!important;
+  }
+
+  #summaryBtn,
+  #printBtn{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    height:40px;
+    padding:0 8px;
+    font-size:11.5px;
+    white-space:nowrap;
+  }
+}
+
+@media(max-width:400px){
+  .controls{
+    grid-template-columns:minmax(0,1.45fr) minmax(0,.82fr) minmax(0,.82fr) 38px;
+    gap:7px;
+  }
+  #themeBtn{
+    width:38px!important;
+    min-width:38px!important;
+    max-width:38px!important;
+  }
+  #autoBtn{font-size:11px;padding-inline:6px}
+  #summaryBtn,#printBtn{font-size:11px;padding-inline:6px}
+}

@@ -46,7 +46,7 @@ select:focus,input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 
 input:disabled{background:var(--surface2);color:var(--muted)}
 .period select{min-width:100px}
 
-.period input{width:120px}
+.period input{width:116px;padding-left:8px;padding-right:6px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border:1px solid transparent;border-radius:var(--ctl);font-weight:600;font-size:13px;white-space:nowrap}
 .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn-secondary{background:#fff;border-color:var(--line);color:var(--blue)}

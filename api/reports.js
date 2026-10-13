@@ -431,6 +431,59 @@ async function loadReport(reportId, start, end, session) {
   };
 }
 
+/* ---------- Cache no Supabase e uma consulta por vez ----------
+   • Hoje e ontem: se o mesmo período foi consultado há menos de 3 minutos, todos recebem essa cópia.
+   • Períodos fechados: a cópia só vale se foi feita depois que o período fechou de vez
+     (fim do dia seguinte, por causa da regra de retorno em 24h). Antes disso, consulta de novo uma vez.
+   • Consultas iguais ao mesmo tempo viram uma só (por instância da função). */
+const OPEN_TTL_MS = 3 * 60 * 1000;
+const inflight = new Map();
+
+function finalAfter(end) {
+  const [y, m, d] = String(end).split('-').map(Number);
+  return Date.UTC(y, m - 1, d + 2, 3, 0, 0); // 00:00 de Brasília, dois dias depois
+}
+
+async function cachedSnapshots(start, requestedEnd, { anyAge = false } = {}) {
+  if (!isSupabaseConfigured()) return null;
+  const [a, b] = await Promise.all([
+    getLatestReportSnapshot({ reportId: 72, start, end: requestedEnd }),
+    getLatestReportSnapshot({ reportId: 74, start, end: requestedEnd })
+  ]);
+  if (!Array.isArray(a?.rows) || !Array.isArray(b?.rows)) return null;
+  const t = Math.min(Date.parse(a.collected_at), Date.parse(b.collected_at));
+  const fresh = anyAge || (isClosedRange(requestedEnd) ? t >= finalAfter(requestedEnd) : Date.now() - t < OPEN_TTL_MS);
+  if (!fresh) return null;
+  return { r72: { rows: a.rows }, r74: { rows: b.rows }, source: 'supabase', collectedAt: new Date(t).toISOString() };
+}
+
+async function collectFromOrpen(start, end, requestedEnd) {
+  // outra instância pode ter acabado de guardar o mesmo período
+  const again = await cachedSnapshots(start, requestedEnd).catch(() => null);
+  if (again) return again;
+
+  const stage = (name, fn) => fn().catch((error) => { error.stage = name; throw error; });
+  const session = await stage('authenticate', () => authenticate());
+  const r72 = await stage('r72', () => loadReport(72, start, end, session));
+  const r74 = await stage('r74', () => loadReport(74, start, end, session));
+  const out = { r72, r74, session, source: 'orpen', saved: false, collectedAt: new Date().toISOString() };
+
+  if (isSupabaseConfigured()) {
+    try {
+      await Promise.all([
+        saveReportSnapshot({ reportId: 72, start, end: requestedEnd, rows: r72.rows }),
+        saveReportSnapshot({ reportId: 74, start, end: requestedEnd, rows: r74.rows })
+      ]);
+      out.saved = true;
+      await saveSyncRun({ success: true, start, end: requestedEnd, r72Rows: r72.rows.length, r74Rows: r74.rows.length });
+    } catch (error) {
+      console.error('Monitor IA Supabase:', error);
+      out.saveError = 'Falha ao salvar no Supabase.';
+    }
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   res.setHeader('x-monitor-build', '3.4.0');
 
@@ -464,103 +517,60 @@ export default async function handler(req, res) {
       });
     }
 
-    let session;
-
+    let result;
+    let warning;
     try {
-      session = await authenticate();
+      result = await cachedSnapshots(start, requestedEnd);
     } catch (error) {
-      console.error('Monitor IA auth:', error);
-      return res.status(502).json({
-        ok: false,
-        stage: 'authenticate',
-        error: error?.message || String(error),
-        name: error?.name || 'Error'
-      });
+      console.error('Monitor IA Supabase read:', error);
     }
 
-    let r72;
-    let r74;
-    let loadedFromSupabase = false;
-
-    if (isSupabaseConfigured() && isClosedRange(requestedEnd)) {
+    if (!result) {
+      // uma consulta por período: quem clicar enquanto ela roda espera pelo mesmo resultado
+      const key = `${start}|${end}|${requestedEnd}`;
+      if (!inflight.has(key)) {
+        inflight.set(key, collectFromOrpen(start, end, requestedEnd).finally(() => inflight.delete(key)));
+      }
       try {
-        const [saved72, saved74] = await Promise.all([
-          getLatestReportSnapshot({ reportId: 72, start, end: requestedEnd }),
-          getLatestReportSnapshot({ reportId: 74, start, end: requestedEnd })
-        ]);
-
-        if (saved72?.rows && saved74?.rows) {
-          r72 = { rows: Array.isArray(saved72.rows) ? saved72.rows : [] };
-          r74 = { rows: Array.isArray(saved74.rows) ? saved74.rows : [] };
-          loadedFromSupabase = true;
+        result = await inflight.get(key);
+      } catch (error) {
+        console.error('Monitor IA Orpen:', error);
+        // Orpen indisponível: mostra a última cópia guardada desse período, se houver
+        const stale = await cachedSnapshots(start, requestedEnd, { anyAge: true }).catch(() => null);
+        if (!stale) {
+          return res.status(502).json({
+            ok: false,
+            stage: error?.stage || 'orpen',
+            error: error?.message || String(error),
+            name: error?.name || 'Error'
+          });
         }
-      } catch (error) {
-        console.error('Monitor IA Supabase read:', error);
+        result = stale;
+        warning = 'Não foi possível consultar o Orpen agora. Mostrando os dados guardados às ' +
+          new Date(stale.collectedAt).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }) + '.';
       }
     }
 
-    if (!r72) {
-      try {
-        r72 = await loadReport(72, start, end, session);
-      } catch (error) {
-        console.error('Monitor IA R72:', error);
-        return res.status(502).json({
-          ok: false,
-          stage: 'r72',
-          error: error?.message || String(error),
-          name: error?.name || 'Error'
-        });
-      }
-    }
-
-    if (!r74) {
-      try {
-        r74 = await loadReport(74, start, end, session);
-      } catch (error) {
-        console.error('Monitor IA R74:', error);
-        return res.status(502).json({
-          ok: false,
-          stage: 'r74',
-          error: error?.message || String(error),
-          name: error?.name || 'Error'
-        });
-      }
-    }
-
-    let supabase = {
+    const session = result.session || null;
+    const r72 = result.r72;
+    const r74 = result.r74;
+    const supabase = {
       configured: isSupabaseConfigured(),
-      saved: false,
-      source: loadedFromSupabase ? 'supabase' : 'orpen'
+      saved: Boolean(result.saved),
+      source: result.source,
+      collectedAt: result.collectedAt || null
     };
-
-    if (supabase.configured && !loadedFromSupabase) {
-      try {
-        await Promise.all([
-          saveReportSnapshot({ reportId: 72, start, end: requestedEnd, rows: r72.rows }),
-          saveReportSnapshot({ reportId: 74, start, end: requestedEnd, rows: r74.rows })
-        ]);
-        supabase.saved = true;
-        await saveSyncRun({
-          success: true,
-          start,
-          end: requestedEnd,
-          r72Rows: r72.rows.length,
-          r74Rows: r74.rows.length
-        });
-      } catch (error) {
-        console.error('Monitor IA Supabase:', error);
-        supabase.error = 'Falha ao salvar no Supabase.';
-      }
-    }
+    if (result.saveError) supabase.error = result.saveError;
 
     return res.status(200).json({
       ok: true,
       version: '3.4.0',
       period: { start, end: requestedEnd },
+      warning,
       auth: {
-        authMethod: session.authMethod || 'unknown',
-        userId: session.userId || null,
-        userType: session.userType || null
+        authMethod: session ? (session.authMethod || 'unknown') : 'cache',
+        userId: session?.userId || null,
+        userType: session?.userType || null
       },
       r72: r72.rows,
       r74: r74.rows,

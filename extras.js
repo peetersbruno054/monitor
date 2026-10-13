@@ -333,6 +333,8 @@ function prevRange(s,e){
   return[ymd(ps2),ymd(pe2)];
 }
 window.prevRange=prevRange;
+// período anterior já carregado (usado pelo relatório mensal); null enquanto não chegou
+window.monPrev=function(){var c=cache[$('start').value+'|'+$('end').value];return c&&c.s?{range:c.r,s:c.s}:null};
 function loadPrev(){
   var s=$('start').value,e=$('end').value,k=s+'|'+e;if(cache[k]&&Date.now()-cache[k].t<6e5)return applyDeltas();
   var r=prevRange(s,e);

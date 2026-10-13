@@ -301,5 +301,7 @@ function renderHealth(){
     '<button type="button" aria-label="Fechar aviso">×</button>';
   q('button',el).onclick=function(){hidden=true;el.remove()};
 }
-window.monDesempenho={byIA:byIA,weeks:weeks,exportCsv:exportCsv};
+window.monDesempenho={byIA:byIA,weeks:weeks,weeklyRows:weeklyRows,exportCsv:exportCsv,IAS:IAS,FIELDS:FIELDS,check:check,goalText:goalText,fmtH:fmtH,fmtR:fmtR,
+  metas:function(){return S.metas},
+  eco:function(){return ecoOn()?{minutos:S.eco.minutos,custoHora:S.eco.custoHora||0,horas:horas,reais:reais}:null}};
 })();

@@ -150,3 +150,7 @@ Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishab
 - **Metas**: rode `supabase/metas.sql` uma vez no SQL Editor do Supabase. Depois, administradores definem as metas no botão **Metas**.
 - **Alerta de falhas**: toda falha de coleta fica em `sync_runs`. Com 3 falhas seguidas, administradores veem um aviso no painel
   e, se `RESEND_API_KEY` e `ALERT_EMAIL` estiverem configurados, recebem um e-mail (no máximo um a cada 2 horas).
+- **Economia da IA**: em **Metas e economia**, administradores informam o tempo médio de um atendimento humano (e, se quiserem, o custo da hora). A Visão geral, o Semana a semana, o CSV, o resumo copiado e o PDF passam a mostrar as horas evitadas (só atendimentos resolvidos pela IA).
+- **Mapa de pico** (Visão geral): dia da semana × hora do primeiro contato, por IA, em volume, % transferidos ou % resolvidos. O expediente considerado é segunda a sexta, das 8h às 18h (constante `BIZ` em `padroes.js`).
+- **Clientes que mais voltam** (aba Qualidade): telefones com 2 ou mais atendimentos no período, com desfecho de cada um, protocolos (clique para copiar) e CSV da lista completa. O telefone aparece parcialmente oculto; clique para ver.
+- **Relatório mensal** (botão no topo): abre uma página limpa, sempre em fundo branco, com indicadores, destaques, pontos de atenção, desempenho por IA, semana a semana, horário de pico e clientes que mais voltaram. Use **Imprimir / salvar PDF**. Compara com o mês anterior quando o período é um mês fechado.

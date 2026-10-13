@@ -1,6 +1,7 @@
 import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
 import { requireActiveSession } from '../lib/auth.js';
 import { isSupabaseConfigured, saveReportSnapshot, saveSyncRun, getLatestReportSnapshot } from '../lib/supabase.js';
+import { noteCollectionFailure, noteSupabaseFailure, noteSupabaseSuccess } from '../lib/alerts.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
 const SURVEY_BOTS = ['66666', '393939', '313131', '323232', '676767'];
@@ -431,12 +432,59 @@ async function loadReport(reportId, start, end, session) {
   };
 }
 
+/* ---------- Linhas enxutas ----------
+   O painel só usa estas colunas. Guardar e enviar só elas deixa a resposta e o Supabase
+   bem menores (antes cada linha ia em dobro, com nomes em português e inglês, e mais a linha original). */
+function pick(row, keys) {
+  for (const k of keys) if (row && row[k] != null && row[k] !== '') return String(row[k]);
+  return '';
+}
+function isSummaryRow(r) {
+  return Object.values(r || {}).some((v) => typeof v === 'string' && /^(qtde|quantidade)$/i.test(v.trim()));
+}
+function compactR72(rows) {
+  const list = [];
+  // o CSV do R72 termina com um quadro-resumo ("Qtde"); ele não é protocolo e fica de fora
+  for (const r of rows || []) { if (isSummaryRow(r)) break; list.push(r); }
+  return list.map((r) => ({
+    Data: pick(r, ['Data', 'date']),
+    Protocolo: pick(r, ['Protocolo', 'protocol']),
+    Contato: pick(r, ['Contato', 'contact']),
+    'Pontos de Bot': pick(r, ['Pontos de Bot', 'botPoint']),
+    Agente: pick(r, ['Agente', 'agent'])
+  }));
+}
+function compactR74(rows) {
+  return (rows || []).map((r) => ({
+    date: pick(r, ['date']),
+    agent: pick(r, ['agent']),
+    contact: pick(r, ['contact']),
+    protocol: pick(r, ['protocol']),
+    question: pick(r, ['question']),
+    answer: pick(r, ['answer'])
+  }));
+}
+
+/* ---------- Sessão do Orpen reaproveitada ----------
+   Um login serve para várias consultas seguidas (ex.: carregar um mês dia a dia).
+   Se o Orpen recusar a sessão, faz um login novo e tenta mais uma vez. */
+const SESSION_TTL_MS = 4 * 60 * 1000;
+let orpenSession = null;
+function getOrpenSession(fresh = false) {
+  if (!fresh && orpenSession && Date.now() - orpenSession.t < SESSION_TTL_MS) return orpenSession.p;
+  const p = authenticate();
+  orpenSession = { p, t: Date.now() };
+  p.catch(() => { if (orpenSession && orpenSession.p === p) orpenSession = null; });
+  return p;
+}
+
 /* ---------- Cache no Supabase e uma consulta por vez ----------
-   • Hoje e ontem: se o mesmo período foi consultado há menos de 3 minutos, todos recebem essa cópia.
+   • Hoje: se o mesmo dia foi consultado há menos de 3 minutos, todos recebem essa cópia (ontem: 10 minutos).
    • Períodos fechados: a cópia só vale se foi feita depois que o período fechou de vez
      (fim do dia seguinte, por causa da regra de retorno em 24h). Antes disso, consulta de novo uma vez.
    • Consultas iguais ao mesmo tempo viram uma só (por instância da função). */
-const OPEN_TTL_MS = 3 * 60 * 1000;
+const OPEN_TTL_MS = 3 * 60 * 1000;        // hoje
+const YESTERDAY_TTL_MS = 10 * 60 * 1000;  // ontem (muda pouco; ainda não está fechado por causa das 24h)
 const inflight = new Map();
 
 function finalAfter(end) {
@@ -452,9 +500,10 @@ async function cachedSnapshots(start, requestedEnd, { anyAge = false } = {}) {
   ]);
   if (!Array.isArray(a?.rows) || !Array.isArray(b?.rows)) return null;
   const t = Math.min(Date.parse(a.collected_at), Date.parse(b.collected_at));
-  const fresh = anyAge || (isClosedRange(requestedEnd) ? t >= finalAfter(requestedEnd) : Date.now() - t < OPEN_TTL_MS);
+  const ttl = requestedEnd >= saoPauloDate() ? OPEN_TTL_MS : YESTERDAY_TTL_MS;
+  const fresh = anyAge || (isClosedRange(requestedEnd) ? t >= finalAfter(requestedEnd) : Date.now() - t < ttl);
   if (!fresh) return null;
-  return { r72: { rows: a.rows }, r74: { rows: b.rows }, source: 'supabase', collectedAt: new Date(t).toISOString() };
+  return { r72: { rows: compactR72(a.rows) }, r74: { rows: compactR74(b.rows) }, source: 'supabase', collectedAt: new Date(t).toISOString() };
 }
 
 async function collectFromOrpen(start, end, requestedEnd) {
@@ -462,10 +511,21 @@ async function collectFromOrpen(start, end, requestedEnd) {
   const again = await cachedSnapshots(start, requestedEnd).catch(() => null);
   if (again) return again;
 
-  const stage = (name, fn) => fn().catch((error) => { error.stage = name; throw error; });
-  const session = await stage('authenticate', () => authenticate());
-  const r72 = await stage('r72', () => loadReport(72, start, end, session));
+  const stage = (name, fn) => fn().catch((error) => { error.stage = error.stage || name; throw error; });
+  const reused = Boolean(orpenSession && Date.now() - orpenSession.t < SESSION_TTL_MS);
+  let session = await stage('authenticate', () => getOrpenSession());
+  let r72;
+  try {
+    r72 = await loadReport(72, start, end, session);
+  } catch (error) {
+    if (!reused) { error.stage = 'r72'; throw error; }
+    // sessão reaproveitada pode ter expirado no Orpen: login novo e mais uma tentativa
+    session = await stage('authenticate', () => getOrpenSession(true));
+    r72 = await stage('r72', () => loadReport(72, start, end, session));
+  }
   const r74 = await stage('r74', () => loadReport(74, start, end, session));
+  r72.rows = compactR72(r72.rows);
+  r74.rows = compactR74(r74.rows);
   const out = { r72, r74, session, source: 'orpen', saved: false, collectedAt: new Date().toISOString() };
 
   if (isSupabaseConfigured()) {
@@ -475,17 +535,19 @@ async function collectFromOrpen(start, end, requestedEnd) {
         saveReportSnapshot({ reportId: 74, start, end: requestedEnd, rows: r74.rows })
       ]);
       out.saved = true;
+      noteSupabaseSuccess();
       await saveSyncRun({ success: true, start, end: requestedEnd, r72Rows: r72.rows.length, r74Rows: r74.rows.length });
     } catch (error) {
       console.error('Monitor IA Supabase:', error);
       out.saveError = 'Falha ao salvar no Supabase.';
+      noteSupabaseFailure(error);
     }
   }
   return out;
 }
 
 export default async function handler(req, res) {
-  res.setHeader('x-monitor-build', '3.4.0');
+  res.setHeader('x-monitor-build', '3.5.0');
 
   if (!(await requireActiveSession(req, res))) return;
 
@@ -493,7 +555,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       route: 'reports',
-      build: '3.3.0',
+      build: '3.5.0',
       runtime: process.version
     });
   }
@@ -535,6 +597,8 @@ export default async function handler(req, res) {
         result = await inflight.get(key);
       } catch (error) {
         console.error('Monitor IA Orpen:', error);
+        // registra a falha; depois de 3 seguidas, avisa por e-mail (se configurado)
+        await noteCollectionFailure({ start, end: requestedEnd, stage: error?.stage || 'orpen', error }).catch(() => {});
         // Orpen indisponível: mostra a última cópia guardada desse período, se houver
         const stale = await cachedSnapshots(start, requestedEnd, { anyAge: true }).catch(() => null);
         if (!stale) {
@@ -564,7 +628,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      version: '3.4.0',
+      version: '3.5.0',
       period: { start, end: requestedEnd },
       warning,
       auth: {
@@ -577,19 +641,7 @@ export default async function handler(req, res) {
       meta: {
         r72Rows: r72.rows.length,
         r74Rows: r74.rows.length,
-        r72ProblemUnresolvedRows: r72.rows.filter((row) => row.outcome === 'nao').length,
-        r72ProblemUnresolvedProtocols: new Set(
-          r72.rows
-            .filter((row) => row.outcome === 'nao' && row.protocol)
-            .map((row) => row.protocol)
-        ).size,
-        supabase,
-        r72ProblemUnresolvedPoints: [...new Set(
-          r72.rows
-            .filter((row) => row.outcome === 'nao')
-            .map((row) => row.botPoint)
-            .filter(Boolean)
-        )]
+        supabase
       }
     });
   } catch (error) {

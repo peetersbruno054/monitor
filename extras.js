@@ -13,15 +13,11 @@ var css='#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12p
 '.more-btn{margin:4px 0 0;padding:0;border:0;background:none;color:var(--blue);font-size:12px;font-weight:600}.stars{margin-right:4px;color:#e0a640;font-size:16px;letter-spacing:1px}'+
 '.ph{padding:0;border:0;background:none;color:var(--blue);font:inherit;text-decoration:underline dotted;cursor:pointer}'+
 '.dl{margin-left:8px;font-size:11px;font-weight:600;color:var(--muted)}.dl.up{color:var(--good)}.dl.dn{color:var(--bad)}'+
-'.hc{display:grid;grid-template-columns:repeat(24,1fr);gap:4px;align-items:end}.hcol{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}.hbar{display:flex;align-items:flex-end;justify-content:center;width:100%;height:120px}'+
-'.hbar i{display:block;position:relative;width:78%;max-width:22px;min-height:2px;border-radius:4px 4px 0 0;background:color-mix(in srgb,var(--blue) 28%,transparent);transform-origin:bottom;animation:growY .7s both}'+
-'.hbar u{position:absolute;left:0;right:0;bottom:0;border-radius:inherit;background:var(--transferred);text-decoration:none}.hcol small{height:12px;font-size:10px;color:var(--muted)}'+
-'.lg{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--muted)}.lg i{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:3px}'+
 '.cp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.cp-cols h3{margin:0 0 6px;font-size:13px}.cp{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line2);font-size:12px}'+
 '.cp b{min-width:26px;padding:2px 8px;border-radius:999px;background:var(--surface3);text-align:center}.cp.zero{opacity:.45}'+
 '.fn{display:grid;grid-template-columns:130px minmax(0,1fr) 92px;gap:12px;align-items:center;padding:7px 0;font-size:12px}.fn .tr{height:10px;border-radius:999px;background:var(--surface3);overflow:hidden}'+
 '.fn .tr i{display:block;height:100%;border-radius:999px;background:var(--c);transform-origin:left;animation:ocg .7s both}.fn span:last-child{text-align:right;color:var(--muted)}'+
-'@media(max-width:620px){.cp-cols{grid-template-columns:1fr}.fn{grid-template-columns:100px minmax(0,1fr) 74px}.hc{gap:2px}.hbar{height:90px}}';
+'@media(max-width:620px){.cp-cols{grid-template-columns:1fr}.fn{grid-template-columns:100px minmax(0,1fr) 74px}}';
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:css}));
 
 /* ---------- Telefone mascarado (toque para revelar) ---------- */
@@ -152,7 +148,7 @@ wrap('renderQuality',function(){
     st.map(function(s){var v=pct(s[1],ini);return'<div class="fn" style="--c:var(--'+s[2]+')"><span>'+s[0]+'</span><div class="tr"><i style="width:'+v+'%"></i></div><span>'+fmt(s[1])+' · '+v+'%</span></div>'}).join('');
 });
 
-/* ---------- Visão geral: alertas, gráfico por hora, comparação ---------- */
+/* ---------- Visão geral: alertas, comparação ---------- */
 var cache={};
 function ns(s){var n=s.filter(function(x){return x.note});return{n:n.length,v:n.length?n.reduce(function(a,x){return a+x.note},0)/n.length:0}}
 function recontactCount(list){
@@ -300,13 +296,13 @@ function renderAttention(prev){
   badge.textContent=items.length+' ponto'+(items.length===1?'':'s')+' de atenção';
 
   function card(x,main){
-    var icon=x.level==='high'?'!':x.level==='medium'?'△':'•';
-    return'<article class="'+(main?'attention-primary ':'')+'attention-item '+x.level+'"><div class="attention-icon" aria-hidden="true">'+icon+'</div><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span><small>'+esc(x.extra)+'</small></div><button type="button" class="attention-action" data-att-action="'+x.key+'">'+esc(x.label)+'</button></article>';
+    return'<article class="'+(main?'attention-primary ':'')+'attention-item '+x.level+'"><i class="attention-dot" aria-hidden="true"></i><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span>'+(x.extra?'<small>'+esc(x.extra)+'</small>':'')+'</div><button type="button" class="attention-action" data-att-action="'+x.key+'">'+esc(x.label)+'</button></article>';
   }
 
-  box.innerHTML='<div class="attention-primary-wrap"><div class="attention-kicker">Principal ponto de atenção</div>'+card(principal,true)+'</div>'+
-    (secondary.length?'<div class="attention-secondary">'+secondary.map(function(x){return card(x,false)}).join('')+'</div>':'');
+  box.innerHTML=[principal].concat(secondary).map(function(x,i){return card(x,i===0)}).join('');
   qa('[data-att-action]',box).forEach(function(btn){btn.onclick=attentionAction(btn.dataset.attAction)});
+  // a linha inteira também leva ao detalhe (no celular o botão fica oculto)
+  qa('.attention-item',box).forEach(function(row){row.onclick=function(e){if(e.target.closest('button'))return;var b=q('[data-att-action]',row);if(b)b.click()}});
 }
 
 function applyDeltas(){
@@ -344,13 +340,6 @@ function loadPrev(){
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){
   renderAttention();
-  var all=data.r72.protocols;
-  var h=[],i,mx;for(i=0;i<24;i++)h.push([0,0]);
-  all.forEach(function(x){var m=dt(x.firstDate);if(!m)return;var k=new Date(m).getHours();h[k][0]++;if(x.outcome==='transferido')h[k][1]++});
-  mx=Math.max.apply(null,h.map(function(v){return v[0]}).concat(1));
-  panel('hoursPanel','#outcomes','after').innerHTML=head('Atendimentos por hora','Quando a IA recebe mais protocolos e quando mais transfere')+
-    '<div class="hc">'+h.map(function(v,k){return'<div class="hcol" title="'+k+'h: '+v[0]+' atendimentos, '+v[1]+' transferidos"><div class="hbar"><i style="height:'+v[0]/mx*100+'%"><u style="height:'+(v[0]?v[1]/v[0]*100:0)+'%"></u></i></div><small>'+(k%3?'':k)+'</small></div>'}).join('')+'</div>'+
-    '<div class="lg"><span><i style="background:color-mix(in srgb,var(--blue) 28%,transparent)"></i>Iniciados</span><span><i style="background:var(--transferred)"></i>Transferidos</span></div>';
   applyDeltas();
 });
 

@@ -23,15 +23,15 @@ var css=
 '.pk-seg button+button{border-left:1px solid var(--line)}'+
 '.pk-seg button[aria-pressed=true]{background:var(--blue);color:#fff}'+
 '.pk-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px}.pk-head>div:first-child{flex:1;min-width:220px}'+
-'.pk-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:6px 0 14px}'+
-'.pk-s{padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}'+
-'.pk-s small{display:block;color:var(--muted);font-size:11.5px}.pk-s strong{display:block;margin:2px 0;font-size:21px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}'+
+'.pk-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:4px 0 12px}'+
+'.pk-s{padding:9px 12px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}'+
+'.pk-s small{display:block;color:var(--muted);font-size:11.5px}.pk-s strong{display:block;margin:1px 0;font-size:19px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}'+
 '.pk-s em{display:block;font-style:normal;color:var(--muted);font-size:11.5px}'+
 '.pk-wrap{overflow-x:auto;padding-bottom:2px}'+
-'.pk-grid{display:grid;gap:2px}'+
+'.pk-area{position:relative}.pk-grid{display:grid;gap:2px}'+
 '.pk-h{font-size:9.5px;line-height:16px;text-align:center;color:var(--muted2)}.pk-h.biz{color:var(--ink);font-weight:600}'+
 '.pk-d{display:flex;align-items:center;font-size:11.5px;font-weight:600;color:var(--ink2)}.pk-d.we{color:var(--muted)}'+
-'.pk-c{height:26px;min-width:0;padding:0;border:0;border-radius:4px;background:var(--surface3);color:var(--ink);font:inherit;font-size:10px;font-variant-numeric:tabular-nums;cursor:pointer}'+
+'.pk-c{height:23px;min-width:0;padding:0;border:0;border-radius:4px;background:var(--surface3);color:var(--ink);font:inherit;font-size:10px;font-variant-numeric:tabular-nums;cursor:pointer}'+
 '.pk-c.pk-hi{color:#fff}.pk-c.pk-lo{opacity:.5}.pk-c:hover{outline:1px solid var(--ink2)}.pk-c[aria-pressed=true]{outline:2px solid var(--ink)}'+
 '.pk-c.pk-ro{cursor:default}.pk-c.pk-ro:hover{outline:0}'+
 '.pk-detail{margin-top:10px;min-height:20px;font-size:12.5px;color:var(--ink2)}'+
@@ -49,22 +49,40 @@ var css=
 '#recPanel .rc-more{display:flex;gap:8px;margin-top:12px}'+
 '#recPanel .panel-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px}#recPanel .panel-head>div:first-child{flex:1;min-width:220px}'+
 '@media print{.pk-ctl,#recPanel .rc-more,#recPanel .rc-csv{display:none!important}#peakPanel,#recPanel .rc-row{break-inside:avoid}.pk-wrap{overflow:visible}.pk-grid{min-width:0!important}#recPanel .rc-row:nth-child(n+11){display:none}}'+
+'@media(max-width:560px){#peakPanel .pk-sum{grid-template-columns:1fr 1fr;gap:8px}#peakPanel .pk-s{padding:8px 10px}#peakPanel .pk-s strong{font-size:16px}#peakPanel .pk-s em{display:none}#peakPanel .pk-head p{display:none}}'+
 '@media(max-width:820px){#recPanel .rc-row{grid-template-columns:44px minmax(0,1fr)}#recPanel .rc-last{grid-column:1/-1}.pk-ctl{margin-left:0;width:100%}}';
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:css}));
 
-/* ---------- Mapa de pico: dia da semana × hora ---------- */
+/* ---------- Atendimentos por hora: gráfico por desfecho + mapa dia da semana × hora ---------- */
+var CATS=[['resolvido','Resolvidos','resolved'],['nao','Não resolvidos','bad'],['transferido','Transferidos','transferred'],['outros','Outros desfechos','other']];
+var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['finalizado','Finalizado'],['safenota','Finaliza SafeNota']];
+var KEYS=['t','r','tr'].concat(CATS.map(function(c){return c[0]}),OSUB.map(function(o){return o[0]}));
+function catOf(x){if(x.outcome==='resolvido')return'resolvido';if(isUnresolvedProtocol(x))return'nao';if(x.outcome==='transferido')return'transferido';return'outros'}
+function newSlot(){var s={};KEYS.forEach(function(k){s[k]=0});return s}
 function slots(list,ia){
-  var g=[],i;for(i=0;i<168;i++)g.push({t:0,r:0,tr:0});
-  var tot=0,timed=0;
+  var g=[],i;for(i=0;i<168;i++)g.push(newSlot());
+  var tot=0,timed=0,excl=0;
   (list||[]).forEach(function(x){
     if(ia&&x.agent!==ia)return;
-    if(DESFECHOS.indexOf(x.outcome)<0)return;
     var ms=dt(x.firstDate);if(!ms)return;
-    var d=new Date(ms),wd=(d.getDay()+6)%7,h=d.getHours(),s=g[wd*24+h];
+    if(DESFECHOS.indexOf(x.outcome)<0){excl++;return}
+    var d=new Date(ms),wd=(d.getDay()+6)%7,h=d.getHours(),s=g[wd*24+h],c=catOf(x);
     tot++;if(/\d{1,2}:\d{2}/.test(String(x.firstDate)))timed++;
-    s.t++;if(x.outcome==='resolvido')s.r++;if(x.outcome==='transferido')s.tr++;
+    s.t++;s[c]++;if(x.outcome==='resolvido')s.r++;if(x.outcome==='transferido')s.tr++;
+    if(c==='outros'&&OSUB.some(function(o){return o[0]===x.outcome}))s[x.outcome]++;
   });
-  return{g:g,tot:tot,timed:timed};
+  return{g:g,tot:tot,timed:timed,excl:excl};
+}
+// soma dos 7 dias em cada hora
+function hourly(sl){
+  var h=[],i,d;for(i=0;i<24;i++)h.push(newSlot());
+  for(d=0;d<7;d++)for(i=0;i<24;i++){var s=sl.g[d*24+i];KEYS.forEach(function(k){h[i][k]+=s[k]})}
+  return h;
+}
+// só as horas em que houve atendimento (da primeira à última), para não desperdiçar largura
+function range(sl){
+  var h0=23,h1=0,i;for(i=0;i<168;i++)if(sl.g[i].t){var hr=i%24;if(hr<h0)h0=hr;if(hr>h1)h1=hr}
+  return h0>h1?[0,23]:[h0,h1];
 }
 function summarize(sl){
   var day=[0,0,0,0,0,0,0],hour=[],i,wd,h,s,inn={t:0,r:0,tr:0},off={t:0,r:0,tr:0},top=null;
@@ -89,11 +107,8 @@ function heatHtml(sl,metric,opt){
   for(i=0;i<168;i++){var s=sl.g[i],v=null;
     if(metric==='vol')v=s.t;else if(s.t>=MIN_RATE)v=(metric==='tr'?s.tr:s.r)/s.t;
     vals.push(v);if(v!=null&&v>mx)mx=v}
-  // só as horas em que houve atendimento (do primeiro ao último), para não desperdiçar largura
-  var h0=23,h1=0;for(i=0;i<168;i++)if(sl.g[i].t){var hr=i%24;if(hr<h0)h0=hr;if(hr>h1)h1=hr}
-  if(h0>h1){h0=0;h1=23}
-  var n=h1-h0+1;
-  var out='<div class="pk-grid" style="--c:'+color+';grid-template-columns:44px repeat('+n+',minmax(24px,1fr));min-width:'+(44+n*26)+'px" role="grid"><div></div>';
+  var rg=range(sl),h0=rg[0],h1=rg[1],n=h1-h0+1;
+  var out='<div class="pk-grid" style="--c:'+color+';grid-template-columns:42px repeat('+n+',minmax(24px,1fr));min-width:'+(44+n*26)+'px" role="grid"><div></div>';
   for(i=h0;i<=h1;i++)out+='<div class="pk-h'+(i>=BIZ.from&&i<BIZ.to?' biz':'')+'">'+i+'</div>';
   for(var wd=0;wd<7;wd++){
     out+='<div class="pk-d'+(wd>4?' we':'')+'">'+DS[wd]+'</div>';
@@ -109,44 +124,80 @@ function heatHtml(sl,metric,opt){
   heatHtml.hidden=24-n;
   return out+'</div>';
 }
+// barras empilhadas por desfecho em cada hora (alinhadas com as colunas do mapa)
+function chartHtml(sl,agg){
+  var rg=range(sl),h0=rg[0],h1=rg[1],n=h1-h0+1,k;
+  var mx=1;for(k=h0;k<=h1;k++)if(agg[k].t>mx)mx=agg[k].t;
+  var step=mx<=5?1:mx<=10?2:mx<=25?5:mx<=50?10:Math.ceil(mx/5/10)*10,top=Math.ceil(mx/step)*step,grid='';
+  for(var g=step;g<=top;g+=step)grid+='<div class="hs-gl" style="bottom:'+(g/top*100)+'%"><span>'+g+'</span></div>';
+  var cols='';
+  for(k=h0;k<=h1;k++){var v=agg[k];
+    var segs=CATS.map(function(c){var m=v[c[0]];return m?'<u class="sg sg-'+c[2]+'" style="height:'+(m/top*100)+'%"></u>':''}).join('');
+    var lab=k+'h: '+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+(v.t?' — '+CATS.filter(function(c){return v[c[0]]}).map(function(c){return c[1].toLowerCase()+' '+v[c[0]]}).join(', '):'');
+    cols+='<div class="hs-col" data-h="'+k+'" tabindex="'+(v.t?0:-1)+'" aria-label="'+esc(lab)+'"><div class="hs-stack">'+segs+'</div></div>';
+  }
+  return'<div class="hs"><div class="hs-plot">'+grid+'<div class="hs-cols" style="grid-template-columns:repeat('+n+',minmax(0,1fr))">'+cols+'</div></div><div class="hs-tip" hidden></div></div>';
+}
+function legendHtml(agg){
+  var tot={};KEYS.forEach(function(k){tot[k]=agg.reduce(function(a,v){return a+v[k]},0)});
+  var sub=OSUB.filter(function(o){return tot[o[0]]}).map(function(o){return o[1]+' '+fmt(tot[o[0]])}).join(' · ');
+  return'<div class="hs-legend">'+CATS.map(function(c){return'<span><i class="sw sw-'+c[2]+'"></i>'+c[1]+' <b>'+fmt(tot[c[0]])+'</b>'+(c[0]==='outros'&&sub?'<small>('+sub+')</small>':'')+'</span>'}).join('')+'</div>';
+}
 
 var PK={ia:'',metric:'vol',sel:null};
 var METRICS=[['vol','Volume'],['tr','% transferidos'],['res','% resolvidos']];
 function renderPeak(){
   var el=q('#peakPanel');
   if(typeof data==='undefined'||!data||!data.r72){if(el)el.hidden=true;return}
-  var anchor=q('#hoursPanel')||(q('#outcomes')&&q('#outcomes').closest('.panel'));if(!anchor)return;
+  var anchor=q('#outcomes')&&q('#outcomes').closest('.panel');if(!anchor)return;
   if(!el){el=document.createElement('article');el.id='peakPanel';el.className='panel';anchor.after(el)}
   var sl=slots(data.r72.protocols,PK.ia);
   if(!sl.tot&&!PK.ia){el.hidden=true;return}
   el.hidden=false;
-  var sm=summarize(sl),pctOf=function(a){return rp(a,sm.tot)};
-  var head='<div class="panel-head pk-head"><div><h2>Mapa de pico</h2><p>Quando os clientes procuram a IA e em que horários ela mais resolve ou transfere (dia da semana × hora do primeiro contato)</p></div>'+
+  var sm=summarize(sl),agg=hourly(sl),pctOf=function(a){return rp(a,sm.tot)};
+  var head='<div class="panel-head pk-head"><div><h2>Atendimentos por hora</h2><p>Quando os clientes procuram a IA, como os atendimentos terminam e em que dias e horários ela mais resolve ou transfere</p></div>'+
     '<div class="pk-ctl"><select id="pkIA" aria-label="IA">'+['<option value="">Todas as IAs</option>'].concat(IAS.map(function(n){return'<option'+(n===PK.ia?' selected':'')+'>'+esc(n)+'</option>'})).join('')+'</select>'+
-    '<div class="pk-seg" role="group" aria-label="Medida">'+METRICS.map(function(m){return'<button type="button" data-m="'+m[0]+'" aria-pressed="'+(m[0]===PK.metric?'true':'false')+'">'+m[1]+'</button>'}).join('')+'</div></div></div>';
-  if(!sl.tot){el.innerHTML=head+'<div class="pk-note">Nenhum atendimento com desfecho para esta IA no período.</div>';bind(el,sl);return}
-  if(sl.timed<sl.tot*.5){el.innerHTML=head+'<div class="pk-note">Os dados deste período não trazem o horário dos atendimentos, então o mapa não pode ser montado.</div>';bind(el,sl);return}
+    '<div class="pk-seg" role="group" aria-label="Medida do mapa por dia e hora" title="Medida do mapa por dia da semana e hora">'+METRICS.map(function(m){return'<button type="button" data-m="'+m[0]+'" aria-pressed="'+(m[0]===PK.metric?'true':'false')+'">'+m[1]+'</button>'}).join('')+'</div></div></div>';
+  if(!sl.tot){el.innerHTML=head+'<div class="pk-note">Nenhum atendimento com desfecho para esta IA no período.</div>';bind(el,sl,agg);return}
+  if(sl.timed<sl.tot*.5){el.innerHTML=head+'<div class="pk-note">Os dados deste período não trazem o horário dos atendimentos, então o gráfico e o mapa não podem ser montados.</div>';bind(el,sl,agg);return}
   var top=sm.top;
   var cards=
-    '<div class="pk-s"><small>Dia mais movimentado</small><strong>'+DIAS[sm.busiest]+'</strong><em>'+fmt(sm.day[sm.busiest])+' atendimentos ('+pctOf(sm.day[sm.busiest])+'% do período)</em></div>'+
+    '<div class="pk-s"><small>Dia mais movimentado</small><strong>'+DIAS[sm.busiest]+'</strong><em>'+fmt(sm.day[sm.busiest])+' atendimentos ('+pctOf(sm.day[sm.busiest])+'%)</em></div>'+
     '<div class="pk-s"><small>Hora de pico</small><strong>'+hh(sm.peak)+' às '+hh(sm.peak+1)+'</strong><em>'+fmt(sm.hour[sm.peak])+' atendimentos, somando todos os dias</em></div>'+
-    '<div class="pk-s"><small>Fora do expediente</small><strong>'+pctOf(sm.off.t)+'%</strong><em>'+fmt(sm.off.t)+' atendimentos · IA resolveu '+rp(sm.off.r,sm.off.t)+'% (no expediente: '+rp(sm.inn.r,sm.inn.t)+'%) · '+fmt(sm.off.tr)+' transferências</em></div>'+
+    '<div class="pk-s"><small>Fora do expediente</small><strong>'+pctOf(sm.off.t)+'%</strong><em>'+fmt(sm.off.t)+' atend. · IA resolveu '+rp(sm.off.r,sm.off.t)+'% (no expediente: '+rp(sm.inn.r,sm.inn.t)+'%) · '+fmt(sm.off.tr)+' transf.</em></div>'+
     '<div class="pk-s"><small>Maior taxa de transferência</small><strong>'+(top?DS[top.wd]+' '+hh(top.h):'—')+'</strong><em>'+(top?Math.round(top.rate*100)+'% de '+fmt(top.t)+' atendimentos':'poucos atendimentos por horário')+'</em></div>';
   var lg=PK.metric==='vol'?'<span><i></i></span><span>mais atendimentos</span>':'<span><i></i></span><span>'+(PK.metric==='tr'?'mais transferências':'mais resolvidos')+'; horários com menos de '+MIN_RATE+' atendimentos ficam sem cor</span>';
-  el.innerHTML=head+'<div class="pk-sum">'+cards+'</div><div class="pk-wrap">'+heatHtml(sl,PK.metric,{sel:PK.sel})+'</div>'+
-    '<div class="pk-detail" id="pkDetail" aria-live="polite">'+(PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário para ver os números dele.')+'</div>'+
+  var chart=chartHtml(sl,agg),heat=heatHtml(sl,PK.metric,{sel:PK.sel});
+  var area='<div class="pk-area" style="min-width:'+(44+(range(sl)[1]-range(sl)[0]+1)*26)+'px">'+chart+heat+'</div>';
+  el.innerHTML=head+'<div class="pk-sum">'+cards+'</div>'+legendHtml(agg)+'<div class="pk-wrap">'+area+'</div>'+
+    '<div class="pk-detail" id="pkDetail" aria-live="polite">'+(PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário do mapa para ver os números dele.')+'</div>'+
     '<div class="pk-lg" style="--c:'+(PK.metric==='tr'?'var(--bad)':PK.metric==='res'?'var(--good)':'var(--blue)')+'">'+lg+'</div>'+
-    '<div class="pk-note">Horas em negrito: expediente (segunda a sexta, '+BIZ.from+'h às '+BIZ.to+'h).'+(heatHtml.hidden?' Horários sem nenhum atendimento no período não aparecem.':'')+' Considera os '+fmt(sm.tot)+' atendimentos com desfecho'+(PK.ia?' da '+esc(PK.ia):'')+'; o horário é o do primeiro contato.</div>';
-  bind(el,sl);
+    '<div class="pk-note">Barras: atendimentos de cada hora, pelo desfecho. Mapa: dia da semana × hora do primeiro contato. Horas em negrito: expediente (segunda a sexta, '+BIZ.from+'h às '+BIZ.to+'h).'+(heatHtml.hidden?' Horários sem nenhum atendimento no período não aparecem.':'')+
+    ' Considera os '+fmt(sm.tot)+' atendimentos com desfecho'+(PK.ia?' da '+esc(PK.ia):'')+(sl.excl?'; '+fmt(sl.excl)+' protocolo'+(sl.excl===1?'':'s')+' ainda sem desfecho não entram':'')+'.</div>';
+  bind(el,sl,agg);
 }
-function bind(el,sl){
+function bind(el,sl,agg){
   var s=q('#pkIA',el);if(s)s.onchange=function(){PK.ia=this.value;PK.sel=null;renderPeak()};
   qa('.pk-seg button',el).forEach(function(b){b.onclick=function(){PK.metric=b.dataset.m;renderPeak()}});
   qa('.pk-c',el).forEach(function(c){c.onclick=function(){
     var i=+c.dataset.i;PK.sel=PK.sel===i?null:i;
     qa('.pk-c',el).forEach(function(x){x.setAttribute('aria-pressed',+x.dataset.i===PK.sel?'true':'false')});
-    q('#pkDetail',el).innerHTML=PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário para ver os números dele.';
+    q('#pkDetail',el).innerHTML=PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário do mapa para ver os números dele.';
   }});
+  // dica nas barras por hora (mouse, teclado ou toque)
+  var hs=q('.hs',el),tip=hs&&q('.hs-tip',hs);if(!hs||!tip)return;
+  function showTip(col){
+    var k=+col.dataset.h,v=agg[k];if(!v.t){tip.hidden=true;return}
+    tip.innerHTML='<b>'+k+'h às '+k+'h59</b><span class="hs-tt">'+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+'</span>'+CATS.filter(function(c){return v[c[0]]}).map(function(c){return'<span><i class="sw sw-'+c[2]+'"></i>'+c[1]+'<b>'+fmt(v[c[0]])+' · '+rp(v[c[0]],v.t)+'%</b></span>'+
+      (c[0]==='outros'?OSUB.filter(function(o){return v[o[0]]}).map(function(o){return'<span class="hs-sub">'+o[1]+'<b>'+fmt(v[o[0]])+'</b></span>'}).join(''):'')}).join('');
+    tip.hidden=false;
+    var r=col.getBoundingClientRect(),w=hs.getBoundingClientRect(),z=parseFloat(getComputedStyle(document.body).zoom)||1,cl=(r.left-w.left)/z,cr=(r.right-w.left)/z,tw=tip.offsetWidth,max=w.width/z;
+    tip.style.left=(cr+8+tw<=max?cr+8:Math.max(0,cl-8-tw))+'px';   // ao lado da coluna, sem cobrir a barra
+    qa('.hs-col.on',hs).forEach(function(c){c.classList.remove('on')});col.classList.add('on');
+  }
+  function hide(){tip.hidden=true;qa('.hs-col.on',hs).forEach(function(c){c.classList.remove('on')})}
+  qa('.hs-col',hs).forEach(function(c){c.addEventListener('mouseenter',function(){showTip(c)});c.addEventListener('focus',function(){showTip(c)});c.addEventListener('click',function(){showTip(c)});c.addEventListener('blur',hide)});
+  q('.hs-plot',hs).addEventListener('mouseleave',hide);
 }
 wrap('renderOverview',renderPeak);
 

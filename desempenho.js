@@ -46,22 +46,23 @@ var css=
 '#metaDlg input{width:100%;min-width:70px;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}'+
 '#metaDlg .md-f{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}#metaDlg .md-f small{flex:1;min-width:220px;color:var(--muted);font-size:11.5px}'+
 '#metaDlg .md-msg{margin-top:10px;font-size:12px;color:var(--bad)}#metaDlg .md-msg.ok{color:var(--good)}'+
-'#ecoPanel .eco-ks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:4px}'+
-'#ecoPanel .eco-k{padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}'+
-'#ecoPanel .eco-k small{display:block;color:var(--muted);font-size:11.5px}#ecoPanel .eco-k strong{display:block;margin:2px 0;font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--good)}'+
-'#ecoPanel .eco-k:not(:first-child) strong{color:var(--ink)}#ecoPanel .eco-k em{display:block;font-style:normal;color:var(--muted);font-size:11.5px}'+
-'#ecoPanel .eco-rows{display:grid;gap:10px;margin-top:16px}'+
-'#ecoPanel .eco-r{display:grid;grid-template-columns:150px minmax(0,1fr) 190px;gap:14px;align-items:center}'+
-'#ecoPanel .eco-r b{font-size:13px;font-weight:600}#ecoPanel .eco-r .tr{height:8px;border-radius:999px;background:var(--surface3);overflow:hidden}'+
-'#ecoPanel .eco-r .tr i{display:block;height:100%;border-radius:999px;background:var(--good);transform-origin:left}'+
-'#ecoPanel .eco-r span{text-align:right;font-variant-numeric:tabular-nums}#ecoPanel .eco-r strong{display:block;font-size:14px}#ecoPanel .eco-r small{display:block;color:var(--muted);font-size:11px}'+
-'#ecoPanel .eco-empty{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12.5px}#ecoPanel .eco-empty span{flex:1;min-width:240px}'+
-'#ecoPanel .panel-head{display:flex;align-items:flex-start;gap:12px}#ecoPanel .panel-head>div{flex:1}'+
+'#ecoPanel .panel-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:6px}#ecoPanel .panel-head>div{flex:1}#ecoPanel .panel-head p{margin-top:1px}'+
+'#ecoPanel .eco-ks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}'+
+'#ecoPanel .eco-k{padding:4px 18px;border-left:1px solid var(--line2)}#ecoPanel .eco-k:first-child{padding-left:0;border-left:0}'+
+'#ecoPanel .eco-k small{display:block;color:var(--muted);font-size:11.5px}#ecoPanel .eco-k strong{display:block;margin:1px 0;font-size:24px;line-height:1.15;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}'+
+'#ecoPanel .eco-k:first-child strong{color:var(--good)}#ecoPanel .eco-k em{display:block;font-style:normal;color:var(--muted);font-size:11.5px}'+
+'#ecoPanel .eco-bar{display:flex;gap:2px;height:8px;margin-top:12px;border-radius:999px;overflow:hidden;background:var(--surface3)}#ecoPanel .eco-bar i{display:block;min-width:3px;background:var(--c)}'+
+'#ecoPanel .eco-leg{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:8px}'+
+'#ecoPanel .eco-r{display:inline-flex;align-items:baseline;gap:6px;font-size:12px;color:var(--ink2)}#ecoPanel .eco-r u{align-self:center;width:8px;height:8px;border-radius:50%;background:var(--c);text-decoration:none}'+
+'#ecoPanel .eco-r strong{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}#ecoPanel .eco-r small{color:var(--muted);font-size:11px}'+
+'#ecoPanel .wk-note{margin-top:8px;font-size:11.5px;color:var(--muted)}#ecoPanel .panel-head .btn{width:auto;flex:none;height:32px;padding:0 12px;font-size:12.5px}'+
+'#ecoPanel .eco-empty{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12.5px}#ecoPanel .eco-empty span{flex:1;min-width:240px}'+
 '#metaDlg .md-eco{margin-top:16px;padding-top:14px;border-top:1px solid var(--line2)}#metaDlg .md-eco h3{margin:0 0 10px;font-size:13px}'+
 '#metaDlg .md-eco-g{display:grid;grid-template-columns:1fr 1fr;gap:12px}#metaDlg .md-eco label{display:grid;gap:6px;font-size:12px;color:var(--ink2)}'+
 '#metaDlg .md-eco small{display:block;margin-top:8px;color:var(--muted);font-size:11.5px}'+
 '@media print{.ag-tools,#ecoSet,#wkIA,#healthBanner{display:none!important}#ecoPanel,#weeklyPanel{break-inside:avoid}#ecoPanel .eco-k,#ecoPanel .eco-r{break-inside:avoid}#weeklyPanel .wk-wrap{overflow:visible}}'+
-'@media(max-width:820px){#ecoPanel .eco-ks{grid-template-columns:1fr}#ecoPanel .eco-r{grid-template-columns:1fr auto;gap:6px 12px}#ecoPanel .eco-r .tr{grid-column:1/-1;grid-row:2}#metaDlg .md-eco-g{grid-template-columns:1fr}}'+
+'@media(max-width:560px){#ecoPanel .panel-head{flex-wrap:nowrap}#ecoPanel .panel-head p{display:none}#ecoPanel .eco-ks{grid-template-columns:1fr;gap:2px}#ecoPanel .eco-k,#ecoPanel .eco-k:first-child{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:0 10px;padding:6px 0;border-left:0;border-top:1px solid var(--line2)}#ecoPanel .eco-k:first-child{border-top:0}#ecoPanel .eco-k small{order:1}#ecoPanel .eco-k strong{order:2;font-size:18px}#ecoPanel .eco-k em{display:none}#metaDlg .md-eco-g{grid-template-columns:1fr}}'+
+'@media(max-width:820px){#metaDlg .md-eco-g{grid-template-columns:1fr}}'+
 '@media(max-width:820px){.ag-tools{margin-left:0;width:100%;flex-direction:row;flex-wrap:nowrap}.ag-tools .btn{flex:1 1 0;width:auto;min-width:0}}';
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:css}));
 
@@ -166,17 +167,20 @@ function renderEco(){
       '<div class="eco-empty"><span>Informe o tempo médio de um atendimento humano para ver as horas (e o valor) que as IAs economizaram. Aparece também no relatório por IA, no resumo e no PDF.</span><button type="button" class="btn btn-secondary" id="ecoSet">Definir tempo médio</button></div>';
     q('#ecoSet',el).onclick=openMetas;return;
   }
-  var h=horas(all.r),money=reais(all.r),days=h/8,max=Math.max.apply(null,IAS.map(function(n){return st[n].r}).concat(1));
+  var h=horas(all.r),money=reais(all.r),days=h/8;
   var others=Math.max(0,all.r-IAS.reduce(function(a,n){return a+st[n].r},0));
-  var rows=IAS.map(function(n){return{name:n,r:st[n].r}});if(others)rows.push({name:'Outros agentes',r:others});
+  var COLORS=['var(--blue)','var(--good)','var(--resolved)','var(--inactivity)'];
+  var rows=IAS.map(function(n,i){return{name:n,r:st[n].r,c:COLORS[i]}});if(others)rows.push({name:'Outros agentes',r:others,c:'var(--muted2)'});
+  rows=rows.filter(function(r){return r.r>0});
   var big=function(label,value,sub){return'<div class="eco-k"><small>'+label+'</small><strong>'+value+'</strong><em>'+sub+'</em></div>'};
-  el.innerHTML='<div class="panel-head"><div><h2>Economia da IA</h2><p>Atendimentos que a IA resolveu sozinha × tempo médio de um atendimento humano</p></div>'+(S.admin?'<button type="button" class="btn btn-ghost" id="ecoSet" title="Alterar o tempo médio e o custo por hora">Ajustar</button>':'')+'</div>'+
+  el.innerHTML='<div class="panel-head"><div><h2>Economia da IA</h2><p>Atendimentos resolvidos pela IA × tempo médio de um atendimento humano</p></div>'+(S.admin?'<button type="button" class="btn btn-ghost" id="ecoSet" title="Alterar o tempo médio e o custo por hora">Ajustar</button>':'')+'</div>'+
     '<div class="eco-ks">'+big('Atendimento humano evitado','<span class="eco-h">'+fmtH(h)+'</span>',fmt(all.r)+' resolvidos × '+fmtMin(S.eco.minutos)+' min')+
-      big('Equivale a',(Math.round(days*10)/10).toLocaleString('pt-BR')+' dia'+(days>1.05?'s':''),'de trabalho de um analista (8 h por dia)')+
+      big('Equivale a',(Math.round(days*10)/10).toLocaleString('pt-BR')+' dia'+(days>1.05?'s':''),'de um analista (8 h por dia)')+
       (money!=null?big('Economia estimada','<span class="eco-h">'+fmtR(money)+'</span>','a '+fmtR(S.eco.custoHora)+' por hora'):big('Resolvidos pela IA',pct(all.r,all.t)+'%',fmt(all.r)+' de '+fmt(all.t)+' com desfecho'))+'</div>'+
-    '<div class="eco-rows">'+rows.map(function(r){var hh=horas(r.r),w=max?Math.round(r.r/max*100):0;
-      return'<div class="eco-r"><b>'+esc(r.name)+'</b><div class="tr"><i style="width:'+w+'%"></i></div><span><strong>'+fmtH(hh)+'</strong><small>'+fmt(r.r)+' resolvido'+(r.r===1?'':'s')+(money!=null?' · '+fmtR(reais(r.r)):'')+'</small></span></div>'}).join('')+'</div>'+
-    '<div class="wk-note">Conta só os atendimentos resolvidos pela IA ('+fmt(all.r)+' de '+fmt(all.t)+' com desfecho). Transferidos, não resolvidos e inatividade não entram, então o cálculo é conservador. Tempo médio considerado: '+fmtMin(S.eco.minutos)+' min por atendimento.</div>';
+    (rows.length?'<div class="eco-bar" role="img" aria-label="Divisão das horas evitadas por IA">'+rows.map(function(r){return'<i style="flex:'+r.r+' 1 0;--c:'+r.c+'" title="'+esc(r.name)+': '+fmtH(horas(r.r))+'"></i>'}).join('')+'</div>'+
+      '<div class="eco-leg">'+rows.map(function(r){return'<span class="eco-r" style="--c:'+r.c+'"><u></u>'+esc(r.name)+' <strong>'+fmtH(horas(r.r))+'</strong><small>'+fmt(r.r)+(money!=null?' · '+fmtR(reais(r.r)):'')+'</small></span>'}).join('')+'</div>':
+      '<div class="wk-note">Nenhum atendimento resolvido pela IA no período.</div>')+
+    '<div class="wk-note">Só conta os resolvidos pela IA ('+fmt(all.r)+' de '+fmt(all.t)+' com desfecho); transferidos, não resolvidos e inatividade ficam de fora, então o cálculo é conservador.</div>';
   var b=q('#ecoSet',el);if(b)b.onclick=openMetas;
 }
 wrap('renderOverview',renderEco);

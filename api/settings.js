@@ -1,6 +1,6 @@
 // Configurações do Monitor guardadas no Supabase (tabela monitor_settings).
-//  GET  → metas por IA (qualquer pessoa logada) + situação das coletas (só administradores)
-//  PUT  → salva as metas (só administradores)
+//  GET  → metas por IA e dados da economia (qualquer pessoa logada) + situação das coletas (só administradores)
+//  PUT  → salva as metas e/ou a economia (só administradores)
 import { requireActiveSession, requireActiveAdmin } from '../lib/auth.js';
 import { isSupabaseConfigured, getSetting, setSetting } from '../lib/supabase.js';
 import { collectionHealth } from '../lib/alerts.js';
@@ -34,18 +34,38 @@ function cleanMetas(input) {
   return out;
 }
 
+// Economia: tempo médio de um atendimento humano (minutos) e custo da hora do analista (R$, opcional)
+function cleanEconomia(input) {
+  if (!input || typeof input !== 'object') return {};
+  const out = {};
+  const num = (v) => (v === '' || v == null ? null : Number(String(v).replace(',', '.')));
+  const min = num(input.minutos);
+  if (min != null) {
+    if (!Number.isFinite(min) || min <= 0 || min > 480) throw Object.assign(new Error('Tempo médio inválido: use de 1 a 480 minutos.'), { status: 400 });
+    out.minutos = Math.round(min * 10) / 10;
+  }
+  const cost = num(input.custoHora);
+  if (cost != null) {
+    if (!Number.isFinite(cost) || cost < 0 || cost > 10000) throw Object.assign(new Error('Custo por hora inválido.'), { status: 400 });
+    out.custoHora = Math.round(cost * 100) / 100;
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
     const session = await requireActiveSession(req, res);
     if (!session) return;
-    const out = { ok: true, admin: Boolean(session.admin), ias: IAS, metas: {}, configured: isSupabaseConfigured() };
+    const out = { ok: true, admin: Boolean(session.admin), ias: IAS, metas: {}, economia: {}, configured: isSupabaseConfigured() };
     if (isSupabaseConfigured()) {
       try {
         const row = await getSetting('metas');
         out.metas = row?.value || {};
         if (row) out.metasUpdatedAt = row.updated_at;
+        const eco = await getSetting('economia');
+        out.economia = eco?.value || {};
       } catch (error) {
         if (tableMissing(error)) out.setupNeeded = MISSING_TABLE;
         else console.error('Monitor IA metas:', error.message);
@@ -70,14 +90,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Dados inválidos.' });
     }
     try {
-      const metas = cleanMetas(body.metas);
-      await setSetting('metas', metas, session.email);
-      return res.status(200).json({ ok: true, metas });
+      const out = { ok: true };
+      // cada parte é opcional: salva só o que veio no pedido
+      if (body.metas !== undefined) { out.metas = cleanMetas(body.metas); await setSetting('metas', out.metas, session.email); }
+      if (body.economia !== undefined) { out.economia = cleanEconomia(body.economia); await setSetting('economia', out.economia, session.email); }
+      return res.status(200).json(out);
     } catch (error) {
       if (error.status === 400) return res.status(400).json({ ok: false, error: error.message });
       if (tableMissing(error)) return res.status(409).json({ ok: false, error: MISSING_TABLE });
       console.error('Monitor IA salvar metas:', error.message);
-      return res.status(500).json({ ok: false, error: 'Não foi possível salvar as metas.' });
+      return res.status(500).json({ ok: false, error: 'Não foi possível salvar.' });
     }
   }
 

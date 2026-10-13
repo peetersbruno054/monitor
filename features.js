@@ -489,6 +489,7 @@ function summary(){
   var imp={};s.forEach(function(x){if(x.note&&x.note<=3)x.help.forEach(function(h){if(neg.has(norm(h)))imp[h]=(imp[h]||0)+1})});
   var top=Object.keys(imp).sort(function(a,b){return imp[b]-imp[a]})[0];if(top)L.push('Principal ponto a melhorar: '+top+' ('+fmt(imp[top])+')');
   if(kf)L.push('Falhas de conhecimento: '+fmt(kf)+' protocolo'+(kf===1?'':'s'));
+  var eco=window.monEconomia&&window.monEconomia();if(eco)L.push(eco.texto);
   var g={};p.forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,n:[]});o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
   var names=Object.keys(g).filter(function(n){return['Assistente Safira','IA SPC','SPC AGE','SPC ACI'].indexOf(n)>=0}).sort(function(a,b){return g[b].t-g[a].t});
   if(names.length){L.push('Maior volume: '+names[0]+' ('+fmt(g[names[0]].t)+')');L.push('');L.push('Por IA:');

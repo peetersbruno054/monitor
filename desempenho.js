@@ -5,7 +5,7 @@
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var IAS=['Assistente Safira','IA SPC','SPC AGE','SPC ACI'];
 var FIELDS=[['resolvido','Resolvidos','mín.','%'],['transferido','Transferidos','máx.','%'],['nao','Não resolvidos','máx.','%'],['nota','Nota média','mín.','']];
-var S={metas:{},admin:false,health:null,setup:'',loadedAt:0};
+var S={metas:{},eco:{},admin:false,health:null,setup:'',loadedAt:0};
 function toast(m){if(window.monToast)window.monToast(m)}
 function wrap(n,f){var o=window[n];if(typeof o!=='function')return;window[n]=function(){var r=o.apply(this,arguments);try{f()}catch(e){console.error('desempenho',n,e)}return r}}
 function dk(v){var m=String(v||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);m=String(v||'').match(/(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+'-'+m[2]+'-'+m[3]:''}
@@ -46,6 +46,22 @@ var css=
 '#metaDlg input{width:100%;min-width:70px;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}'+
 '#metaDlg .md-f{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}#metaDlg .md-f small{flex:1;min-width:220px;color:var(--muted);font-size:11.5px}'+
 '#metaDlg .md-msg{margin-top:10px;font-size:12px;color:var(--bad)}#metaDlg .md-msg.ok{color:var(--good)}'+
+'#ecoPanel .eco-ks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:4px}'+
+'#ecoPanel .eco-k{padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}'+
+'#ecoPanel .eco-k small{display:block;color:var(--muted);font-size:11.5px}#ecoPanel .eco-k strong{display:block;margin:2px 0;font-size:26px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--good)}'+
+'#ecoPanel .eco-k:not(:first-child) strong{color:var(--ink)}#ecoPanel .eco-k em{display:block;font-style:normal;color:var(--muted);font-size:11.5px}'+
+'#ecoPanel .eco-rows{display:grid;gap:10px;margin-top:16px}'+
+'#ecoPanel .eco-r{display:grid;grid-template-columns:150px minmax(0,1fr) 190px;gap:14px;align-items:center}'+
+'#ecoPanel .eco-r b{font-size:13px;font-weight:600}#ecoPanel .eco-r .tr{height:8px;border-radius:999px;background:var(--surface3);overflow:hidden}'+
+'#ecoPanel .eco-r .tr i{display:block;height:100%;border-radius:999px;background:var(--good);transform-origin:left}'+
+'#ecoPanel .eco-r span{text-align:right;font-variant-numeric:tabular-nums}#ecoPanel .eco-r strong{display:block;font-size:14px}#ecoPanel .eco-r small{display:block;color:var(--muted);font-size:11px}'+
+'#ecoPanel .eco-empty{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12.5px}#ecoPanel .eco-empty span{flex:1;min-width:240px}'+
+'#ecoPanel .panel-head{display:flex;align-items:flex-start;gap:12px}#ecoPanel .panel-head>div{flex:1}'+
+'#metaDlg .md-eco{margin-top:16px;padding-top:14px;border-top:1px solid var(--line2)}#metaDlg .md-eco h3{margin:0 0 10px;font-size:13px}'+
+'#metaDlg .md-eco-g{display:grid;grid-template-columns:1fr 1fr;gap:12px}#metaDlg .md-eco label{display:grid;gap:6px;font-size:12px;color:var(--ink2)}'+
+'#metaDlg .md-eco small{display:block;margin-top:8px;color:var(--muted);font-size:11.5px}'+
+'@media print{.ag-tools,#ecoSet,#wkIA,#healthBanner{display:none!important}#ecoPanel,#weeklyPanel{break-inside:avoid}#ecoPanel .eco-k,#ecoPanel .eco-r{break-inside:avoid}#weeklyPanel .wk-wrap{overflow:visible}}'+
+'@media(max-width:820px){#ecoPanel .eco-ks{grid-template-columns:1fr}#ecoPanel .eco-r{grid-template-columns:1fr auto;gap:6px 12px}#ecoPanel .eco-r .tr{grid-column:1/-1;grid-row:2}#metaDlg .md-eco-g{grid-template-columns:1fr}}'+
 '@media(max-width:820px){.ag-tools{margin-left:0;width:100%;flex-direction:row;flex-wrap:nowrap}.ag-tools .btn{flex:1 1 0;width:auto;min-width:0}}';
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:css}));
 
@@ -55,9 +71,9 @@ function loadSettings(force){
   S.loadedAt=Date.now();
   return fetch('/api/settings',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
     if(!j||!j.ok)return;
-    S.metas=j.metas||{};S.admin=!!j.admin;S.health=j.health||null;S.setup=j.setupNeeded||'';
+    S.metas=j.metas||{};S.eco=j.economia||{};S.admin=!!j.admin;S.health=j.health||null;S.setup=j.setupNeeded||'';
     placeTools();renderHealth();
-    if(typeof data!=='undefined'&&data&&data.r72){try{window.renderAgents()}catch(e){console.error(e)}renderWeekly()}
+    if(typeof data!=='undefined'&&data&&data.r72){try{window.renderAgents()}catch(e){console.error(e)}renderEco();renderWeekly()}
   }).catch(function(){});
 }
 var main=document.getElementById('main');
@@ -73,8 +89,15 @@ function add(o,x){
 }
 function rates(o){var av=o.n.length?o.n.reduce(function(a,v){return a+v},0)/o.n.length:0,pos=o.n.filter(function(v){return v>=4}).length;
   return{t:o.t,r:o.r,tr:o.tr,u:o.u,ina:o.ina,f:o.f,nn:o.n.length,resolvido:o.t?o.r/o.t*100:0,transferido:o.t?o.tr/o.t*100:0,nao:o.t?o.u/o.t*100:0,inatividade:o.t?o.ina/o.t*100:0,nota:av,pos:o.n.length?pos/o.n.length*100:0}}
-function byIA(list){var g={};IAS.forEach(function(n){g[n]=blank()});var all=blank();list.forEach(function(x){if(g[x.agent]){add(g[x.agent],x);add(all,x)}});
+function byIA(list){var g={};IAS.forEach(function(n){g[n]=blank()});var all=blank();list.forEach(function(x){if(g[x.agent])add(g[x.agent],x);add(all,x)});
   var out={};IAS.forEach(function(n){out[n]=rates(g[n])});out._all=rates(all);return out}
+/* ---------- Economia: resolvidos pela IA × tempo médio de um atendimento humano ---------- */
+function ecoOn(){return S.eco&&S.eco.minutos>0}
+function horas(resolvidos){return ecoOn()?resolvidos*S.eco.minutos/60:0}
+function reais(resolvidos){return ecoOn()&&S.eco.custoHora>0?horas(resolvidos)*S.eco.custoHora:null}
+function fmtH(h){if(h>0&&h<1)return Math.round(h*60)+' min';return h.toLocaleString('pt-BR',{maximumFractionDigits:1})+' h'}
+function fmtR(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function fmtMin(m){return String(m).replace('.',',')}
 // meta atingida? null = sem meta ou sem dado
 function check(goal,field,v,hasData){
   if(!goal||goal[field]==null||!hasData)return null;
@@ -107,7 +130,7 @@ var tools=null;
 function placeTools(){
   var head=q('#agentCards')&&q('#agentCards').closest('.panel').querySelector('.panel-head');if(!head)return;
   if(!tools){tools=document.createElement('div');tools.className='ag-tools';var seg=q('.segmented',head);head.insertBefore(tools,seg||null)}
-  tools.innerHTML=(S.admin?'<button type="button" class="btn btn-ghost" id="metaBtn" title="Definir as metas de cada IA">◎ Metas</button>':'')+
+  tools.innerHTML=(S.admin?'<button type="button" class="btn btn-ghost" id="metaBtn" title="Definir as metas de cada IA e o tempo médio para a economia">◎ Metas e economia</button>':'')+
     '<button type="button" class="btn btn-ghost" id="iaCsvBtn" title="Baixar o desempenho de cada IA no período, com a quebra por semana">↓ Relatório por IA</button>';
   var m=q('#metaBtn',tools);if(m)m.onclick=openMetas;
   q('#iaCsvBtn',tools).onclick=exportCsv;
@@ -130,13 +153,48 @@ function weeklyRows(ia){
   return ws;
 }
 
+function agentsPanel(){return q('#agentCards').closest('.panel')}
+function renderEco(){
+  var el=q('#ecoPanel');
+  if(typeof data==='undefined'||!data||!data.r72){if(el)el.hidden=true;return}
+  if(!ecoOn()&&!S.admin){if(el)el.hidden=true;return}
+  if(!el){el=document.createElement('article');el.id='ecoPanel';el.className='panel';agentsPanel().after(el)}
+  el.hidden=false;
+  var st=byIA(data.r72.protocols),all=st._all;
+  if(!ecoOn()){
+    el.innerHTML='<div class="panel-head"><div><h2>Economia da IA</h2><p>Quanto tempo de atendimento humano a IA evitou no período</p></div></div>'+
+      '<div class="eco-empty"><span>Informe o tempo médio de um atendimento humano para ver as horas (e o valor) que as IAs economizaram. Aparece também no relatório por IA, no resumo e no PDF.</span><button type="button" class="btn btn-secondary" id="ecoSet">Definir tempo médio</button></div>';
+    q('#ecoSet',el).onclick=openMetas;return;
+  }
+  var h=horas(all.r),money=reais(all.r),days=h/8,max=Math.max.apply(null,IAS.map(function(n){return st[n].r}).concat(1));
+  var others=Math.max(0,all.r-IAS.reduce(function(a,n){return a+st[n].r},0));
+  var rows=IAS.map(function(n){return{name:n,r:st[n].r}});if(others)rows.push({name:'Outros agentes',r:others});
+  var big=function(label,value,sub){return'<div class="eco-k"><small>'+label+'</small><strong>'+value+'</strong><em>'+sub+'</em></div>'};
+  el.innerHTML='<div class="panel-head"><div><h2>Economia da IA</h2><p>Atendimentos que a IA resolveu sozinha × tempo médio de um atendimento humano</p></div>'+(S.admin?'<button type="button" class="btn btn-ghost" id="ecoSet" title="Alterar o tempo médio e o custo por hora">Ajustar</button>':'')+'</div>'+
+    '<div class="eco-ks">'+big('Atendimento humano evitado','<span class="eco-h">'+fmtH(h)+'</span>',fmt(all.r)+' resolvidos × '+fmtMin(S.eco.minutos)+' min')+
+      big('Equivale a',(Math.round(days*10)/10).toLocaleString('pt-BR')+' dia'+(days>1.05?'s':''),'de trabalho de um analista (8 h por dia)')+
+      (money!=null?big('Economia estimada','<span class="eco-h">'+fmtR(money)+'</span>','a '+fmtR(S.eco.custoHora)+' por hora'):big('Resolvidos pela IA',pct(all.r,all.t)+'%',fmt(all.r)+' de '+fmt(all.t)+' com desfecho'))+'</div>'+
+    '<div class="eco-rows">'+rows.map(function(r){var hh=horas(r.r),w=max?Math.round(r.r/max*100):0;
+      return'<div class="eco-r"><b>'+esc(r.name)+'</b><div class="tr"><i style="width:'+w+'%"></i></div><span><strong>'+fmtH(hh)+'</strong><small>'+fmt(r.r)+' resolvido'+(r.r===1?'':'s')+(money!=null?' · '+fmtR(reais(r.r)):'')+'</small></span></div>'}).join('')+'</div>'+
+    '<div class="wk-note">Conta só os atendimentos resolvidos pela IA ('+fmt(all.r)+' de '+fmt(all.t)+' com desfecho). Transferidos, não resolvidos e inatividade não entram, então o cálculo é conservador. Tempo médio considerado: '+fmtMin(S.eco.minutos)+' min por atendimento.</div>';
+  var b=q('#ecoSet',el);if(b)b.onclick=openMetas;
+}
+wrap('renderOverview',renderEco);
+// usado pelo resumo para copiar (features.js)
+window.monEconomia=function(){
+  if(!ecoOn()||typeof data==='undefined'||!data||!data.r72)return null;
+  var all=byIA(data.r72.protocols)._all,m=reais(all.r);
+  return{resolvidos:all.r,minutos:S.eco.minutos,horas:horas(all.r),reais:m,
+    texto:'Economia: '+fmtH(horas(all.r))+' de atendimento humano evitadas ('+fmt(all.r)+' resolvidos × '+fmtMin(S.eco.minutos)+' min)'+(m!=null?' · '+fmtR(m):'')};
+};
+
 var wkIA='';
 function renderWeekly(){
   var el=q('#weeklyPanel');
   if(typeof data==='undefined'||!data||!data.r72){if(el)el.hidden=true;return}
   var p=period(),days=Math.round((d0(p.end)-d0(p.start))/864e5)+1;
   if(days<14){if(el)el.hidden=true;return}
-  if(!el){var anchor=q('#agentCards').closest('.panel');el=document.createElement('article');el.id='weeklyPanel';el.className='panel';anchor.after(el)}
+  if(!el){var anchor=q('#ecoPanel')||agentsPanel();el=document.createElement('article');el.id='weeklyPanel';el.className='panel';anchor.after(el)}
   el.hidden=false;
   var ws=weeklyRows(wkIA),goal=wkIA?S.metas[wkIA]:null,tot=wkIA?byIA(data.r72.protocols)[wkIA]:byIA(data.r72.protocols)._all;
   function delta(cur,prev,field,good){
@@ -148,6 +206,7 @@ function renderWeekly(){
     var better=good==='up'?d>0:d<0;
     return'<span class="dv '+(better?'up':'dn')+'">'+(d>0?'▲ +':'▼ −')+String(Math.abs(d)).replace('.',',')+(field==='nota'?'':' pp')+'</span>';
   }
+  function ecoCell(v){if(!ecoOn())return'';var m=reais(v.r);return'<td><b>'+fmtH(horas(v.r))+'</b>'+(m!=null?'<small>'+fmtR(m)+'</small>':'')+'</td>'}
   function cell(v,prev,field,good){
     var has=field==='nota'?v.nn>0:v.t>0,ok=check(goal,field,field==='nota'?v.nota:v[field],has),
         txt=field==='nota'?nota(v.nota):(v.t?Math.round(v[field])+'%':'—'),
@@ -157,11 +216,11 @@ function renderWeekly(){
   var rows=ws.map(function(w,i){var prev=i?ws[i-1].v:null;
     return'<tr><td><b>'+br(w.start)+' – '+br(w.end)+'</b><small>'+(w.full?'semana completa':'semana parcial')+'</small></td>'+
       '<td><b>'+fmt(w.v.t)+'</b></td>'+cell(w.v,prev,'resolvido','up')+cell(w.v,prev,'transferido','down')+cell(w.v,prev,'nao','down')+cell(w.v,prev,'nota','up')+
-      '<td><b>'+fmt(w.v.f)+'</b></td></tr>'}).join('');
-  var total='<tr class="tot"><td>Período todo</td><td>'+fmt(tot.t)+'</td>'+cell(tot,undefined,'resolvido')+cell(tot,undefined,'transferido')+cell(tot,undefined,'nao')+cell(tot,undefined,'nota')+'<td>'+fmt(tot.f)+'</td></tr>';
+      '<td><b>'+fmt(w.v.f)+'</b></td>'+ecoCell(w.v)+'</tr>'}).join('');
+  var total='<tr class="tot"><td>Período todo</td><td>'+fmt(tot.t)+'</td>'+cell(tot,undefined,'resolvido')+cell(tot,undefined,'transferido')+cell(tot,undefined,'nao')+cell(tot,undefined,'nota')+'<td>'+fmt(tot.f)+'</td>'+ecoCell(tot)+'</tr>';
   el.innerHTML='<div class="panel-head wk-head"><div><h2>Semana a semana</h2><p>Evolução '+(wkIA?'da '+esc(wkIA):'das IAs')+' em cada semana do período (segunda a domingo), comparando com a semana anterior</p></div>'+
     '<select id="wkIA" aria-label="IA"><option value="">Todas as IAs</option>'+IAS.map(function(n){return'<option'+(n===wkIA?' selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></div>'+
-    '<div class="wk-wrap"><table><thead><tr><th>Semana</th><th>Atendimentos</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th><th>Falhas de conhec.</th></tr></thead><tbody>'+rows+total+'</tbody></table></div>'+
+    '<div class="wk-wrap"><table><thead><tr><th>Semana</th><th>Atendimentos</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th><th>Falhas de conhec.</th>'+(ecoOn()?'<th>Horas evitadas</th>':'')+'</tr></thead><tbody>'+rows+total+'</tbody></table></div>'+
     '<div class="wk-note">'+(wkIA&&goal?'Verde: dentro da meta · vermelho: fora da meta. ':wkIA?'':'Escolha uma IA para ver as metas dela. ')+'Setas: variação em pontos percentuais (pp) vs. a semana anterior.</div>';
   q('#wkIA',el).onchange=function(){wkIA=this.value;renderWeekly()};
 }
@@ -173,12 +232,13 @@ function exportCsv(){
   var p=period(),ws=weeks(p.start,p.end),list=data.r72.protocols,n=function(v){return String(Math.round(v*10)/10).replace('.',',')};
   ws.forEach(function(w){w.list=[]});
   list.forEach(function(x){var d=dk(x.firstDate);if(!d)return;for(var i=0;i<ws.length;i++){if(d>=ws[i].start&&d<=ws[i].end){ws[i].list.push(x);break}}});
-  var head=['IA','Recorte','De','Até','Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Avaliações','Nota média','% Notas 4 e 5','Falhas de conhecimento','Meta % resolvidos (mín.)','Meta % transferidos (máx.)','Meta % não resolvidos (máx.)','Meta nota (mín.)','Metas atingidas'];
+  var head=['IA','Recorte','De','Até','Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Avaliações','Nota média','% Notas 4 e 5','Falhas de conhecimento','Meta % resolvidos (mín.)','Meta % transferidos (máx.)','Meta % não resolvidos (máx.)','Meta nota (mín.)','Metas atingidas','Tempo médio humano (min)','Horas evitadas','Economia (R$)'];
   function line(ia,label,a,b,v){
     var goal=ia==='Todas as IAs'?null:S.metas[ia],hits=0,total=0;
     FIELDS.forEach(function(f){var has=f[0]==='nota'?v.nn>0:v.t>0,ok=check(goal,f[0],f[0]==='nota'?v.nota:v[f[0]],has);if(ok!==null){total++;if(ok)hits++}});
     var g=function(k){return goal&&goal[k]!=null?String(goal[k]).replace('.',','):''};
-    return[ia,label,brFull(a),brFull(b),v.t,v.r,n(v.resolvido),v.tr,n(v.transferido),v.u,n(v.nao),v.ina,n(v.inatividade),v.nn,v.nn?v.nota.toFixed(2).replace('.',','):'',v.nn?n(v.pos):'',v.f,g('resolvido'),g('transferido'),g('nao'),g('nota'),total?hits+' de '+total:''];
+    return[ia,label,brFull(a),brFull(b),v.t,v.r,n(v.resolvido),v.tr,n(v.transferido),v.u,n(v.nao),v.ina,n(v.inatividade),v.nn,v.nn?v.nota.toFixed(2).replace('.',','):'',v.nn?n(v.pos):'',v.f,g('resolvido'),g('transferido'),g('nao'),g('nota'),total?hits+' de '+total:'',
+      ecoOn()?fmtMin(S.eco.minutos):'',ecoOn()?String(Math.round(horas(v.r)*10)/10).replace('.',','):'',reais(v.r)!=null?reais(v.r).toFixed(2).replace('.',','):''];
   }
   var all=byIA(list),rows=[];
   IAS.concat(['Todas as IAs']).forEach(function(ia){
@@ -198,11 +258,15 @@ var dlg=null;
 function openMetas(){
   if(!dlg){dlg=document.createElement('dialog');dlg.id='metaDlg';document.body.appendChild(dlg);dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close()})}
   var val=function(ia,f){var g=S.metas[ia];return g&&g[f]!=null?String(g[f]):''};
-  dlg.innerHTML='<div class="md-h"><div><h2>Metas por IA</h2><p>Valem para todos os períodos. Deixe em branco para não usar meta.</p></div><button type="button" class="md-x" aria-label="Fechar">✕</button></div>'+
+  dlg.innerHTML='<div class="md-h"><div><h2>Metas e economia</h2><p>Valem para todos os períodos. Deixe em branco para não usar.</p></div><button type="button" class="md-x" aria-label="Fechar">✕</button></div>'+
     '<form id="metaForm"><div class="md-wrap"><table><thead><tr><th>IA</th>'+FIELDS.map(function(f){return'<th>'+f[1]+'<span>'+f[2]+(f[3]?' em %':' (1 a 5)')+'</span></th>'}).join('')+'</tr></thead><tbody>'+
     IAS.map(function(ia){return'<tr data-ia="'+esc(ia)+'"><td>'+esc(ia)+'</td>'+FIELDS.map(function(f){return'<td><input type="number" inputmode="decimal" name="'+f[0]+'" min="'+(f[0]==='nota'?1:0)+'" max="'+(f[0]==='nota'?5:100)+'" step="'+(f[0]==='nota'?'0.1':'1')+'" value="'+esc(val(ia,f[0]))+'" aria-label="'+esc(ia+' · '+f[1])+'"></td>'}).join('')+'</tr>'}).join('')+
-    '</tbody></table></div><div class="md-f"><small>Resolvidos e nota: o mínimo esperado. Transferidos e não resolvidos: o máximo aceitável. As metas aparecem nos cartões de cada IA, no “Semana a semana” e no relatório em CSV.</small>'+
-    '<button type="button" class="btn btn-secondary" id="metaCancel">Cancelar</button><button type="submit" class="btn btn-primary">Salvar metas</button></div><div id="metaMsg">'+(S.setup?'<div class="md-msg">'+esc(S.setup)+'</div>':'')+'</div></form>';
+    '</tbody></table></div>'+
+    '<div class="md-eco"><h3>Economia da IA</h3><div class="md-eco-g"><label>Tempo médio de um atendimento humano (minutos)<input type="number" inputmode="decimal" id="ecoMin" min="1" max="480" step="0.5" value="'+esc(S.eco.minutos!=null?S.eco.minutos:'')+'" placeholder="ex.: 8"></label>'+
+    '<label>Custo da hora do analista (R$, opcional)<input type="number" inputmode="decimal" id="ecoCost" min="0" step="0.01" value="'+esc(S.eco.custoHora!=null?S.eco.custoHora:'')+'" placeholder="ex.: 35"></label></div>'+
+    '<small>Cada atendimento resolvido pela IA conta como esse tempo de atendimento humano evitado.</small></div>'+
+    '<div class="md-f"><small>Resolvidos e nota: o mínimo esperado. Transferidos e não resolvidos: o máximo aceitável. As metas aparecem nos cartões de cada IA, no “Semana a semana” e no relatório em CSV.</small>'+
+    '<button type="button" class="btn btn-secondary" id="metaCancel">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div><div id="metaMsg">'+(S.setup?'<div class="md-msg">'+esc(S.setup)+'</div>':'')+'</div></form>';
   q('.md-x',dlg).onclick=q('#metaCancel',dlg).onclick=function(){dlg.close()};
   q('#metaForm',dlg).onsubmit=saveMetas;
   dlg.showModal();
@@ -212,12 +276,12 @@ function saveMetas(e){
   var metas={},btn=q('#metaForm button[type=submit]',dlg),msg=q('#metaMsg',dlg);
   qa('tr[data-ia]',dlg).forEach(function(tr){var g={};qa('input',tr).forEach(function(i){if(i.value!=='')g[i.name]=i.value});if(Object.keys(g).length)metas[tr.dataset.ia]=g});
   btn.disabled=true;msg.innerHTML='';
-  fetch('/api/settings',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({metas:metas})})
+  fetch('/api/settings',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({metas:metas,economia:{minutos:q('#ecoMin',dlg).value,custoHora:q('#ecoCost',dlg).value}})})
     .then(function(r){return r.json().catch(function(){return{ok:false,error:'Resposta inválida do servidor.'}})})
     .then(function(j){
       if(!j.ok)throw new Error(j.error||'Não foi possível salvar.');
-      S.metas=j.metas||{};S.setup='';dlg.close();toast('Metas salvas');
-      if(typeof data!=='undefined'&&data&&data.r72){window.renderAgents();renderWeekly()}
+      S.metas=j.metas||{};S.eco=j.economia||{};S.setup='';dlg.close();toast('Salvo');
+      if(typeof data!=='undefined'&&data&&data.r72){window.renderAgents();renderEco();renderWeekly()}
     })
     .catch(function(err){msg.innerHTML='<div class="md-msg">'+esc(err.message)+'</div>'})
     .finally(function(){btn.disabled=false});

@@ -43,6 +43,17 @@ revoke all on table public.sync_runs from anon, authenticated;
 grant all on table public.report_snapshots to service_role;
 grant all on table public.sync_runs to service_role;
 
+-- configurações do Monitor (metas por IA, controle do alerta de falhas)
+create table if not exists public.monitor_settings (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+alter table public.monitor_settings enable row level security;
+revoke all on table public.monitor_settings from anon, authenticated;
+grant all on table public.monitor_settings to service_role;
+
 create or replace function public.monitor_ia_cleanup(days_to_keep integer default 365)
 returns void
 language sql

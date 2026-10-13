@@ -47,7 +47,6 @@ html[data-theme=dark]{--finished:#9aabbb;--safenota:#e27fb2;--ongoing:#8fcf6b}
 .quick-actions .btn svg{flex:0 0 auto}
 html[data-theme=dark] .quick-actions.on-rail .btn{background:transparent;border-color:rgba(255,255,255,.22)}
 html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
-@media(max-width:620px){.quick-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}}
 
 /* ---------- Clicar para filtrar ---------- */
 .go{cursor:pointer}
@@ -176,20 +175,6 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 /* ---------- Pesquisas: barra de filtros com data ---------- */
 @media(min-width:821px){.toolbar.t6{grid-template-columns:minmax(200px,1fr) 165px 150px 160px 150px 80px}}
 
-/* ---------- Celular: cabeçalho compacto ---------- */
-@media(max-width:620px){
-  .topbar-inner{padding:10px 12px;gap:8px}
-  .controls{display:flex!important;flex-wrap:wrap;gap:8px}
-  .controls .btn{width:auto;height:40px;flex:0 0 auto}
-  #periodToggle{order:1;flex:1 1 0}
-  #refresh{order:2;flex:1 1 0}
-  .controls .period{order:3;flex:1 1 100%}
-  .quick-actions{order:4;display:flex!important;flex:1 1 0;gap:8px}
-  .quick-actions #summaryBtn{flex:1 1 auto}
-  .quick-actions .btn{padding:0 12px}
-  #autoBtn{order:5;padding:0 12px}
-  #themeBtn{order:6;flex:0 0 40px!important;width:40px}
-}
 
 /* ---------- Sem desfecho ---------- */
 .link-btn{padding:0;border:0;background:none;color:var(--blue);font:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
@@ -401,6 +386,4 @@ body.conv-open{overflow:hidden}
 }
 @media(prefers-reduced-motion:reduce){.conv-loading span{animation:none}}
 
-.copy-protocol-btn{width:118px;max-width:100%;height:32px;border:1px solid var(--line);background:#fff;border-radius:var(--ctl);color:var(--blue);font-size:11px;font-weight:600;cursor:pointer;transition:transform .12s,background .15s,border-color .15s,color .15s,box-shadow .15s}\n.copy-protocol-btn:hover{border-color:var(--blue);background:var(--surface2)}
-.copy-protocol-btn:active{transform:translateY(1px) scale(.98)}
-.copy-protocol-btn.done{color:var(--good);border-color:var(--good);background:var(--goodbg);box-shadow:0 0 0 2px color-mix(in srgb,var(--good) 10%,transparent)}
+.copy-protocol-btn{width:118px;max-width:100%;height:32px;border:1px solid var(--line);background:#fff;border-radius:var(--ctl);color:var(--blue);font-size:11px;font-weight:600;cursor:pointer}

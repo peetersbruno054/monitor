@@ -121,3 +121,15 @@ select public.monitor_ia_cleanup(365);
 ```
 
 Isso mantém aproximadamente um ano de histórico.
+
+## Acessos dos colegas
+
+Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishable** na Vercel), o botão **Acessos** aparece para administradores, na faixa azul (no celular, junto do botão Atualizar).
+
+- **Criar acesso:** informe o e-mail e o perfil (*Leitura* ou *Administrador*). O site gera uma senha temporária, mostrada uma única vez, com botão para copiar os dados de acesso.
+- **Na lista:** gerar nova senha, tornar admin/leitura, bloquear/desbloquear e remover (com confirmação). O responsável e o próprio acesso não podem ser bloqueados nem removidos.
+- **Bloquear ou remover** corta o acesso em até 2 minutos, mesmo para quem já está com o site aberto.
+- **Minha senha:** todos podem trocar a própria senha (pede a senha atual).
+- Administradores: o responsável, os e-mails em `MONITOR_ADMINS` e quem recebeu o perfil *Administrador* na tela. Mudança de perfil vale a partir do próximo login.
+- Opcional: `MONITOR_ALLOWED_DOMAINS=safeweb.com.br` impede criar acessos com outros domínios.
+- Deixe desligado no Supabase o cadastro aberto (*Authentication → Sign In / Providers → Email → Allow new users to sign up*). A criação pela tela continua funcionando.

@@ -1,5 +1,5 @@
 import { generateReport, authenticate, orpenFetch } from '../lib/orpen.js';
-import { requireMonitorSession } from '../lib/auth.js';
+import { requireActiveSession } from '../lib/auth.js';
 import { isSupabaseConfigured, saveReportSnapshot, saveSyncRun, getLatestReportSnapshot } from '../lib/supabase.js';
 
 const BOT_POINTS = Array.from({ length: 23 }, (_, i) => String(52 + i));
@@ -434,7 +434,7 @@ async function loadReport(reportId, start, end, session) {
 export default async function handler(req, res) {
   res.setHeader('x-monitor-build', '3.4.0');
 
-  if (!requireMonitorSession(req, res)) return;
+  if (!(await requireActiveSession(req, res))) return;
 
   if (req.method === 'GET') {
     return res.status(200).json({

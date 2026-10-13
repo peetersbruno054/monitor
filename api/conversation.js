@@ -1,5 +1,5 @@
 import { authenticate, orpenFetch } from '../lib/orpen.js';
-import { requireMonitorSession } from '../lib/auth.js';
+import { requireActiveSession } from '../lib/auth.js';
 
 const BASE = process.env.ORPEN_BASE_URL || 'https://safeweb.orpen.com.br/rcx';
 const CONVERSATION_URL = `${BASE}/ContactCenter/ajax.php?getMessagesFromProtocol`;
@@ -28,13 +28,13 @@ function extractMessageText(message = {}) {
 
   // Reproduz a limpeza feita pela extensão: HTML não faz parte do texto da conversa.
   const withoutTags = raw
-    .replace(/<script[\\s\\S]*?<\\/script>/gi, '')
-    .replace(/<style[\\s\\S]*?<\\/style>/gi, '')
-    .replace(/<img\\b[^>]*>/gi, '')
-    .replace(/<br\\s*\\/?>(?=.)/gi, '\\n')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<img\b[^>]*>/gi, '')
+    .replace(/<br\s*\/?>/gi, ' ')
     .replace(/<[^>]+>/g, '');
 
-  return maskSensitive(withoutTags.replace(/\\s+/g, ' ').trim());
+  return maskSensitive(withoutTags.replace(/\s+/g, ' ').trim());
 }
 
 function directionFromMessage(message = {}) {
@@ -113,7 +113,7 @@ function parseBody(req) {
 export default async function handler(req, res) {
   res.setHeader('x-monitor-build', '3.4.1');
 
-  if (!requireMonitorSession(req, res)) return;
+  if (!(await requireActiveSession(req, res))) return;
 
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({

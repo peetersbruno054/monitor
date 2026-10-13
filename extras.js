@@ -318,10 +318,25 @@ function applyDeltas(){
   renderAttention(c);
 }
 
+/* Período anterior para comparação:
+   • mês fechado (1º ao último dia) → mês anterior inteiro;
+   • mês em andamento (1º até hoje) → os mesmos dias do mês anterior;
+   • demais → o mesmo número de dias imediatamente antes. */
+function prevRange(s,e){
+  var a=new Date(s+'T12:00:00'),b=new Date(e+'T12:00:00'),ymd=function(d){return ymdLocal(d)};
+  if(a.getDate()===1&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()){
+    var last=new Date(b.getFullYear(),b.getMonth()+1,0).getDate(),ps=new Date(a.getFullYear(),a.getMonth()-1,1),plast=new Date(a.getFullYear(),a.getMonth(),0).getDate();
+    var pe=new Date(ps.getFullYear(),ps.getMonth(),b.getDate()===last?plast:Math.min(b.getDate(),plast));
+    return[ymd(ps),ymd(pe)];
+  }
+  var len=Math.round((b-a)/864e5)+1,pe2=new Date(a),ps2=new Date(a);pe2.setDate(a.getDate()-1);ps2.setDate(a.getDate()-len);
+  return[ymd(ps2),ymd(pe2)];
+}
+window.prevRange=prevRange;
 function loadPrev(){
   var s=$('start').value,e=$('end').value,k=s+'|'+e;if(cache[k]&&Date.now()-cache[k].t<6e5)return applyDeltas();
   var r=prevRange(s,e);
-  fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start:r[0],end:r[1]})}).then(function(x){return x.json()}).then(function(j){
+  fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start:r[0],end:r[1],__prev:1})}).then(function(x){return x.json()}).then(function(j){
     if(!j.ok)return;cache[k]={t:Date.now(),r:r,s:stats(analyze72(j.r72),analyze74(j.r74))};applyDeltas()}).catch(function(){});
 }
 wrap('renderAll',loadPrev);

@@ -288,7 +288,7 @@ html[data-theme=dark] .panel,html[data-theme=dark] .kpi{box-shadow:none}
   .rw-tiles{grid-template-columns:1fr 1fr 1fr}
   .rw b{font-size:19px}
   .attention-item{grid-template-columns:28px minmax(0,1fr);padding:10px}
-  .attention-icon{width:28px;height:28px}
+  .attention-icon{display:grid;width:28px;height:28px}
   .attention-action{min-width:112px}
 }
 

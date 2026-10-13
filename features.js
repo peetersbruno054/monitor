@@ -186,31 +186,66 @@ function applyReturnRule(list,now){
   });
 }
 
-/* Busca estendida: para confirmar as 24h é preciso ver o dia seguinte ao fim do período */
-var CTX={},ctxN=0,_fetch=window.fetch.bind(window);
+/* Busca dia a dia: cada dia é consultado (e guardado no Supabase) separadamente.
+   • Dias já fechados vêm do cache, então "Últimos 30 dias" ou "Mês passado" só consultam
+     no Orpen os dias que ainda não foram guardados;
+   • o dia seguinte ao fim do período entra só como contexto, para confirmar as 24h;
+   • no máximo 3 consultas ao mesmo tempo, com o andamento em "Última coleta". */
+var CTX={},ctxN=0,_fetch=window.fetch.bind(window),POOL=3,pendingWarn=null;
+wrap('renderAll',function(){if(pendingWarn===null)return;var w=pendingWarn;pendingWarn=null;
+  setTimeout(function(){var nt=$('notice');if(!nt)return;if(w){nt.textContent=w;nt.classList.add('warn');nt.hidden=false}else nt.classList.remove('warn')},0)});
 function addDay(iso){var d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+1);return ymdLocal(d)}
+function dayList(s,e){var a=[],d=s;while(d<=e&&a.length<400){a.push(d);d=addDay(d)}return a}
+function fetchDay(opt,d){
+  var o=Object.assign({},opt,{body:JSON.stringify({start:d,end:d,__monitorOriginalEnd:d})});
+  return _fetch('/api/reports',o).then(function(res){return res.text().then(function(t){var j=null;try{j=JSON.parse(t)}catch(_){}return{res:res,t:t,j:j,day:d}})},
+    function(err){return{res:null,t:'',j:{ok:false,error:'Sem conexão com o servidor.'},day:d}});
+}
 window.fetch=function(url,opt){
   if(String(url).indexOf('/api/reports')<0||!opt||String(opt.method||'').toUpperCase()!=='POST')return _fetch(url,opt);
   var body={};try{body=JSON.parse(opt.body||'{}')}catch(_){}
   if(!body.start||!body.end)return _fetch(url,opt);
-  var today=ymdLocal(new Date()),originalEnd=body.end,ext=body.end<today?addDay(body.end):body.end,o2=Object.assign({},opt,{body:JSON.stringify({start:body.start,end:ext,__monitorOriginalEnd:originalEnd})});
-  return _fetch(url,o2).then(function(res){
-    return res.text().then(function(t){
-      var j=null;try{j=JSON.parse(t)}catch(_){}
-      if(j&&j.ok&&Array.isArray(j.r72)){
-        var id='c'+(++ctxN);CTX[id]={start:body.start,end:body.end};
-        // pesquisas: tira as dos protocolos abertos depois do período
-        var s0=j.r72[0]||{},pr=col(s0,['protocolo']),da=col(s0,['data/hora','data hora','data']),first={};
-        j.r72.forEach(function(row){var p=String(row[pr]||'').trim(),d=dayKey(row[da]);if(p&&d&&(!first[p]||d<first[p]))first[p]=d});
-        if(Array.isArray(j.r74)){var s1=j.r74[0]||{},p74=col(s1,['protocolo','protocol']);j.r74=j.r74.filter(function(row){var f=first[String(row[p74]||'').trim()];return!f||f<=body.end})}
-        j.r72=[{__ctx:id}].concat(j.r72);j.period={start:body.start,end:body.end};
-        // aviso do servidor (ex.: Orpen fora do ar, mostrando dados já guardados)
-        if(j.warning&&!body.__prev){var w=j.warning;setTimeout(function(){var n=$('notice');if(n){n.textContent=w;n.classList.add('warn');n.hidden=false}},0)}
-        else setTimeout(function(){var n=$('notice');if(n)n.classList.remove('warn')},0);
-        t=JSON.stringify(j);
-      }
-      return new Response(t,{status:res.status,statusText:res.statusText,headers:{'content-type':'application/json; charset=utf-8'}});
+  var today=ymdLocal(new Date()),days=dayList(body.start,body.end),n=days.length;
+  if(body.end<today)days.push(addDay(body.end));
+  var results=new Array(days.length),next=0,done=0,stop=false,showProgress=n>2&&!body.__prev,st=$('status');
+  function worker(){
+    if(stop||next>=days.length)return Promise.resolve();
+    var i=next++;
+    return fetchDay(opt,days[i]).then(function(r){
+      results[i]=r;done++;
+      if(r.res&&r.res.status===401)stop=true;
+      if(showProgress&&st)st.textContent='Carregando dias: '+Math.min(done,n)+' de '+n;
+      return worker();
     });
+  }
+  var workers=[];for(var w=0;w<Math.min(POOL,days.length);w++)workers.push(worker());
+  return Promise.all(workers).then(function(){
+    var ok=results.filter(function(r){return r&&r.j&&r.j.ok&&Array.isArray(r.j.r72)}),
+        bad=results.filter(function(r){return r&&!(r.j&&r.j.ok)}),
+        auth=bad.find(function(r){return r.res&&r.res.status===401});
+    var failRes=auth||(!ok.length?bad[0]:null);
+    if(failRes){var st0=failRes.res?failRes.res.status:502;return new Response(failRes.t||JSON.stringify(failRes.j),{status:st0>=400?st0:502,headers:{'content-type':'application/json; charset=utf-8'}})}
+    // junta os dias; linhas repetidas entre dias (cópias antigas que já incluíam o dia seguinte) entram uma vez só
+    var seen72={},seen74={},r72=[],r74=[],warns=[];
+    ok.forEach(function(r){
+      var k72={},k74={};
+      r.j.r72.forEach(function(row){var k=JSON.stringify(row);if(seen72[k])return;k72[k]=1;r72.push(row)});
+      (r.j.r74||[]).forEach(function(row){var k=JSON.stringify(row);if(seen74[k])return;k74[k]=1;r74.push(row)});
+      Object.assign(seen72,k72);Object.assign(seen74,k74);
+      if(r.j.warning)warns.push(r.j.warning);
+    });
+    var missing=bad.filter(function(r){return r.day<=body.end}).map(function(r){return brDay(r.day).slice(0,5)});
+    var warning=missing.length?'Não foi possível carregar '+(missing.length===1?'o dia '+missing[0]:missing.length+' dias ('+missing.slice(0,6).join(', ')+(missing.length>6?'…':'')+')')+'. Os números abaixo estão sem esse período; tente atualizar de novo em alguns minutos.'
+      :warns.length===1?warns[0]:warns.length?'Não foi possível consultar o Orpen agora em '+warns.length+' dias. Mostrando os dados já guardados.':'';
+    var id='c'+(++ctxN);CTX[id]={start:body.start,end:body.end};
+    // pesquisas: tira as dos protocolos abertos depois do período
+    var s0=r72[0]||{},pr=col(s0,['protocolo']),da=col(s0,['data/hora','data hora','data']),first={};
+    r72.forEach(function(row){var p=String(row[pr]||'').trim(),d=dayKey(row[da]);if(p&&d&&(!first[p]||d<first[p]))first[p]=d});
+    var s1=r74[0]||{},p74=col(s1,['protocolo','protocol']);r74=r74.filter(function(row){var f=first[String(row[p74]||'').trim()];return!f||f<=body.end});
+    var j={ok:true,period:{start:body.start,end:body.end},days:n,warning:warning||undefined,r72:[{__ctx:id}].concat(r72),r74:r74};
+    // aviso (ex.: Orpen fora do ar, mostrando dados já guardados): aparece depois que a tela for desenhada
+    if(!body.__prev)pendingWarn=warning||'';
+    return new Response(JSON.stringify(j),{status:200,headers:{'content-type':'application/json; charset=utf-8'}});
   });
 };
 

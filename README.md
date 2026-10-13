@@ -65,6 +65,9 @@ Configure em **Settings → Environment Variables**:
 | `SUPABASE_ANON_KEY` | fallback para autenticação |
 | `MONITOR_AUTH_SECRET` | segredo usado para assinar a sessão diária |
 | `ORPEN_*` | variáveis de conexão com o Orpen |
+| `RESEND_API_KEY` | opcional: chave do Resend para o e-mail de alerta de falhas |
+| `ALERT_EMAIL` | opcional: quem recebe o alerta (vários separados por vírgula) |
+| `ALERT_FROM` | opcional: remetente (padrão `Monitor IA <onboarding@resend.dev>`) |
 
 Depois de alterar variáveis da Vercel, faça um novo deploy.
 
@@ -100,6 +103,8 @@ Regras principais:
 - `/api/auth` — login e sessão
 - `/api/reports` — R72/R74
 - `/api/conversation` — consulta de conversa por protocolo
+- `/api/settings` — metas por IA (leitura para todos, gravação só administradores) e situação das coletas
+- `/api/users` — gestão de acessos (administradores)
 - `/api/check-config` — diagnóstico protegido
 - `/api/health` — verificação simples do serviço
 
@@ -133,3 +138,15 @@ Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishab
 - Administradores: o responsável, os e-mails em `MONITOR_ADMINS` e quem recebeu o perfil *Administrador* na tela. Mudança de perfil vale a partir do próximo login.
 - Opcional: `MONITOR_ALLOWED_DOMAINS=safeweb.com.br` impede criar acessos com outros domínios.
 - Deixe desligado no Supabase o cadastro aberto (*Authentication → Sign In / Providers → Email → Allow new users to sign up*). A criação pela tela continua funcionando.
+
+## Períodos longos, metas e relatório mensal
+
+- Os dados são buscados **um dia por vez** (no máximo 3 ao mesmo tempo). Cada dia fica guardado no Supabase:
+  dias fechados não voltam a consultar o Orpen; hoje é reaproveitado por 3 minutos e ontem por 10.
+  Por isso "Últimos 30 dias", "Este mês" e "Mês passado" ficam leves depois da primeira carga.
+- A sessão do Orpen é reaproveitada por até 4 minutos entre consultas seguidas.
+- **Semana a semana** aparece na Visão geral quando o período tem 14 dias ou mais.
+- **Relatório por IA** (Desempenho por IA) baixa um CSV com o total do período e a quebra por semana de cada IA, com as metas.
+- **Metas**: rode `supabase/metas.sql` uma vez no SQL Editor do Supabase. Depois, administradores definem as metas no botão **Metas**.
+- **Alerta de falhas**: toda falha de coleta fica em `sync_runs`. Com 3 falhas seguidas, administradores veem um aviso no painel
+  e, se `RESEND_API_KEY` e `ALERT_EMAIL` estiverem configurados, recebem um e-mail (no máximo um a cada 2 horas).

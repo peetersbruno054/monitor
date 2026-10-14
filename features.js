@@ -179,6 +179,11 @@ function applyReturnRule(list,now){
         continue;
       }
 
+      /* O retorno ainda não terminou (em andamento ou aguardando as 24h): o desfecho do protocolo
+         anterior só muda quando o último da cadeia fechar. Sem isso, um "resolvido" sumia da base
+         (ou voltava para "aguardando") enquanto o cliente ainda estava sendo atendido de novo. */
+      if(fin.outcome==='andamento'||fin.outcome==='possivel'){x.returnPending=true;continue}
+
       x.outcome=fin.outcome;
       x.hasProblemUnresolved=false;
       x.finalPoint=fin.finalPoint;

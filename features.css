@@ -222,55 +222,6 @@ html[data-theme=dark] .pill.o-inatividade{color:var(--inactivity)}
 }
 
 
-/* ---------- O que merece atenção (linhas compactas) ---------- */
-.attention-panel{overflow:hidden}
-.attention-panel .panel-head{margin-bottom:8px}
-.attention-panel .panel-head p{display:none}
-.attention-list{display:grid;gap:5px}
-.attention-item{
-  display:grid;
-  grid-template-columns:8px minmax(0,1fr) auto;
-  gap:4px 12px;
-  align-items:center;
-  padding:7px 8px 7px 12px;
-  border:1px solid var(--line2);
-  border-radius:10px;
-  background:var(--surface2);
-}
-.attention-dot{width:8px;height:8px;border-radius:50%;background:var(--possible)}
-.attention-item.high .attention-dot{background:var(--bad)}
-.attention-item.medium .attention-dot{background:var(--inactivity)}
-.attention-item.attention-primary{background:color-mix(in srgb,var(--bad) 3%,var(--surface2));border-color:color-mix(in srgb,var(--bad) 20%,var(--line2))}
-.attention-main{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:1px 8px}
-.attention-main b{color:var(--ink);font-size:13px;line-height:18px;font-weight:650;white-space:nowrap}
-.attention-main span{min-width:0;color:var(--ink2);font-size:12px;line-height:18px}
-.attention-main>small{color:var(--muted);font-size:11px;line-height:18px;white-space:nowrap}
-.attention-action{
-  height:28px;
-  padding:0 11px;
-  border:1px solid var(--line);
-  border-radius:var(--ctl);
-  background:var(--surface);
-  color:var(--blue);
-  font-size:11.5px;
-  font-weight:600;
-  white-space:nowrap;
-  transition:background .15s,border-color .15s,transform .15s;
-}
-.attention-action:hover{border-color:var(--blue);background:var(--surface2)}
-.attention-action:active{transform:translateY(1px)}
-.attention-bad{color:var(--bad)!important;background:var(--badbg)!important;border-color:color-mix(in srgb,var(--bad) 24%,transparent)!important}
-.attention-warn{color:var(--inactivity)!important;background:color-mix(in srgb,var(--inactivity) 10%,var(--surface))!important;border-color:color-mix(in srgb,var(--inactivity) 24%,transparent)!important}
-.attention-ok{color:var(--good)!important;background:var(--goodbg)!important;border-color:color-mix(in srgb,var(--good) 24%,transparent)!important}
-.attention-empty{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:11.5px;flex-wrap:wrap}
-.attention-empty b{color:var(--ink2)}
-@media(max-width:620px){
-  .attention-item{grid-template-columns:8px minmax(0,1fr) 12px;padding:9px 10px;cursor:pointer}
-  .attention-item::after{content:"›";color:var(--muted2);font-size:20px;line-height:1}
-  .attention-main b{white-space:normal}
-  .attention-main>small{display:none}
-  .attention-action{display:none}
-}
 
 
 

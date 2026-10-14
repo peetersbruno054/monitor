@@ -187,131 +187,12 @@ function prevDelta(cur,old){
   var delta=cur-old;
   return{delta:delta,pct:old?delta/Math.abs(old)*100:null};
 }
-function trendText(cur,old,unit){
-  if(old==null)return'';
-  var d=prevDelta(cur,old),v=Math.round(d.delta);
-  if(unit==='pp')v=Math.round(d.delta*10)/10;
-  if(!d.delta)return'· estável vs. período anterior';
-  return'· '+(d.delta>0?'▲ +':'▼ −')+String(Math.abs(v)).replace('.',',')+(unit==='pp'?' pp':'')+' vs. período anterior'+(d.pct!=null?' ('+(d.pct>0?'+':'')+Math.round(d.pct)+'%)':'');
-}
-function attentionAction(key){
-  if(key==='nao')return function(){goProtocols('nao')};
-  if(key==='falha')return function(){goProtocols('falha')};
-  if(key==='satisfacao'||key==='nota')return function(){goSurveys()};
-  if(key==='recontato')return function(){location.hash='quality';setTimeout(function(){show('quality')},0)};
-  if(key==='possivel')return function(){goProtocols('possivel')};
-  return function(){};
-}
-function topAgent(list){
-  var by={};
-  (list||[]).forEach(function(x){by[x.agent]=(by[x.agent]||0)+1});
-  return Object.keys(by).sort(function(a,b){return by[b]-by[a]})[0]||'';
-}
-function renderAttention(prev){
-  var box=q('#attentionList'),badge=q('#attentionBadge');
-  if(!box||!badge||!data)return;
-
-  var p=data.r72.protocols,
-      outcomeP=p.filter(function(x){return OUT.indexOf(x.outcome)>=0}),
-      total=outcomeP.length||0,
-      unresolved=p.filter(isUnresolvedProtocol).length,
-      failures=p.filter(hasFailure).length,
-      waiting=p.filter(function(x){return x.outcome==='possivel'}).length,
-      recontacts=recontactCount(p),
-      notes=data.r74.filter(function(x){return x.note}),
-      low=notes.filter(function(x){return x.note<=3}),
-      avg=notes.length?notes.reduce(function(a,x){return a+x.note},0)/notes.length:0,
-      lowPct=notes.length?low.length/notes.length*100:0,
-      prior=prev&&prev.s?prev.s:null,
-      items=[];
-
-  function add(key,level,title,text,extra,actionLabel,score){
-    items.push({key:key,level:level,title:title,text:text,extra:extra||'',label:actionLabel,score:score});
-  }
-
-  var du=prevDelta(unresolved,prior&&prior.un),
-      df=prevDelta(failures,prior&&prior.failures),
-      dr=prevDelta(recontacts,prior&&prior.recontacts),
-      da=prevDelta(avg,prior&&prior.avg),
-      dl=prevDelta(lowPct,prior&&prior.lowPct);
-
-  if(unresolved){
-    var ua=topAgent(p.filter(isUnresolvedProtocol));
-    add('nao',du.delta>0||!prior?'high':'medium','Não resolvidos',
-      fmt(unresolved)+' protocolo'+(unresolved===1?'':'s')+' com “Problema não resolvido”.'+(ua?' Maior concentração: '+ua+'.':''),
-      trendText(unresolved,prior&&prior.un,''),
-      'Ver não resolvidos',
-      100+(du.delta>0?Math.min(50,du.delta*5):0)+(du.pct>0?Math.min(40,du.pct/2):0));
-  }
-
-  if(failures){
-    var fa=topAgent(p.filter(hasFailure));
-    add('falha',df.delta>0||!prior?'high':'medium','Falhas de conhecimento',
-      fmt(failures)+' protocolo'+(failures===1?'':'s')+' registraram falha de conhecimento.'+(fa?' Maior concentração: '+fa+'.':''),
-      trendText(failures,prior&&prior.failures,''),
-      'Ver falhas',
-      85+(df.delta>0?Math.min(45,df.delta*5):0)+(df.pct>0?Math.min(35,df.pct/2):0));
-  }
-
-  if(notes.length&&(avg<4||(da.delta!=null&&da.delta<=-0.2))){
-    add('satisfacao','medium','Satisfação em queda',
-      'Nota média de '+avg.toFixed(2).replace('.',',')+' com '+fmt(notes.length)+' avaliações.',
-      trendText(avg,prior&&prior.avg,'pp').replace(' pp vs. período anterior',' ponto(s) vs. período anterior'),
-      'Ver pesquisas',
-      75+(avg<4?20:0)+(da.delta!=null&&da.delta<0?Math.min(30,Math.abs(da.delta)*30):0));
-  }else if(notes.length&&lowPct>=20){
-    add('nota','medium','Notas baixas',
-      fmt(low.length)+' de '+fmt(notes.length)+' avaliações ('+Math.round(lowPct)+'%) ficaram entre 1 e 3.',
-      trendText(lowPct,prior&&prior.lowPct,'pp'),
-      'Ver notas',
-      65+(dl.delta>0?Math.min(30,dl.delta*2):0));
-  }
-
-  if(recontacts&&(dr.delta==null||dr.delta>0)){
-    add('recontato','medium','Recontatos em até 24h',
-      fmt(recontacts)+' recontato'+(recontacts===1?'':'s')+' identificado'+(recontacts===1?'':'s')+'.',
-      trendText(recontacts,prior&&prior.recontacts,''),
-      'Ver qualidade',
-      55+(dr.delta>0?Math.min(35,dr.delta*4):0));
-  }
-
-  if(waiting){
-    add('possivel','low','Aguardando confirmação',
-      fmt(waiting)+' protocolo'+(waiting===1?'':'s')+' ainda estão dentro da janela de 24h aguardando confirmação.',
-      '· acompanhamento da janela de 24h',
-      'Ver em acompanhamento',
-      20);
-  }
-
-  if(!items.length){
-    badge.className='badge attention-ok';
-    badge.textContent='Tudo normal';
-    box.innerHTML='<div class="attention-empty"><b>Nenhum alerta relevante no período.</b><span>Os indicadores estão sem ocorrências que exijam atenção imediata.</span></div>';
-    return;
-  }
-
-  items.sort(function(a,b){return b.score-a.score});
-  var principal=items[0],secondary=items.slice(1,4);
-  badge.className='badge '+(principal.level==='high'?'attention-bad':'attention-warn');
-  badge.textContent=items.length+' ponto'+(items.length===1?'':'s')+' de atenção';
-
-  function card(x,main){
-    return'<article class="'+(main?'attention-primary ':'')+'attention-item '+x.level+'"><i class="attention-dot" aria-hidden="true"></i><div class="attention-main"><b>'+esc(x.title)+'</b><span>'+esc(x.text)+'</span>'+(x.extra?'<small>'+esc(x.extra)+'</small>':'')+'</div><button type="button" class="attention-action" data-att-action="'+x.key+'">'+esc(x.label)+'</button></article>';
-  }
-
-  box.innerHTML=[principal].concat(secondary).map(function(x,i){return card(x,i===0)}).join('');
-  qa('[data-att-action]',box).forEach(function(btn){btn.onclick=attentionAction(btn.dataset.attAction)});
-  // a linha inteira também leva ao detalhe (no celular o botão fica oculto)
-  qa('.attention-item',box).forEach(function(row){row.onclick=function(e){if(e.target.closest('button'))return;var b=q('[data-att-action]',row);if(b)b.click()}});
-}
-
 function applyDeltas(){
   qa('.kpi2 .dl').forEach(function(x){x.remove()});
-  var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data){renderAttention();return}
+  var c=cache[$('start').value+'|'+$('end').value];if(!c||!c.s.t||!data)return;
   var a=stats(data.r72,data.r74),P=c.s,ok=a.n&&P.n,d=[[a.res-P.res,1,1],[a.tr-P.tr,1,0],[ok?a.avg-P.avg:null,0,1],[ok?a.pos-P.pos:null,1,1]];
   qa('#overviewKpis .kpi2').forEach(function(card,i){var di=d[i];if(!di||di[0]==null)return;var r=di[1]?Math.round(di[0]):Math.round(di[0]*100)/100,cls=r&&di[2]?(r>0?'up':'dn'):'';
     q('.vl',card).insertAdjacentHTML('beforeend','<small class="dl '+cls+'" title="vs. período anterior ('+c.r[0]+' a '+c.r[1]+')">'+(r>0?'▲ +':r<0?'▼ −':'= ')+String(Math.abs(r)).replace('.',',')+(di[1]?' pp':'')+'</small>')});
-  renderAttention(c);
 }
 
 /* Período anterior para comparação:
@@ -339,7 +220,6 @@ function loadPrev(){
 }
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){
-  renderAttention();
   applyDeltas();
 });
 

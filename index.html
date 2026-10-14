@@ -54,7 +54,6 @@
         <input id="start" type="date" aria-label="Data inicial">
         <input id="end" type="date" aria-label="Data final">
       </div>
-      <button id="reportBtn" class="btn btn-secondary" type="button"><span class="btn-icon">↓</span> Relatório da coordenação</button>
       <button id="refresh" class="btn btn-primary" type="button"><span class="btn-icon">↻</span> Atualizar dados</button>
       <div class="freshness"><span>Última coleta</span><strong id="status">Dados de Hoje</strong><small>coletados há pouco</small></div>
     </div>
@@ -89,10 +88,6 @@
       </div>
       <div id="agentCards" class="agent-cards"></div>
       <div id="agentTable" class="table-wrap" hidden></div>
-    </article>
-    <article class="panel attention-panel" id="attentionPanel" aria-live="polite">
-      <div class="panel-head"><div><h2>O que merece atenção</h2><p>Alertas automáticos para priorizar a análise do período</p></div><span id="attentionBadge" class="badge">Tudo normal</span></div>
-      <div id="attentionList" class="attention-list"></div>
     </article>
   </section>
 
@@ -162,7 +157,6 @@
 <script src="/acessos.js"></script>
 <script src="/desempenho.js"></script>
 <script src="/padroes.js"></script>
-<script src="/relatorio.js"></script>
 <script src="/movimento.js"></script>
 </body>
 </html>

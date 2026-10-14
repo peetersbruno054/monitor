@@ -37,6 +37,14 @@ var css=
 '.pk-detail{margin-top:10px;min-height:20px;font-size:12.5px;color:var(--ink2)}'+
 '.pk-lg{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:11px;color:var(--muted)}.pk-lg i{display:inline-block;width:90px;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--surface3),var(--c))}'+
 '.pk-note{margin-top:8px;font-size:11.5px;color:var(--muted)}'+
+'.hs-axis{display:grid;gap:2px;margin-top:3px}.hs-axis span{font-size:9.5px;line-height:14px;text-align:center;color:var(--muted2)}.hs-axis .biz{color:var(--ink);font-weight:600}'+
+'.pk-trow{position:sticky;left:0;display:flex;padding:10px 0 4px}'+
+'.pk-toggle{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px 0 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--blue);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s}'+
+'.pk-toggle:hover{background:var(--surface2);border-color:var(--blue)}.pk-toggle svg{transition:transform .25s}#peakPanel.pk-open .pk-toggle svg{transform:rotate(180deg)}'+
+'#peakPanel .pk-fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease}#peakPanel.pk-open .pk-fold{grid-template-rows:1fr}'+
+'#peakPanel .pk-fold>div{min-height:0;overflow:hidden;visibility:hidden;transition:visibility 0s .32s}#peakPanel.pk-open .pk-fold>div{visibility:visible;transition-delay:0s}'+
+'.pk-mrow{position:sticky;left:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;width:fit-content;max-width:calc(100vw - 56px);margin:4px 0 8px}.pk-mrow span{font-size:12px;color:var(--muted)}'+
+'@media print{.pk-trow{display:none!important}#peakPanel .pk-fold{grid-template-rows:1fr!important}#peakPanel .pk-fold>div{visibility:visible!important;overflow:visible!important}}'+
 /* clientes que voltam */
 '#recPanel .rc-ks{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:6px 0 14px}'+
 '#recPanel .rc-list{display:grid;gap:8px}'+
@@ -136,7 +144,8 @@ function chartHtml(sl,agg){
     var lab=k+'h: '+fmt(v.t)+' atendimento'+(v.t===1?'':'s')+(v.t?' — '+CATS.filter(function(c){return v[c[0]]}).map(function(c){return c[1].toLowerCase()+' '+v[c[0]]}).join(', '):'');
     cols+='<div class="hs-col" data-h="'+k+'" tabindex="'+(v.t?0:-1)+'" aria-label="'+esc(lab)+'"><div class="hs-stack">'+segs+'</div></div>';
   }
-  return'<div class="hs"><div class="hs-plot">'+grid+'<div class="hs-cols" style="grid-template-columns:repeat('+n+',minmax(0,1fr))">'+cols+'</div></div><div class="hs-tip" hidden></div></div>';
+  var ax='';for(k=h0;k<=h1;k++)ax+='<span'+(k>=BIZ.from&&k<BIZ.to?' class="biz"':'')+'>'+k+'</span>';
+  return'<div class="hs"><div class="hs-plot">'+grid+'<div class="hs-cols" style="grid-template-columns:repeat('+n+',minmax(0,1fr))">'+cols+'</div></div><div class="hs-axis" aria-hidden="true" style="grid-template-columns:repeat('+n+',minmax(0,1fr))">'+ax+'</div><div class="hs-tip" hidden></div></div>';
 }
 function legendHtml(agg){
   var tot={};KEYS.forEach(function(k){tot[k]=agg.reduce(function(a,v){return a+v[k]},0)});
@@ -144,7 +153,7 @@ function legendHtml(agg){
   return'<div class="hs-legend">'+CATS.map(function(c){return'<span><i class="sw sw-'+c[2]+'"></i>'+c[1]+' <b>'+fmt(tot[c[0]])+'</b>'+(c[0]==='outros'&&sub?'<small>('+sub+')</small>':'')+'</span>'}).join('')+'</div>';
 }
 
-var PK={ia:'',metric:'vol',sel:null};
+var PK={ia:'',metric:'vol',sel:null,open:false};
 var METRICS=[['vol','Volume'],['tr','% transferidos'],['res','% resolvidos']];
 function renderPeak(){
   var el=q('#peakPanel');
@@ -156,8 +165,7 @@ function renderPeak(){
   el.hidden=false;
   var sm=summarize(sl),agg=hourly(sl),pctOf=function(a){return rp(a,sm.tot)};
   var head='<div class="panel-head pk-head"><div><h2>Atendimentos por hora</h2><p>Quando os clientes procuram a IA, como os atendimentos terminam e em que dias e horários ela mais resolve ou transfere</p></div>'+
-    '<div class="pk-ctl"><select id="pkIA" aria-label="IA">'+['<option value="">Todas as IAs</option>'].concat(IAS.map(function(n){return'<option'+(n===PK.ia?' selected':'')+'>'+esc(n)+'</option>'})).join('')+'</select>'+
-    '<div class="pk-seg" role="group" aria-label="Medida do mapa por dia e hora" title="Medida do mapa por dia da semana e hora">'+METRICS.map(function(m){return'<button type="button" data-m="'+m[0]+'" aria-pressed="'+(m[0]===PK.metric?'true':'false')+'">'+m[1]+'</button>'}).join('')+'</div></div></div>';
+    '<div class="pk-ctl"><select id="pkIA" aria-label="IA">'+['<option value="">Todas as IAs</option>'].concat(IAS.map(function(n){return'<option'+(n===PK.ia?' selected':'')+'>'+esc(n)+'</option>'})).join('')+'</select></div></div>';
   if(!sl.tot){el.innerHTML=head+'<div class="pk-note">Nenhum atendimento com desfecho para esta IA no período.</div>';bind(el,sl,agg);return}
   if(sl.timed<sl.tot*.5){el.innerHTML=head+'<div class="pk-note">Os dados deste período não trazem o horário dos atendimentos, então o gráfico e o mapa não podem ser montados.</div>';bind(el,sl,agg);return}
   var top=sm.top;
@@ -168,16 +176,28 @@ function renderPeak(){
     '<div class="pk-s"><small>Maior taxa de transferência</small><strong>'+(top?DS[top.wd]+' '+hh(top.h):'—')+'</strong><em>'+(top?Math.round(top.rate*100)+'% de '+fmt(top.t)+' atendimentos':'poucos atendimentos por horário')+'</em></div>';
   var lg=PK.metric==='vol'?'<span><i></i></span><span>mais atendimentos</span>':'<span><i></i></span><span>'+(PK.metric==='tr'?'mais transferências':'mais resolvidos')+'; horários com menos de '+MIN_RATE+' atendimentos ficam sem cor</span>';
   var chart=chartHtml(sl,agg),heat=heatHtml(sl,PK.metric,{sel:PK.sel});
-  var area='<div class="pk-area" style="min-width:'+(44+(range(sl)[1]-range(sl)[0]+1)*26)+'px">'+chart+heat+'</div>';
+  var seg='<div class="pk-seg" role="group" aria-label="Medida do mapa por dia e hora">'+METRICS.map(function(m){return'<button type="button" data-m="'+m[0]+'" aria-pressed="'+(m[0]===PK.metric?'true':'false')+'">'+m[1]+'</button>'}).join('')+'</div>';
+  var open=!!PK.open,ovf=open?' style="overflow:visible"':'';
+  var area='<div class="pk-area" style="min-width:'+(44+(range(sl)[1]-range(sl)[0]+1)*26)+'px">'+chart+
+    '<div class="pk-trow"><button type="button" class="pk-toggle" aria-expanded="'+(open?'true':'false')+'" aria-controls="pkMore"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg><span>'+(open?'Ocultar':'Ver')+' detalhe por dia da semana</span></button></div>'+
+    '<div class="pk-fold"><div id="pkMore"'+ovf+'><div class="pk-mrow">'+seg+'<span>Mapa por dia da semana e hora</span></div>'+heat+'</div></div></div>';
+  el.classList.toggle('pk-open',open);
   el.innerHTML=head+'<div class="pk-sum">'+cards+'</div>'+legendHtml(agg)+'<div class="pk-wrap">'+area+'</div>'+
-    '<div class="pk-detail" id="pkDetail" aria-live="polite">'+(PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário do mapa para ver os números dele.')+'</div>'+
-    '<div class="pk-lg" style="--c:'+(PK.metric==='tr'?'var(--bad)':PK.metric==='res'?'var(--good)':'var(--blue)')+'">'+lg+'</div>'+
+    '<div class="pk-fold"><div'+ovf+'><div class="pk-detail" id="pkDetail" aria-live="polite">'+(PK.sel!=null?detailText(sl,PK.sel):'Clique em um horário do mapa para ver os números dele.')+'</div>'+
+    '<div class="pk-lg" style="--c:'+(PK.metric==='tr'?'var(--bad)':PK.metric==='res'?'var(--good)':'var(--blue)')+'">'+lg+'</div></div></div>'+
     '<div class="pk-note">Barras: atendimentos de cada hora, pelo desfecho. Mapa: dia da semana × hora do primeiro contato. Horas em negrito: expediente (segunda a sexta, '+BIZ.from+'h às '+BIZ.to+'h).'+(heatHtml.hidden?' Horários sem nenhum atendimento no período não aparecem.':'')+
     ' Considera os '+fmt(sm.tot)+' atendimentos com desfecho'+(PK.ia?' da '+esc(PK.ia):'')+(sl.excl?'; '+fmt(sl.excl)+' protocolo'+(sl.excl===1?'':'s')+' ainda sem desfecho não entram':'')+'.</div>';
   bind(el,sl,agg);
 }
 function bind(el,sl,agg){
   var s=q('#pkIA',el);if(s)s.onchange=function(){PK.ia=this.value;PK.sel=null;renderPeak()};
+  var tg=q('.pk-toggle',el);
+  if(tg)tg.onclick=function(){
+    PK.open=!PK.open;el.classList.toggle('pk-open',PK.open);
+    tg.setAttribute('aria-expanded',PK.open?'true':'false');
+    q('span',tg).textContent=(PK.open?'Ocultar':'Ver')+' detalhe por dia da semana';
+    qa('.pk-fold>div',el).forEach(function(d){if(PK.open)setTimeout(function(){if(PK.open)d.style.overflow='visible'},340);else d.style.overflow=''});
+  };
   qa('.pk-seg button',el).forEach(function(b){b.onclick=function(){PK.metric=b.dataset.m;renderPeak()}});
   qa('.pk-c',el).forEach(function(c){c.onclick=function(){
     var i=+c.dataset.i;PK.sel=PK.sel===i?null:i;

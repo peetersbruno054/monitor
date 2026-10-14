@@ -436,32 +436,6 @@ wrap('renderSurveys',function(){
 });
 
 /* ======================================================================
-   4. Resumo para copiar (WhatsApp / Teams)
-   ====================================================================== */
-function summary(){
-  var all=data.r72.protocols,p=outcomes(),t=p.length,c=function(o){return p.filter(function(x){return x.outcome===o}).length},
-      un=all.filter(isUnresolvedProtocol).length,s=data.r74,ns=s.filter(function(x){return x.note}),
-      avg=ns.length?ns.reduce(function(a,x){return a+x.note},0)/ns.length:0,kf=all.filter(hasFailure).length;
-  var L=['Monitor IA · '+periodText(),''];
-  L.push(fmt(t)+' atendimento'+(t===1?'':'s')+' da IA com desfecho');
-  [['Resolvidos pela IA',c('resolvido')],['Transferidos',c('transferido')],['Não resolvidos',un],['Inatividade',c('inatividade')],['Aguardando confirmação',c('possivel')]]
-    .forEach(function(r){L.push('• '+r[0]+': '+pct(r[1],t)+'% ('+fmt(r[1])+')')});
-  var nAnd=all.filter(function(x){return x.outcome==='andamento'}).length;if(nAnd)L.push('Em andamento (menos de 24h): '+fmt(nAnd));
-  L.push('');
-  L.push(ns.length?'Pesquisa: nota média '+avg.toFixed(2).replace('.',',')+' ('+fmt(ns.length)+' avaliaç'+(ns.length===1?'ão':'ões')+') · '+nPositive(s)+'% positivas':'Pesquisa: sem avaliações no período');
-  var imp={};s.forEach(function(x){if(x.note&&x.note<=3)x.help.forEach(function(h){if(neg.has(norm(h)))imp[h]=(imp[h]||0)+1})});
-  var top=Object.keys(imp).sort(function(a,b){return imp[b]-imp[a]})[0];if(top)L.push('Principal ponto a melhorar: '+top+' ('+fmt(imp[top])+')');
-  if(kf)L.push('Falhas de conhecimento: '+fmt(kf)+' protocolo'+(kf===1?'':'s'));
-  var eco=window.monEconomia&&window.monEconomia();if(eco)L.push(eco.texto);
-  var g={};p.forEach(function(x){var o=g[x.agent]||(g[x.agent]={t:0,r:0,tr:0,n:[]});o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.survey&&x.survey.note)o.n.push(x.survey.note)});
-  var names=Object.keys(g).filter(function(n){return['Assistente Safira','IA SPC','SPC AGE','SPC ACI'].indexOf(n)>=0}).sort(function(a,b){return g[b].t-g[a].t});
-  if(names.length){L.push('Maior volume: '+names[0]+' ('+fmt(g[names[0]].t)+')');L.push('');L.push('Por IA:');
-    names.forEach(function(n){var o=g[n],a=o.n.length?(o.n.reduce(function(x,y){return x+y},0)/o.n.length).toFixed(2).replace('.',','):'';
-      L.push('• '+n+': '+fmt(o.t)+' atend. · '+pct(o.r,o.t)+'% resolvidos · '+pct(o.tr,o.t)+'% transferidos'+(a?' · nota '+a:''))})}
-  return L.join('\n');
-}
-
-/* ======================================================================
    5. Impressão / PDF
    ====================================================================== */
 var TITLES={overview:'Visão geral',surveys:'Pesquisas',quality:'Qualidade',protocols:'Protocolos'};
@@ -491,15 +465,11 @@ addEventListener('beforeprint',beforePrint);addEventListener('afterprint',afterP
 
 /* ---------- Botões no cabeçalho ---------- */
 var box=document.createElement('div');box.className='quick-actions';
-box.innerHTML='<button id="summaryBtn" type="button" class="btn btn-secondary" title="Copiar um resumo do período para colar no WhatsApp ou no Teams">'+svgIcon('<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/>')+' Copiar resumo</button>'+
-  '<button id="printBtn" type="button" class="btn btn-ghost" title="Imprimir ou salvar em PDF">'+svgIcon('<path d="M6 8V3h8v5M6 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2"/><path d="M6 12h8v5H6z"/>')+' PDF</button>';
+box.innerHTML='';   // fica só como contêiner (o botão "Acessos" entra aqui)
 /* No computador ficam na faixa azul (o cabeçalho já está cheio); no celular, junto dos controles */
 var wide=matchMedia('(min-width:821px)');
 function placeActions(){if(wide.matches){var sp=q('.rail-spacer');sp.appendChild(box);box.classList.add('on-rail')}else{$('refresh').parentNode.insertBefore(box,$('refresh'));box.classList.remove('on-rail')}}
 placeActions();wide.addEventListener&&wide.addEventListener('change',placeActions);
-$('summaryBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}copyText(summary(),'Resumo copiado. É só colar no WhatsApp ou no Teams')};
-$('printBtn').onclick=function(){if(!data){toast('Carregue os dados primeiro');return}beforePrint();window.print()};
-var reportBtn=q('#reportBtn');if(reportBtn)reportBtn.onclick=function(){if(!data){toast('Carregue os dados primeiro');return}beforePrint();window.print()};
 
 /* CSV da lista de protocolos com o nome do filtro */
 window.monListName=function(){return'protocolos-'+(uv.outcome||'nao')};
@@ -570,5 +540,5 @@ wrap('renderSurveys',function(){
 },true);
 /* a lista é re-renderizada pelo renderSurveys: o seletor precisa estar pronto antes */
 var _gs=goSurveys;goSurveys=function(a){sv.date='';_gs(a)};
-window.goSurveys=goSurveys; // o botão "Ver pesquisas" de "O que merece atenção" (extras.js) usa esta função
+window.goSurveys=goSurveys; // usada por outras partes da tela para abrir as pesquisas já filtradas
 })();

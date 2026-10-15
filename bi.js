@@ -42,7 +42,8 @@ function pad(n){return('0'+n).slice(-2)}
 var css=
 '.bi{--bi-res:#1baf7a;--bi-nao:#e34948;--bi-tra:#2a78d6;--bi-ina:#eda100;--bi-out:#9aa7b2;--bi-nota:#6250d6;--bi-ch0:#6250d6;--bi-ch1:#eb6834;--bi-ch2:#12919f;--bi-ch3:#b8860b;--bi-ch4:#c13c7e;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#fff;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
 'html[data-theme=dark] .bi{--bi-res:#199e70;--bi-nao:#e66767;--bi-tra:#3987e5;--bi-ina:#c98500;--bi-out:#7b8a97;--bi-nota:#9085e9;--bi-ch0:#9085e9;--bi-ch1:#d95926;--bi-ch2:#27a3b1;--bi-ch3:#c9a227;--bi-ch4:#d55181;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#0b1720;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
-'.bi .bi-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-bottom:12px}.bi .bi-head>div:first-child{flex:1;min-width:220px}'+
+'.bi .bi-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.bi .bi-head p b{color:var(--ink2);font-weight:600}'+
+'.bi .bi-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-bottom:0}.bi .bi-head>div:first-child{flex:1;min-width:220px}'+
 '.bi .bi-actions{display:flex;flex-wrap:wrap;gap:8px}.bi .bi-actions .btn{width:auto;height:34px;padding:0 13px;font-size:12.5px}'+
 '.bi .bi-filters{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:flex-start}'+
 '.bi .bi-fg{display:grid;gap:5px;min-width:0}.bi .bi-fg>span{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}'+
@@ -52,12 +53,25 @@ var css=
 '.bi .bi-chip small{margin-left:5px;font-size:11px;opacity:.75}'+
 '.bi .bi-chip:focus-visible,.bi .bi-sel:focus-visible,.bi .bi-mrow:focus-visible{outline:2px solid var(--blue);outline-offset:2px}'+
 '.bi .bi-sel{height:34px;max-width:100%;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px}'+
+'.bi .bi-fl{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px 22px;margin-top:14px;padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2)}'+
+'.bi .bi-fl .g-ia{grid-column:span 4}.bi .bi-fl .g-ch{grid-column:span 3}.bi .bi-fl .g-wk{grid-column:span 3}.bi .bi-fl .g-gr{grid-column:span 2}.bi .bi-fl .g-wd{grid-column:span 6}.bi .bi-fl .g-bd{grid-column:span 6}'+
+'.bi .bi-fl .bi-chip{background:var(--surface)}.bi .bi-fl .bi-chip[aria-pressed=true]{background:var(--blue)}.bi .bi-fl .bi-sel{width:100%}'+
+'.bi .bi-ft{display:none;align-items:center;gap:8px;width:100%;height:40px;margin-top:12px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}'+
+'.bi .bi-ft i{margin-left:auto;font-style:normal;color:var(--muted)}.bi .bi-badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--blue);color:#fff;font-style:normal;font-size:11.5px;line-height:20px;text-align:center}'+
+'.bi .bi-act{display:none;flex-wrap:wrap;gap:6px;margin-top:8px}.bi .bi-act span{padding:3px 9px;border:1px solid var(--line2);border-radius:999px;background:var(--surface2);font-size:12px;color:var(--ink2)}'+
+'.bi .bi-mrow.n4,.bi .bi-mh{grid-template-columns:minmax(92px,150px) minmax(0,1fr) 52px 72px}'+
+'.bi .bi-mh{display:grid;gap:10px;margin:2px 0 4px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.bi .bi-mh span:nth-child(n+3){text-align:right}'+
+'.bi .bi-mnt{text-align:right;line-height:1.15;font-variant-numeric:tabular-nums}.bi .bi-mnt b{display:block;font-size:14px;font-weight:600;color:var(--ink)}.bi .bi-mnt small{display:block;font-size:10.5px;color:var(--muted)}'+
+'.bi .bi-2c{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:8px 30px;align-items:start}.bi .bi-2c .bi-sub:first-child{margin-top:4px}.bi .bi-2c .bi-mix{margin-top:4px}'+
+'@media(max-width:1000px){.bi .bi-fl .bi-fg{grid-column:span 6!important}.bi .bi-2c{grid-template-columns:minmax(0,1fr)}}'+
+'@media(max-width:700px){.bi .bi-fl{display:none;grid-template-columns:minmax(0,1fr)}.bi .bi-fl.open{display:grid}.bi .bi-fl .bi-fg{grid-column:1!important}.bi .bi-ft{display:flex}.bi .bi-act{display:flex}.bi .bi-bar .bi-clear{margin-left:0}.bi .bi-mh{display:none}'+
+'.bi .bi-mrow.n4{grid-template-columns:minmax(0,1fr) 44px 62px;grid-template-areas:"n t nt" "bar bar bar";row-gap:4px}.bi .n4 .bi-mn{grid-area:n}.bi .n4 .bi-mt{grid-area:t}.bi .n4 .bi-mnt{grid-area:nt}.bi .n4 .bi-mbar{grid-area:bar}.bi .bi-mix{gap:10px}}'+
 '.bi .bi-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line2);font-size:12.5px;color:var(--ink2)}'+
 '.bi .bi-bar b{color:var(--ink);font-variant-numeric:tabular-nums}.bi .bi-bar .bi-clear{margin-left:auto;border:0;background:none;color:var(--blue);font:inherit;font-weight:600;cursor:pointer}.bi .bi-clear[disabled]{color:var(--muted);cursor:default;opacity:.6}'+
-'.bi .bi-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}'+
-'.bi .bi-k{padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}'+
-'.bi .bi-k small{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px}.bi .bi-k small u{flex:none;width:8px;height:8px;border-radius:50%;background:var(--c,var(--muted2));text-decoration:none}'+
-'.bi .bi-k strong{display:block;margin:3px 0 1px;font-size:26px;line-height:1.15;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}'+
+'.bi .bi-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}'+
+'.bi .bi-k{padding:14px 14px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0;box-shadow:inset 0 3px 0 var(--c,var(--line))}'+
+'.bi .bi-k small{display:block;color:var(--ink2);font-size:12.5px;font-weight:600}'+
+'.bi .bi-k strong{display:block;margin:3px 0 1px;font-size:25px;line-height:1.15;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}'+
 '.bi .bi-dl{margin-left:8px;font-size:12px;font-weight:600;letter-spacing:0;color:var(--muted);white-space:nowrap}.bi .bi-dl.ok{color:var(--good)}.bi .bi-dl.miss{color:var(--bad)}.bi .bi-k em{display:block;font-style:normal;font-size:12px;color:var(--muted)}.bi .bi-k em.ok{color:var(--good);font-weight:600}.bi .bi-k em.miss{color:var(--bad);font-weight:600}'+
 '.bi .bi-lg{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.bi .bi-lg span{display:inline-flex;align-items:center;gap:6px}.bi .bi-lg u{width:10px;height:10px;border-radius:3px;background:var(--c);text-decoration:none}'+
 '.bi .bi-mix{display:grid;gap:6px}'+
@@ -66,10 +80,6 @@ var css=
 '.bi .bi-mn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.bi .bi-mrow.tot .bi-mn{color:var(--ink2)}.bi .bi-mt{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}'+
 '.bi .bi-mbar{display:flex;gap:2px;height:24px;border-radius:4px;overflow:hidden;background:var(--surface3)}'+
 '.bi .bi-mbar i{display:flex;align-items:center;justify-content:center;min-width:2px;overflow:hidden;background:var(--c);color:var(--t);font-style:normal;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}'+
-'.bi .bi-nota{display:grid;gap:8px}.bi .bi-frow{display:grid;grid-template-columns:minmax(92px,150px) minmax(0,1fr) 116px;align-items:center;gap:10px;width:100%;padding:3px 6px;margin:0 -6px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:12.5px;text-align:left;cursor:pointer;box-sizing:content-box}'+
-'.bi .bi-frow:hover{background:var(--surface2)}.bi .bi-frow.sel{background:var(--surface2);box-shadow:inset 3px 0 0 var(--blue)}.bi .bi-nota.dim .bi-frow:not(.sel){opacity:.55}'+
-'.bi .bi-fbar{height:20px;border-radius:0 4px 4px 0;background:var(--bi-nota);min-width:2px}.bi .bi-ftrack{display:flex;align-items:center;height:20px}'+
-'.bi .bi-fv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}.bi .bi-fv small{display:block;white-space:nowrap;color:var(--muted);font-size:11px}'+
 '.bi .bi-cw{position:relative;width:100%;min-height:220px}.bi .bi-cw svg{display:block;width:100%;overflow:visible;touch-action:pan-y}'+
 '.bi .bi-cw text{font-family:inherit;fill:var(--muted);font-size:10.5px}.bi .bi-cw text.lab{fill:var(--ink2);font-size:11px}.bi .bi-cw .grid{stroke:var(--line2);stroke-width:1}.bi .bi-cw .axis{stroke:var(--line);stroke-width:1}'+
 '.bi .bi-empty{display:flex;align-items:center;justify-content:center;min-height:120px;color:var(--muted);font-size:13px;text-align:center}'+
@@ -95,9 +105,9 @@ var css=
 '.bi .bi-sb{display:flex;align-items:center;gap:6px 14px;padding:8px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 6px 18px rgba(0,30,50,.12);font-size:12.5px;color:var(--ink2)}'+
 '.bi .bi-sf{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bi .bi-sf b,.bi .bi-sc b{color:var(--ink)}.bi .bi-sc{white-space:nowrap;font-variant-numeric:tabular-nums}'+
 '.bi .bi-sb button{border:0;background:none;color:var(--blue);font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}'+
-'@media(max-width:1000px){.bi .bi-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}'+
-'@media(max-width:560px){.bi .bi-sx,.bi .bi-sf b{display:none}.bi .bi-k strong{font-size:22px}.bi .bi-k{padding:10px 12px}.bi .bi-actions{width:100%}.bi .bi-actions .btn{flex:1 1 0}.bi .bi-mrow,.bi .bi-frow{grid-template-columns:minmax(84px,104px) minmax(0,1fr) 40px;gap:8px}.bi .bi-mn{white-space:normal;line-height:1.2;font-size:12px}.bi .bi-frow{grid-template-columns:minmax(84px,104px) minmax(0,1fr) 92px}.bi .bi-bar .bi-clear{margin-left:0}}'+
-'@media print{.bi .bi-sw,.bi .bi-actions,.bi .bi-filters,.bi .bi-clear{display:none!important}.bi .panel{break-inside:avoid}.bi .bi-tw{overflow:visible}.bi .bi-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}';
+'@media(max-width:1100px){.bi .bi-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}'+
+'@media(max-width:560px){.bi .bi-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bi .bi-bar{gap:4px 12px;font-size:12px}.bi .bi-dl{display:block;margin:1px 0 0}.bi .bi-sx,.bi .bi-sf b{display:none}.bi .bi-k strong{font-size:22px}.bi .bi-k{padding:10px 12px}.bi .bi-actions{width:100%}.bi .bi-actions .btn{flex:1 1 0}.bi .bi-mrow,.bi .bi-frow{grid-template-columns:minmax(84px,104px) minmax(0,1fr) 40px;gap:8px}.bi .bi-mn{white-space:normal;line-height:1.2;font-size:12px}.bi .bi-frow{grid-template-columns:minmax(84px,104px) minmax(0,1fr) 92px}.bi .bi-bar .bi-clear{margin-left:0}}'+
+'@media print{.bi .bi-sw,.bi .bi-actions,.bi .bi-filters,.bi .bi-clear{display:none!important}.bi .panel{break-inside:avoid}.bi .bi-tw{overflow:visible}.bi .bi-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.bi .bi-fl{display:none}}';
 document.head.appendChild(Object.assign(document.createElement('style'),{textContent:css}));
 
 /* ---------- Estrutura da aba ---------- */
@@ -108,13 +118,12 @@ function ensureTab(){
     '<div class="bi-sw"><div id="biSticky" aria-label="Resumo dos filtros"></div></div>'+
     '<article class="panel" id="biHead"></article>'+
     '<div class="bi-kpis" id="biKpis"></div>'+
-    '<div class="grid-2">'+
-      '<article class="panel" id="biMix"></article>'+
-      '<article class="panel" id="biNota"></article>'+
-    '</div>'+
+    '<article class="panel" id="biMix"></article>'+
     '<article class="panel" id="biCh"></article>'+
-    '<article class="panel" id="biLine"></article>'+
-    '<article class="panel" id="biCols"></article>'+
+    '<div class="grid-2 bi-g2">'+
+      '<article class="panel" id="biLine"></article>'+
+      '<article class="panel" id="biCols"></article>'+
+    '</div>'+
     '<article class="panel" id="biCmp"></article>'+
     '<article class="panel" id="biEvo"></article>';
   var last=qa('[data-panel]').pop();last.parentNode.insertBefore(sec,last.nextSibling);
@@ -223,23 +232,28 @@ function toggle(arr,v){var i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.pus
 function anyFilter(){return F.ias.length||F.ch.length||F.week||F.wd.length||F.band.length||F.gran}
 function chip(group,val,label,on,extra){return'<button type="button" class="bi-chip" data-f="'+group+':'+val+'" aria-pressed="'+(on?'true':'false')+'">'+label+(extra||'')+'</button>'}
 
+var FOPEN=false;
+function nActive(){return F.ias.length+F.ch.length+(F.week?1:0)+F.wd.length+F.band.length+(F.gran?1:0)}
 function renderHead(c){
   var wsOpts='';
   if(c.ws.length>1){
     wsOpts='<option value="">Período todo</option>'+c.ws.map(function(w){return'<option value="'+w.start+'"'+(F.week===w.start?' selected':'')+'>Semana '+brd(w.start)+' – '+brd(w.end)+(w.full?'':' (parcial)')+'</option>'}).join('');
   }
-  var h='<div class="bi-head"><div><h2>BI · Desempenho das IAs</h2><p>'+brf(c.p.start)+' a '+brf(c.p.end)+' · mesmo período do topo da página. Filtre, compare e exporte.</p></div>'+
-    '<div class="bi-actions"><button type="button" class="btn btn-primary" data-act="xlsx" title="Baixar a planilha com os filtros aplicados (resumo, comparativo, evolução e dados)">↓ Excel</button><button type="button" class="btn btn-ghost" data-act="csv" title="Baixar os atendimentos filtrados em CSV">↓ CSV</button><button type="button" class="btn btn-ghost" data-act="link" title="Copiar um link com esses filtros (o período vem do seletor do topo)">🔗 Link</button></div></div>'+
-    '<div class="bi-filters">'+
-      '<div class="bi-fg"><span>IA</span><div class="bi-chips">'+chipsIA(c).map(function(n){return chip('ia',esc(n),esc(n),F.ias.indexOf(n)>=0)}).join('')+'</div></div>'+
-      (c.hasCh?'<div class="bi-fg"><span>Canal</span><div class="bi-chips">'+c.chNames.map(function(n){return chip('ch',esc(n),esc(n),F.ch.indexOf(n)>=0)}).join('')+'</div></div>':'')+
-      (wsOpts?'<div class="bi-fg"><span>Recorte</span><select class="bi-sel" data-f="week" aria-label="Recorte do período">'+wsOpts+'</select></div>':'')+
-      '<div class="bi-fg"><span>Dia da semana</span><div class="bi-chips">'+DS.map(function(n,i){return chip('wd',i,n,F.wd.indexOf(i)>=0)}).join('')+'</div></div>'+
-      '<div class="bi-fg"><span>Faixa horária</span><div class="bi-chips">'+BANDS.map(function(b,i){return chip('band',i,b[0],F.band.indexOf(i)>=0,'<small>'+b[1]+'</small>')}).join('')+'</div></div>'+
-      '<div class="bi-fg"><span>Evolução</span><select class="bi-sel" data-f="gran" aria-label="Agrupar a evolução"><option value="">Automático</option><option value="day"'+(F.gran==='day'?' selected':'')+'>Por dia</option><option value="week"'+(F.gran==='week'?' selected':'')+'>Por semana</option></select></div>'+
+  var n=nActive(),sum=filterSummary(c),mt=metaTally(c);
+  var h='<div class="bi-head"><div><h2>BI · Desempenho das IAs</h2><p><b>'+brf(c.p.start)+'</b> a <b>'+brf(c.p.end)+'</b> · período do topo da página</p></div>'+
+    '<div class="bi-actions"><button type="button" class="btn btn-primary" data-act="xlsx" title="Baixar a planilha com os filtros aplicados (painel, gráficos, comparativos, evolução e dados)">↓ Excel</button><button type="button" class="btn btn-ghost" data-act="csv" title="Baixar os atendimentos filtrados em CSV">↓ CSV</button><button type="button" class="btn btn-ghost" data-act="link" title="Copiar um link com esses filtros (o período vem do seletor do topo)">🔗 Link</button></div></div>'+
+    '<button type="button" class="bi-ft" data-act="ftoggle" aria-expanded="'+(FOPEN?'true':'false')+'" aria-controls="biFl"><span>Filtros</span>'+(n?'<em class="bi-badge">'+n+'</em>':'')+'<i aria-hidden="true">'+(FOPEN?'▴':'▾')+'</i></button>'+
+    (sum.length?'<div class="bi-act" aria-label="Filtros ativos">'+sum.map(function(t){return'<span>'+esc(t)+'</span>'}).join('')+'</div>':'')+
+    '<div class="bi-fl'+(FOPEN?' open':'')+'" id="biFl">'+
+      '<div class="bi-fg g-ia"><span>IA</span><div class="bi-chips">'+chipsIA(c).map(function(n){return chip('ia',esc(n),esc(n),F.ias.indexOf(n)>=0)}).join('')+'</div></div>'+
+      (c.hasCh?'<div class="bi-fg g-ch"><span>Canal</span><div class="bi-chips">'+c.chNames.map(function(n){return chip('ch',esc(n),esc(n),F.ch.indexOf(n)>=0)}).join('')+'</div></div>':'')+
+      (wsOpts?'<div class="bi-fg g-wk"><span>Recorte</span><select class="bi-sel" data-f="week" aria-label="Recorte do período">'+wsOpts+'</select></div>':'')+
+      '<div class="bi-fg g-gr"><span>Evolução</span><select class="bi-sel" data-f="gran" aria-label="Agrupar a evolução"><option value="">Automático</option><option value="day"'+(F.gran==='day'?' selected':'')+'>Por dia</option><option value="week"'+(F.gran==='week'?' selected':'')+'>Por semana</option></select></div>'+
+      '<div class="bi-fg g-wd"><span>Dia da semana</span><div class="bi-chips">'+DS.map(function(n,i){return chip('wd',i,n,F.wd.indexOf(i)>=0)}).join('')+'</div></div>'+
+      '<div class="bi-fg g-bd"><span>Faixa horária</span><div class="bi-chips">'+BANDS.map(function(b,i){return chip('band',i,b[0],F.band.indexOf(i)>=0,'<small>'+b[1]+'</small>')}).join('')+'</div></div>'+
     '</div>'+
     '<div class="bi-bar"><span>Mostrando <b>'+n0(c.st._all.t)+'</b> de <b>'+n0(c.all._all.t)+'</b> atendimentos com desfecho</span>'+
-    '<span>'+n0(c.f.length)+' protocolos no filtro</span>'+(c.prev?'<span>Comparando com '+brf(c.prev.range[0])+' a '+brf(c.prev.range[1])+'</span>':'')+
+    '<span>'+n0(c.f.length)+' protocolos</span>'+(c.prev?'<span>Comparando com '+brf(c.prev.range[0])+' a '+brf(c.prev.range[1])+'</span>':'')+(mt.tot?'<span>Metas atingidas: <b>'+mt.hit+' de '+mt.tot+'</b></span>':'')+
     '<button type="button" class="bi-clear" data-act="clear"'+(anyFilter()?'':' disabled')+'>Limpar filtros</button></div>';
   q('#biHead').innerHTML=h;
 }
@@ -261,8 +275,8 @@ function metaTally(c){
 }
 function renderKpis(c){
   var v=c.st._all,cnt=counts(v),g=singleGoal(c),t=v.t;
-  var k=function(color,lab,val,sub){return'<div class="bi-k"><small>'+(color?'<u style="--c:var('+color+')"></u>':'')+lab+'</small><strong>'+val+'</strong>'+sub+'</div>'};
-  var mt=metaTally(c),pv=c.prev,pst=pv&&pv.st,okp=pst&&pst.t>=10&&t>=10;
+  var k=function(color,lab,val,sub){return'<div class="bi-k"'+(color?' style="--c:var('+color+')"':'')+'><small>'+lab+'</small><strong>'+val+'</strong>'+sub+'</div>'};
+  var pv=c.prev,pst=pv&&pv.st,okp=pst&&pst.t>=10&&t>=10;
   // variação vs. período anterior: pontos percentuais; "good" diz se subir é bom (1), descer é bom (-1) ou tanto faz (0)
   var dl=function(cur,old,good,unit){
     if(!okp||cur==null||old==null)return'';
@@ -270,14 +284,12 @@ function renderKpis(c){
     var txt=unit==='%'?String(Math.abs(r)).replace('.',',')+'%':String(Math.abs(r)).replace('.',',')+(unit==='pp'?' pp':'');
     return'<span class="bi-dl '+cls+'" title="vs. '+brf(pv.range[0])+' a '+brf(pv.range[1])+'">'+(r>0?'▲ ':r<0?'▼ ':'= ')+(r?txt:'igual')+'</span>';
   };
-  var h=k('','Atendimentos com desfecho',n0(t)+(okp?dl((t/pst.t-1)*100,0,0,'%'):''),'<em>'+pc(share(t,c.all._all.t))+' do total do período</em>')+
+  var h=k('--muted2','Atendimentos',n0(t)+(okp?dl((t/pst.t-1)*100,0,0,'%'):''),'<em>com desfecho · '+pc(share(t,c.all._all.t))+' do total</em>')+
     k('--bi-res','Resolvidos',(t?pc(v.resolvido):'—')+dl(v.resolvido,pst&&pst.resolvido,1,'pp'),'<em>'+n0(cnt.resolvido)+' atendimentos</em>'+goalLine(g,'resolvido',v.resolvido,t>0))+
     k('--bi-tra','Transferidos',(t?pc(v.transferido):'—')+dl(v.transferido,pst&&pst.transferido,-1,'pp'),'<em>'+n0(cnt.transferido)+' atendimentos</em>'+goalLine(g,'transferido',v.transferido,t>0))+
     k('--bi-nao','Não resolvidos',(t?pc(v.nao):'—')+dl(v.nao,pst&&pst.nao,-1,'pp'),'<em>'+n0(cnt.nao)+' atendimentos</em>'+goalLine(g,'nao',v.nao,t>0))+
     k('--bi-ina','Inatividade',(t?pc(v.inatividade):'—')+dl(v.inatividade,pst&&pst.inatividade,-1,'pp'),'<em>'+n0(cnt.inatividade)+' atendimentos</em>')+
-    k('','Nota média',(v.nn?nt(v.nota):'—')+(v.nn&&pst&&pst.nn?dl(v.nota,pst.nota,1,'nota'):''),'<em>'+(v.nn?pc(v.pos)+' notas 4 e 5':'sem avaliações')+'</em>'+goalLine(g,'nota',v.nota,v.nn>0))+
-    k('','Respostas da pesquisa',n0(v.nn),'<em>'+(t?pc(share(v.nn,t))+' dos atendimentos':'—')+'</em>')+
-    k('','Metas atingidas',mt.tot?mt.hit+' de '+mt.tot:'—','<em>'+(mt.tot?(F.ias.length?'nas IAs selecionadas':'em todas as IAs'):'sem metas definidas')+'</em>');
+    k('--bi-nota','Nota média',(v.nn?nt(v.nota):'—')+(v.nn&&pst&&pst.nn?dl(v.nota,pst.nota,1,'nota'):''),'<em>'+(v.nn?pc(v.pos)+' notas 4 e 5':'sem avaliações')+'</em><em>'+n0(v.nn)+' respostas'+(t?' · '+pc(share(v.nn,t)):'')+'</em>'+goalLine(g,'nota',v.nota,v.nn>0));
   q('#biKpis').innerHTML=h;
 }
 
@@ -292,15 +304,16 @@ function mixRow(name,v,sel,tot){
     var p=share(n,v.t);
     return'<i data-seg="'+esc(name)+'|'+o.k+'" style="flex:'+n+' 1 0;--c:var('+o.c+');--t:var('+o.t+')">'+(p>=(innerWidth<560?17:10)?Math.round(p)+'%':'')+'</i>';
   }).join('');
-  return'<button type="button" class="bi-mrow'+(sel?' sel':'')+(tot?' tot':'')+'" data-ia="'+(tot?'':esc(name))+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(name)+': '+n0(v.t)+' atendimentos"'+(tot?' tabindex="-1"':'')+'>'+
-    '<span class="bi-mn" title="'+esc(name)+'">'+esc(name)+'</span><span class="bi-mbar" data-row="'+esc(name)+'">'+(v.t?segs:'')+'</span><span class="bi-mt">'+n0(v.t)+'</span></button>';
+  return'<button type="button" class="bi-mrow n4'+(sel?' sel':'')+(tot?' tot':'')+'" data-ia="'+(tot?'':esc(name))+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(name)+': '+n0(v.t)+' atendimentos, nota média '+(v.nn?nt(v.nota):'sem avaliações')+'"'+(tot?' tabindex="-1"':'')+'>'+
+    '<span class="bi-mn" title="'+esc(name)+'">'+esc(name)+'</span><span class="bi-mbar" data-row="'+esc(name)+'">'+(v.t?segs:'')+'</span><span class="bi-mt">'+n0(v.t)+'</span>'+
+    '<span class="bi-mnt" data-nota="'+esc(name)+'"><b>'+(v.nn?nt(v.nota):'—')+'</b><small>'+n0(v.nn)+' aval.</small></span></button>';
 }
 function renderMix(c){
   var rows='',any=false;
   rows+=mixRow('Todas as IAs',c.stIA._all,false,true);
   IAS.forEach(function(n){var v=c.stIA[n];if(!v||!v.t)return;any=true;rows+=mixRow(n,v,F.ias.indexOf(n)>=0,false)});
-  q('#biMix').innerHTML='<div class="panel-head"><div><h2>Como terminam os atendimentos</h2><p>Composição dos desfechos por IA · clique numa IA para filtrar</p></div></div>'+
-    (c.stIA._all.t&&any?legend(c)+'<div class="bi-mix'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
+  q('#biMix').innerHTML='<div class="panel-head"><div><h2>Desempenho por IA</h2><p>Como terminam os atendimentos e nota da pesquisa · clique numa IA para filtrar</p></div></div>'+
+    (c.stIA._all.t&&any?legend(c)+'<div class="bi-mh"><span>IA</span><span>Desfechos</span><span>Atend.</span><span>Nota</span></div><div class="bi-mix'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
 }
 
 /* ---------- Canais de entrada (WhatsApp, Webchat…) ---------- */
@@ -335,7 +348,7 @@ function renderCh(c){
   var info=window.data&&data.r72&&data.r72.channelInfo||{},raw=info.values||{},rawTxt=Object.keys(raw).map(function(k){return k+' ('+n0(raw[k])+')'}).join(', ');
   var note=rawTxt?'<p class="bi-note">Canal lido da coluna “Tipo de Entrada” do R72 (protocolos): '+esc(rawTxt)+'.'+(c.chNames.indexOf(NOCH)>=0?' “Não informado” = protocolos cujo R72 veio sem o tipo de entrada.':'')+'</p>':'';
   host.innerHTML='<div class="panel-head"><div><h2>Por onde o cliente chega</h2><p>Atendimentos com desfecho por canal de entrada · respeita os demais filtros · clique num canal para filtrar</p></div></div>'+
-    (any?'<div class="bi-cts">'+tiles+'</div>'+'<h3 class="bi-sub">Volume por canal '+(c.gran==='week'?'por semana':'por dia')+'</h3><div class="bi-chl">'+c.chNames.filter(function(n){return c.stCh[n].t}).map(function(n){return'<span><u style="--c:var('+chColor(n)+')"></u>'+esc(n)+'</span>'}).join('')+'</div><div class="bi-cw" id="biChCw"></div><h3 class="bi-sub">Como terminam, por canal</h3>'+legend(c)+'<div class="bi-mix'+(F.ch.length?' dim':'')+'">'+rows+'</div>'+note:'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
+    (any?'<div class="bi-cts">'+tiles+'</div><div class="bi-2c"><div class="bi-c1"><h3 class="bi-sub">Volume por canal '+(c.gran==='week'?'por semana':'por dia')+'</h3><div class="bi-chl">'+c.chNames.filter(function(n){return c.stCh[n].t}).map(function(n){return'<span><u style="--c:var('+chColor(n)+')"></u>'+esc(n)+'</span>'}).join('')+'</div><div class="bi-cw" id="biChCw"></div></div><div class="bi-c2"><h3 class="bi-sub">Como terminam, por canal</h3>'+legend(c)+'<div class="bi-mix'+(F.ch.length?' dim':'')+'">'+rows+'</div></div></div>'+note:'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
 }
 
 function chCounts(list){var m={};list.forEach(function(x){var k=x.channel||NOCH;m[k]=(m[k]||0)+1});return m}
@@ -352,7 +365,7 @@ function drawChCols(c){
   var xc=function(i){return m.l+pw*(i+.5)/B.length},yc=function(v){return m.t+ph*(1-v/top)};
   for(var t=0;t<=4;t++){var val=top*t/4;svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:yc(val),y2:yc(val),class:t?'grid':'axis'}));svg.appendChild(el('text',{x:m.l-8,y:yc(val)+3.5,'text-anchor':'end'},n0(val)))}
   xlabels(svg,B,xc,H,m,pw);
-  var band=pw/B.length,cw=Math.max(3,Math.min(24,band*0.7)),defs=el('defs',{});svg.appendChild(defs);
+  var band=pw/B.length,cw=Math.max(3,Math.min(56,band*0.62)),defs=el('defs',{});svg.appendChild(defs);
   B.forEach(function(b,i){
     if(!b.tt)return;
     var x=xc(i)-cw/2,y=yc(0),colTop=yc(b.tt),id='bicc'+i;
@@ -378,17 +391,6 @@ function drawChCols(c){
   });
   host.appendChild(svg);
 }
-function renderNota(c){
-  var rows=IAS.filter(function(n){var v=c.stIA[n];return v&&v.t}).map(function(n){
-    var v=c.stIA[n],sel=F.ias.indexOf(n)>=0;
-    return'<button type="button" class="bi-frow'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(n)+': nota média '+(v.nn?nt(v.nota):'sem avaliações')+', '+n0(v.nn)+' avaliações"><span class="bi-mn" title="'+esc(n)+'">'+esc(n)+'</span>'+
-      '<span class="bi-ftrack"><span class="bi-fbar" style="width:'+(v.nn?Math.max(1,v.nota/5*100):0)+'%" data-nota="'+esc(n)+'"></span></span>'+
-      '<span class="bi-fv">'+(v.nn?nt(v.nota):'—')+'<small>'+n0(v.nn)+' avaliações</small></span></button>';
-  }).join('');
-  q('#biNota').innerHTML='<div class="panel-head"><div><h2>Nota da pesquisa</h2><p>Nota média de 1 a 5 por IA · barras na escala de 0 a 5</p></div></div>'+
-    (rows&&c.stIA._all.nn?'<div class="bi-nota'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">'+(rows?'Nenhuma avaliação nesses filtros.':'Sem atendimentos nesses filtros.')+'</div>');
-}
-
 /* ---------- Gráficos SVG (largura real do contêiner) ---------- */
 var NS='http://www.w3.org/2000/svg';
 function el(n,a,txt){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e}
@@ -464,7 +466,7 @@ function drawCols(c){
   var xc=function(i){return m.l+pw*(i+.5)/B.length},yc=function(v){return m.t+ph*(1-v/top)};
   for(var t=0;t<=4;t++){var val=top*t/4;svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:yc(val),y2:yc(val),class:t?'grid':'axis'}));svg.appendChild(el('text',{x:m.l-8,y:yc(val)+3.5,'text-anchor':'end'},n0(val)))}
   xlabels(svg,B,xc,H,m,pw);
-  var band=pw/B.length,cw=Math.max(3,Math.min(24,band*0.7)),defs=el('defs',{});svg.appendChild(defs);
+  var band=pw/B.length,cw=Math.max(3,Math.min(56,band*0.62)),defs=el('defs',{});svg.appendChild(defs);
   B.forEach(function(b,i){
     if(!b.v.t)return;
     var cn=counts(b.v),x=xc(i)-cw/2,y=yc(0),colTop=yc(b.v.t),id='bic'+i;
@@ -530,7 +532,7 @@ function render(){
   if(typeof data==='undefined'||!data||!data.r72){return}
   var af=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.bi')&&document.activeElement.getAttribute('data-f');
   var c=compute();LAST=c;
-  renderHead(c);renderSticky(c);renderKpis(c);renderMix(c);renderNota(c);renderCh(c);renderCharts(c);drawChCols(c);renderTables(c);
+  renderHead(c);renderSticky(c);renderKpis(c);renderMix(c);renderCh(c);renderCharts(c);drawChCols(c);renderTables(c);
   if(af){var e=q('.bi [data-f="'+af+'"]');if(e&&e.focus)e.focus()}
   syncUrl();watchHead();
 }
@@ -615,6 +617,7 @@ document.addEventListener('click',function(e){
   }
   if(a){
     if(a.dataset.act==='clear'){F={ias:[],ch:[],week:'',wd:[],band:[],gran:''};redo()}
+    else if(a.dataset.act==='ftoggle'){FOPEN=!FOPEN;var fl=q('#biFl'),bt=a;if(fl)fl.classList.toggle('open',FOPEN);bt.setAttribute('aria-expanded',FOPEN?'true':'false');var ic=q('i',bt);if(ic)ic.textContent=FOPEN?'▴':'▾'}
     else if(a.dataset.act==='xlsx')exportXlsx();
     else if(a.dataset.act==='csv')exportCsv();
     else if(a.dataset.act==='link')copyLink();
@@ -646,7 +649,7 @@ function tipMove(e){
     var o=OUT.filter(function(x){return x.k===k})[0],n=counts(v)[k];
     showTip('<b>'+esc(name)+'</b><span><em style="font-style:normal">'+swatch(o.c)+o.lab+'</em><em style="font-style:normal">'+n0(n)+' · '+pc(share(n,v.t))+'</em></span><span><em style="font-style:normal;opacity:.8">Total com desfecho</em><em style="font-style:normal">'+n0(v.t)+'</em></span>',e.clientX,e.clientY);
   }else{
-    var nm=t.dataset.nota,nv=LAST.stIA[nm];if(!nv)return;
+    var nm=t.dataset.nota,nv=nm==='Todas as IAs'?LAST.stIA._all:LAST.stIA[nm];if(!nv)return;
     showTip('<b>'+esc(nm)+'</b><span><em style="font-style:normal">'+swatch('--bi-nota')+'Nota média</em><em style="font-style:normal">'+(nv.nn?nt(nv.nota):'—')+'</em></span><span><em style="font-style:normal;opacity:.8">Avaliações</em><em style="font-style:normal">'+n0(nv.nn)+'</em></span>',e.clientX,e.clientY);
   }
 }

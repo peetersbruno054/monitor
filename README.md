@@ -206,3 +206,8 @@ Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, va
 - **Canais no tempo**, **Canal × IA** (quantidade e % por IA), **Dia × hora** (mapa de calor + volume por hora).
 - Abas já existentes: Resumo, Comparativos (IAs e canais), Evolução semanal/diária, Dados (com filtro automático e coluna Canal).
 - A base é o recorte do BI no momento do download (filtros, período, semana).
+
+## Aba BI — layout
+- Cabeçalho com período e ações (Excel, CSV, Link); filtros num painel próprio (no celular ficam recolhidos atrás do botão “Filtros”, com contador e resumo dos filtros ativos).
+- Seis indicadores em uma faixa (Atendimentos, Resolvidos, Transferidos, Não resolvidos, Inatividade, Nota média, com variação e metas); “Metas atingidas” fica na linha de status.
+- “Desempenho por IA” junta a composição dos desfechos e a nota da pesquisa; canais e gráficos de evolução ficam lado a lado no computador.

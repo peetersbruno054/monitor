@@ -90,7 +90,7 @@ addExport('surveyCount',function(){
 addExport('unresolvedBadge',function(){
   var o=uv.outcome||'nao';
   csv(['Protocolo','IA','Contato','Data','Desfecho','Ponto do bot','Trilha de bot points','Nota','Como a IA ajudou','Comentário'],
-    unresolved().map(function(x){var s=x.survey||{},f=o==='falha'&&window.failurePoint?failurePoint(x):null;return[x.protocol,x.agent,(window.maskPhone?maskPhone(x.contact):x.contact),x.lastDate,isUnresolvedProtocol(x)?'Não resolvido':(window.OUTCOME_ONE&&OUTCOME_ONE[x.outcome])||x.outcome,o==='nao'?(x.unresolvedPoint||x.finalPoint):f?f.point:x.finalPoint,window.trail?trail(x):'',s.note||'',(s.help||[]).join(' | '),s.comment||'']}),window.monListName?monListName():'nao-resolvidos');
+    unresolved().map(function(x){var s=x.survey||{};return[x.protocol,x.agent,(window.maskPhone?maskPhone(x.contact):x.contact),x.lastDate,isUnresolvedProtocol(x)?'Não resolvido':(window.OUTCOME_ONE&&OUTCOME_ONE[x.outcome])||x.outcome,o==='nao'?(x.unresolvedPoint||x.finalPoint):x.finalPoint,window.trail?trail(x):'',s.note||'',(s.help||[]).join(' | '),s.comment||'']}),window.monListName?monListName():'nao-resolvidos');
 });
 
 /* ---- Tabela de IAs: rótulos para o modo cartão no celular ---- */

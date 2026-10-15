@@ -1,5 +1,5 @@
 /* desempenho.js — metas por IA, "Semana a semana", relatório mensal em CSV e aviso de falhas de coleta.
-   Carregar por último (depois de acessos.js). Usa data, DESFECHOS, isUnresolvedProtocol, hasFailure, mode (app.js). */
+   Carregar por último (depois de acessos.js). Usa data, DESFECHOS, isUnresolvedProtocol, mode (app.js). */
 (function(){
 'use strict';
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -81,15 +81,14 @@ var main=document.getElementById('main');
 if(main){new MutationObserver(function(){if(!main.hidden)loadSettings(true)}).observe(main,{attributes:true,attributeFilter:['hidden']});if(!main.hidden)loadSettings(true)}
 
 /* ---------- Números por IA ---------- */
-function blank(){return{t:0,r:0,tr:0,u:0,ina:0,f:0,n:[]}}
+function blank(){return{t:0,r:0,tr:0,u:0,ina:0,n:[]}}
 function add(o,x){
-  if(hasFailure(x))o.f++;
   if(DESFECHOS.indexOf(x.outcome)<0)return;
   o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.outcome==='inatividade')o.ina++;
   if(isUnresolvedProtocol(x))o.u++;if(x.survey&&x.survey.note)o.n.push(x.survey.note);
 }
 function rates(o){var av=o.n.length?o.n.reduce(function(a,v){return a+v},0)/o.n.length:0,pos=o.n.filter(function(v){return v>=4}).length;
-  return{t:o.t,r:o.r,tr:o.tr,u:o.u,ina:o.ina,f:o.f,nn:o.n.length,resolvido:o.t?o.r/o.t*100:0,transferido:o.t?o.tr/o.t*100:0,nao:o.t?o.u/o.t*100:0,inatividade:o.t?o.ina/o.t*100:0,nota:av,pos:o.n.length?pos/o.n.length*100:0}}
+  return{t:o.t,r:o.r,tr:o.tr,u:o.u,ina:o.ina,nn:o.n.length,resolvido:o.t?o.r/o.t*100:0,transferido:o.t?o.tr/o.t*100:0,nao:o.t?o.u/o.t*100:0,inatividade:o.t?o.ina/o.t*100:0,nota:av,pos:o.n.length?pos/o.n.length*100:0}}
 function byIA(list){var g={};IAS.forEach(function(n){g[n]=blank()});var all=blank();list.forEach(function(x){if(g[x.agent])add(g[x.agent],x);add(all,x)});
   var out={};IAS.forEach(function(n){out[n]=rates(g[n])});out._all=rates(all);return out}
 /* ---------- Economia: resolvidos pela IA × tempo médio de um atendimento humano ---------- */
@@ -220,11 +219,11 @@ function renderWeekly(){
   var rows=ws.map(function(w,i){var prev=i?ws[i-1].v:null;
     return'<tr><td><b>'+br(w.start)+' – '+br(w.end)+'</b><small>'+(w.full?'semana completa':'semana parcial')+'</small></td>'+
       '<td><b>'+fmt(w.v.t)+'</b></td>'+cell(w.v,prev,'resolvido','up')+cell(w.v,prev,'transferido','down')+cell(w.v,prev,'nao','down')+cell(w.v,prev,'nota','up')+
-      '<td><b>'+fmt(w.v.f)+'</b></td>'+ecoCell(w.v)+'</tr>'}).join('');
-  var total='<tr class="tot"><td>Período todo</td><td>'+fmt(tot.t)+'</td>'+cell(tot,undefined,'resolvido')+cell(tot,undefined,'transferido')+cell(tot,undefined,'nao')+cell(tot,undefined,'nota')+'<td>'+fmt(tot.f)+'</td>'+ecoCell(tot)+'</tr>';
+      ecoCell(w.v)+'</tr>'}).join('');
+  var total='<tr class="tot"><td>Período todo</td><td>'+fmt(tot.t)+'</td>'+cell(tot,undefined,'resolvido')+cell(tot,undefined,'transferido')+cell(tot,undefined,'nao')+cell(tot,undefined,'nota')+ecoCell(tot)+'</tr>';
   el.innerHTML='<div class="panel-head wk-head"><div><h2>Semana a semana</h2><p>Evolução '+(wkIA?'da '+esc(wkIA):'das IAs')+' em cada semana do período (segunda a domingo), comparando com a semana anterior</p></div>'+
     '<select id="wkIA" aria-label="IA"><option value="">Todas as IAs</option>'+IAS.map(function(n){return'<option'+(n===wkIA?' selected':'')+'>'+esc(n)+'</option>'}).join('')+'</select></div>'+
-    '<div class="wk-wrap"><table><thead><tr><th>Semana</th><th>Atendimentos</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th><th>Falhas de conhec.</th>'+(ecoOn()?'<th>Horas evitadas</th>':'')+'</tr></thead><tbody>'+rows+total+'</tbody></table></div>'+
+    '<div class="wk-wrap"><table><thead><tr><th>Semana</th><th>Atendimentos</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th>'+(ecoOn()?'<th>Horas evitadas</th>':'')+'</tr></thead><tbody>'+rows+total+'</tbody></table></div>'+
     '<div class="wk-note">'+(wkIA&&goal?'Verde: dentro da meta · vermelho: fora da meta. ':wkIA?'':'Escolha uma IA para ver as metas dela. ')+'Setas: variação em pontos percentuais (pp) vs. a semana anterior.</div>';
   q('#wkIA',el).onchange=function(){wkIA=this.value;renderWeekly()};
 }
@@ -236,12 +235,12 @@ function exportCsv(){
   var p=period(),ws=weeks(p.start,p.end),list=data.r72.protocols,n=function(v){return String(Math.round(v*10)/10).replace('.',',')};
   ws.forEach(function(w){w.list=[]});
   list.forEach(function(x){var d=dk(x.firstDate);if(!d)return;for(var i=0;i<ws.length;i++){if(d>=ws[i].start&&d<=ws[i].end){ws[i].list.push(x);break}}});
-  var head=['IA','Recorte','De','Até','Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Avaliações','Nota média','% Notas 4 e 5','Falhas de conhecimento','Meta % resolvidos (mín.)','Meta % transferidos (máx.)','Meta % não resolvidos (máx.)','Meta nota (mín.)','Metas atingidas','Tempo médio humano (min)','Horas evitadas','Economia (R$)'];
+  var head=['IA','Recorte','De','Até','Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos (mín.)','Meta % transferidos (máx.)','Meta % não resolvidos (máx.)','Meta nota (mín.)','Metas atingidas','Tempo médio humano (min)','Horas evitadas','Economia (R$)'];
   function line(ia,label,a,b,v){
     var goal=ia==='Todas as IAs'?null:S.metas[ia],hits=0,total=0;
     FIELDS.forEach(function(f){var has=f[0]==='nota'?v.nn>0:v.t>0,ok=check(goal,f[0],f[0]==='nota'?v.nota:v[f[0]],has);if(ok!==null){total++;if(ok)hits++}});
     var g=function(k){return goal&&goal[k]!=null?String(goal[k]).replace('.',','):''};
-    return[ia,label,brFull(a),brFull(b),v.t,v.r,n(v.resolvido),v.tr,n(v.transferido),v.u,n(v.nao),v.ina,n(v.inatividade),v.nn,v.nn?v.nota.toFixed(2).replace('.',','):'',v.nn?n(v.pos):'',v.f,g('resolvido'),g('transferido'),g('nao'),g('nota'),total?hits+' de '+total:'',
+    return[ia,label,brFull(a),brFull(b),v.t,v.r,n(v.resolvido),v.tr,n(v.transferido),v.u,n(v.nao),v.ina,n(v.inatividade),v.nn,v.nn?v.nota.toFixed(2).replace('.',','):'',v.nn?n(v.pos):'',g('resolvido'),g('transferido'),g('nao'),g('nota'),total?hits+' de '+total:'',
       ecoOn()?fmtMin(S.eco.minutos):'',ecoOn()?String(Math.round(horas(v.r)*10)/10).replace('.',','):'',reais(v.r)!=null?reais(v.r).toFixed(2).replace('.',','):''];
   }
   var all=byIA(list),rows=[];

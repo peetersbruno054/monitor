@@ -143,10 +143,10 @@ function build(){
   }
   function rowIA(name,v,g,isTot){
     var h=0,t=0;if(g)D.FIELDS.forEach(function(f){var has=f[0]==='nota'?v.nn>0:v.t>0,ok=D.check(g,f[0],f[0]==='nota'?v.nota:v[f[0]],has);if(ok!==null){t++;if(ok)h++}});
-    return'<tr'+(isTot?' class="tot"':'')+'><td>'+esc(name)+'</td><td>'+fmt(v.t)+'</td>'+cellIA(v,g,'resolvido')+cellIA(v,g,'transferido')+cellIA(v,g,'nao')+cellIA(v,g,'nota')+'<td>'+fmt(v.f)+'</td><td>'+(t?h+' de '+t:'—')+'</td>'+
+    return'<tr'+(isTot?' class="tot"':'')+'><td>'+esc(name)+'</td><td>'+fmt(v.t)+'</td>'+cellIA(v,g,'resolvido')+cellIA(v,g,'transferido')+cellIA(v,g,'nao')+cellIA(v,g,'nota')+'<td>'+(t?h+' de '+t:'—')+'</td>'+
       (eco?'<td>'+(v.t?D.fmtH(eco.horas(v.r))+(eco.custoHora>0?'<small>'+D.fmtR(eco.reais(v.r))+'</small>':''):'—')+'</td>':'')+'</tr>';
   }
-  out+='<div class="mr-sec"><h2>Desempenho por IA</h2><div class="mr-w"><table><thead><tr><th>IA</th><th>Atend.</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th><th>Falhas de conhec.</th><th>Metas</th>'+(eco?'<th>Horas evitadas</th>':'')+'</tr></thead><tbody>'+
+  out+='<div class="mr-sec"><h2>Desempenho por IA</h2><div class="mr-w"><table><thead><tr><th>IA</th><th>Atend.</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Nota média</th><th>Metas</th>'+(eco?'<th>Horas evitadas</th>':'')+'</tr></thead><tbody>'+
     IAS.map(function(n){return rowIA(n,st[n],metas[n],false)}).join('')+rowIA('Todas as IAs',all,null,true)+'</tbody></table></div></div>';
 
   // semana a semana

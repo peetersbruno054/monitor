@@ -13,8 +13,7 @@ Q+'.view>*{min-width:0}'+
 Q+'.view>#qualityKpis{grid-column:1/-1;order:0}'+
 Q+'.view>.panel:has(#recontactList){grid-column:span 7;order:1}'+
 Q+'.view>#funnelPanel{grid-column:span 5;order:2}'+
-Q+'.view>#recPanel{grid-column:span 7;order:3}'+
-Q+'.view>#knowledgePanel{grid-column:span 5;order:4}'+
+Q+'.view>#recPanel{grid-column:1/-1;order:3}'+
 Q+'.view>.panel:has(#checkpointList){grid-column:1/-1;order:5}'+
 Q+' .panel{padding:18px 20px}'+
 /* ---- tempo até voltar: três faixas empilhadas, cada uma com barra de proporção ---- */
@@ -30,8 +29,7 @@ Q+' .rw.rw0{--rwc:var(--bad)}'+Q+' .rw.rw1{--rwc:var(--inactivity)}'+Q+' .rw.rw2
 Q+' #recPanel .rc-ks{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}'+
 Q+' #recPanel .pk-s{padding:8px 10px}'+Q+' #recPanel .pk-s strong{font-size:17px}'+Q+' #recPanel .pk-s em{font-size:11px;line-height:1.3}'+
 Q+' #recontactList.scroll-list{max-height:330px;border-radius:12px}'+
-Q+' .rc-list,'+Q+' .kf-list{max-height:440px;overflow:auto;padding-right:4px;scrollbar-width:thin}'+
-Q+' .kf-list .item .copy-protocol-btn{width:auto;padding:0 11px;white-space:nowrap}'+
+Q+' .rc-list{max-height:440px;overflow:auto;padding-right:4px;scrollbar-width:thin}'+
 /* ---- funil ---- */
 Q+' #funnelPanel .fn{grid-template-columns:118px minmax(0,1fr) 88px;gap:12px;padding:10px 6px;border-radius:10px;font-size:13px}'+
 Q+' #funnelPanel .fn .tr{height:12px}'+

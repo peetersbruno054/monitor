@@ -33,7 +33,7 @@ Tela: "Atualizar dados"
 ## Melhorias de performance e uso
 
 - O vínculo entre protocolos do R72 e pesquisas do R74 usa um índice por protocolo no navegador, evitando buscas repetidas e reduzindo o custo quando há muitos registros.
-- A Visão geral ganhou o painel **O que merece atenção**, no final da aba, que prioriza automaticamente não resolvidos, falhas de conhecimento, satisfação baixa, recontatos e protocolos aguardando confirmação.
+- A Visão geral ganhou o painel **O que merece atenção**, no final da aba, que prioriza automaticamente não resolvidos, satisfação baixa, recontatos e protocolos aguardando confirmação.
 - Quando o período anterior está disponível, o radar considera **tendência** (alta/queda) além do volume absoluto e destaca um **Principal ponto de atenção**.
 - Os alertas levam diretamente para a lista/painel correspondente, para reduzir o tempo entre detectar um problema e investigá-lo.
 - O botão **Ver conversa** abre a conversa real do protocolo no Monitor, com mensagens agrupadas por cliente/atendimento; o código continua permitindo copiar o número do protocolo.
@@ -159,9 +159,9 @@ Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishab
 
 Quinta aba do site (atalho **5**), com a mesma lógica de uma planilha de BI: filtrar, comparar e exportar. Respeita o período escolhido no topo da página.
 
-- **Filtros:** IA (várias ao mesmo tempo), recorte por semana, dia da semana, faixa horária (madrugada, manhã, tarde, noite), "só falhas de conhecimento" e agrupamento da evolução (automático, por dia ou por semana). Clicar numa IA em qualquer gráfico ou tabela também filtra. **Limpar filtros** volta ao período todo.
-- **Indicadores:** atendimentos com desfecho, % resolvidos, transferidos, não resolvidos e inatividade, nota média, falhas de conhecimento e metas atingidas. Com uma única IA selecionada, cada indicador mostra ✔/✖ conforme a meta definida em **Metas e economia**.
-- **Gráficos:** composição dos desfechos por IA, falhas de conhecimento por IA, evolução dos percentuais e volume por desfecho. As tabelas "Comparativo entre IAs" e "Evolução" trazem os mesmos números.
+- **Filtros:** IA (várias ao mesmo tempo), recorte por semana, dia da semana, faixa horária (madrugada, manhã, tarde, noite) e agrupamento da evolução (automático, por dia ou por semana). Clicar numa IA em qualquer gráfico ou tabela também filtra. **Limpar filtros** volta ao período todo.
+- **Indicadores:** atendimentos com desfecho, % resolvidos, transferidos, não resolvidos e inatividade, nota média, respostas da pesquisa e metas atingidas. Com uma única IA selecionada, cada indicador mostra ✔/✖ conforme a meta definida em **Metas e economia**.
+- **Gráficos:** composição dos desfechos por IA, nota da pesquisa por IA, evolução dos percentuais e volume por desfecho. As tabelas "Comparativo entre IAs" e "Evolução" trazem os mesmos números.
 - **Exportar:** **↓ Excel** gera um `.xlsx` com os filtros aplicados (abas Resumo, Comparativo IAs, Evolução semanal, Evolução diária e Dados, com filtro e cabeçalho fixo). **↓ CSV** baixa só os atendimentos filtrados. O telefone do cliente não vai na exportação.
 - Os números usam as mesmas regras da Visão geral (`byIA` em `desempenho.js`). Arquivos: `bi.js` (aba) e `xlsx.js` (gerador de planilha, sem bibliotecas externas).
 - As cores de desfecho da aba BI (verde, vermelho, azul, âmbar) foram escolhidas para serem distinguíveis por quem tem daltonismo; o restante do site mantém as cores atuais.

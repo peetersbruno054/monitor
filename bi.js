@@ -1,7 +1,7 @@
-/* bi.js — aba "BI": painel filtrável (IA, semana, dia da semana, faixa horária, falhas de conhecimento)
+/* bi.js — aba "BI": painel filtrável (IA, semana, dia da semana, faixa horária)
    com indicadores, gráficos e tabelas, exportável em Excel (.xlsx) e CSV.
    Carregar depois de desempenho.js e padroes.js (usa window.monDesempenho, monPadroes e monXlsx).
-   Usa data, DESFECHOS, dt, hasFailure, isUnresolvedProtocol, ymdLocal, esc (app.js). */
+   Usa data, DESFECHOS, dt, isUnresolvedProtocol, ymdLocal, esc (app.js). */
 (function(){
 'use strict';
 var D=window.monDesempenho,P=window.monPadroes;
@@ -18,7 +18,7 @@ var OUT=[
   {k:'outros',lab:'Outros',one:'Outros',c:'--bi-out',t:'--bi-out-t'}
 ];
 var LINES=OUT.slice(0,4);
-var F={ias:[],week:'',wd:[],band:[],fail:false,gran:''};
+var F={ias:[],week:'',wd:[],band:[],gran:''};
 var LAST=null;
 
 function toast(m){if(window.monToast)window.monToast(m)}
@@ -36,8 +36,8 @@ function pad(n){return('0'+n).slice(-2)}
 
 /* ---------- Estilos ---------- */
 var css=
-'.bi{--bi-res:#1baf7a;--bi-nao:#e34948;--bi-tra:#2a78d6;--bi-ina:#eda100;--bi-out:#9aa7b2;--bi-fal:#6250d6;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#fff;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
-'html[data-theme=dark] .bi{--bi-res:#199e70;--bi-nao:#e66767;--bi-tra:#3987e5;--bi-ina:#c98500;--bi-out:#7b8a97;--bi-fal:#9085e9;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#0b1720;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
+'.bi{--bi-res:#1baf7a;--bi-nao:#e34948;--bi-tra:#2a78d6;--bi-ina:#eda100;--bi-out:#9aa7b2;--bi-nota:#6250d6;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#fff;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
+'html[data-theme=dark] .bi{--bi-res:#199e70;--bi-nao:#e66767;--bi-tra:#3987e5;--bi-ina:#c98500;--bi-out:#7b8a97;--bi-nota:#9085e9;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#0b1720;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
 '.bi .bi-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-bottom:12px}.bi .bi-head>div:first-child{flex:1;min-width:220px}'+
 '.bi .bi-actions{display:flex;flex-wrap:wrap;gap:8px}.bi .bi-actions .btn{width:auto;height:34px;padding:0 13px;font-size:12.5px}'+
 '.bi .bi-filters{display:flex;flex-wrap:wrap;gap:12px 26px;align-items:flex-start}'+
@@ -62,9 +62,9 @@ var css=
 '.bi .bi-mn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}.bi .bi-mrow.tot .bi-mn{color:var(--ink2)}.bi .bi-mt{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}'+
 '.bi .bi-mbar{display:flex;gap:2px;height:24px;border-radius:4px;overflow:hidden;background:var(--surface3)}'+
 '.bi .bi-mbar i{display:flex;align-items:center;justify-content:center;min-width:2px;overflow:hidden;background:var(--c);color:var(--t);font-style:normal;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}'+
-'.bi .bi-fail{display:grid;gap:8px}.bi .bi-frow{display:grid;grid-template-columns:minmax(92px,150px) minmax(0,1fr) 116px;align-items:center;gap:10px;width:100%;padding:3px 6px;margin:0 -6px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:12.5px;text-align:left;cursor:pointer;box-sizing:content-box}'+
-'.bi .bi-frow:hover{background:var(--surface2)}.bi .bi-frow.sel{background:var(--surface2);box-shadow:inset 3px 0 0 var(--blue)}.bi .bi-fail.dim .bi-frow:not(.sel){opacity:.55}'+
-'.bi .bi-fbar{height:20px;border-radius:0 4px 4px 0;background:var(--bi-fal);min-width:2px}.bi .bi-ftrack{display:flex;align-items:center;height:20px}'+
+'.bi .bi-nota{display:grid;gap:8px}.bi .bi-frow{display:grid;grid-template-columns:minmax(92px,150px) minmax(0,1fr) 116px;align-items:center;gap:10px;width:100%;padding:3px 6px;margin:0 -6px;border:0;border-radius:8px;background:none;color:var(--ink);font:inherit;font-size:12.5px;text-align:left;cursor:pointer;box-sizing:content-box}'+
+'.bi .bi-frow:hover{background:var(--surface2)}.bi .bi-frow.sel{background:var(--surface2);box-shadow:inset 3px 0 0 var(--blue)}.bi .bi-nota.dim .bi-frow:not(.sel){opacity:.55}'+
+'.bi .bi-fbar{height:20px;border-radius:0 4px 4px 0;background:var(--bi-nota);min-width:2px}.bi .bi-ftrack{display:flex;align-items:center;height:20px}'+
 '.bi .bi-fv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}.bi .bi-fv small{display:block;white-space:nowrap;color:var(--muted);font-size:11px}'+
 '.bi .bi-cw{position:relative;width:100%;min-height:220px}.bi .bi-cw svg{display:block;width:100%;overflow:visible;touch-action:pan-y}'+
 '.bi .bi-cw text{font-family:inherit;fill:var(--muted);font-size:10.5px}.bi .bi-cw text.lab{fill:var(--ink2);font-size:11px}.bi .bi-cw .grid{stroke:var(--line2);stroke-width:1}.bi .bi-cw .axis{stroke:var(--line);stroke-width:1}'+
@@ -92,7 +92,7 @@ function ensureTab(){
     '<div class="bi-kpis" id="biKpis"></div>'+
     '<div class="grid-2">'+
       '<article class="panel" id="biMix"></article>'+
-      '<article class="panel" id="biFail"></article>'+
+      '<article class="panel" id="biNota"></article>'+
     '</div>'+
     '<article class="panel" id="biLine"></article>'+
     '<article class="panel" id="biCols"></article>'+
@@ -112,18 +112,17 @@ function ensureTab(){
 function prep(){
   return data.r72.protocols.map(function(x){
     var ms=dt(x.firstDate),d=ms?new Date(ms):null;
-    return{x:x,ia:x.agent,ms:ms,day:d?ymdLocal(d):'',wd:d?(d.getDay()+6)%7:-1,h:d?d.getHours():-1,fail:hasFailure(x)};
+    return{x:x,ia:x.agent,ms:ms,day:d?ymdLocal(d):'',wd:d?(d.getDay()+6)%7:-1,h:d?d.getHours():-1};
   });
 }
 function period(){return{start:q('#start').value,end:q('#end').value}}
 function weekObj(ws){for(var i=0;i<ws.length;i++)if(ws[i].start===F.week)return ws[i];return null}
 function inBand(h){return F.band.some(function(b){return h>=BANDS[b][2]&&h<BANDS[b][3]})}
-function pass(r,skipIA,skipFail,wk){
+function pass(r,skipIA,wk){
   if(!skipIA&&F.ias.length&&F.ias.indexOf(r.ia)<0)return false;
   if(wk&&(!r.day||r.day<wk.start||r.day>wk.end))return false;
   if(F.wd.length&&F.wd.indexOf(r.wd)<0)return false;
   if(F.band.length&&!inBand(r.h))return false;
-  if(!skipFail&&F.fail&&!r.fail)return false;
   return true;
 }
 function counts(v){return{resolvido:v.r,nao:v.u,transferido:v.tr,inatividade:v.ina,outros:Math.max(0,v.t-v.r-v.u-v.tr-v.ina)}}
@@ -133,17 +132,15 @@ function compute(){
   if(F.week){wk=weekObj(ws);if(!wk)F.week=''}
   var rs=wk?{start:wk.start,end:wk.end}:p;
   var all=D.byIA(rows.map(function(r){return r.x}));
-  var fNoIA=rows.filter(function(r){return pass(r,true,false,wk)});
-  var fNoIAFail=rows.filter(function(r){return pass(r,true,true,wk)});
-  var f=rows.filter(function(r){return pass(r,false,false,wk)});
+  var fNoIA=rows.filter(function(r){return pass(r,true,wk)});
+  var f=rows.filter(function(r){return pass(r,false,wk)});
   var stIA=D.byIA(fNoIA.map(function(r){return r.x}));
-  var stFail=D.byIA(fNoIAFail.map(function(r){return r.x}));
   var st=D.byIA(f.map(function(r){return r.x}));
   var days=rs.start&&rs.end&&rs.end>=rs.start?span(rs.start,rs.end):0;
   var gran=F.gran||(days>=21?'week':'day');
   if(wk)gran='day';
   if(days>62)gran='week';
-  return{rows:rows,p:p,ws:ws,wk:wk,rs:rs,all:all,f:f,st:st,stIA:stIA,stFail:stFail,days:days,gran:gran,B:buckets(f,rs,gran)};
+  return{rows:rows,p:p,ws:ws,wk:wk,rs:rs,all:all,f:f,st:st,stIA:stIA,days:days,gran:gran,B:buckets(f,rs,gran)};
 }
 function buckets(list,rs,gran){
   var B=[],i;
@@ -179,13 +176,13 @@ function tipOutcomes(title,v,sub){
 
 /* ---------- Filtros ---------- */
 function chipsIA(c){
-  var have=IAS.filter(function(n){return c.all[n]&&(c.all[n].t||c.all[n].f)});
+  var have=IAS.filter(function(n){return c.all[n]&&c.all[n].t});
   if(!have.length)have=IAS.slice();
   F.ias.forEach(function(n){if(have.indexOf(n)<0)have.push(n)});
   return have;
 }
 function toggle(arr,v){var i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v)}
-function anyFilter(){return F.ias.length||F.week||F.wd.length||F.band.length||F.fail||F.gran}
+function anyFilter(){return F.ias.length||F.week||F.wd.length||F.band.length||F.gran}
 function chip(group,val,label,on,extra){return'<button type="button" class="bi-chip" data-f="'+group+':'+val+'" aria-pressed="'+(on?'true':'false')+'">'+label+(extra||'')+'</button>'}
 
 function renderHead(c){
@@ -200,7 +197,6 @@ function renderHead(c){
       (wsOpts?'<div class="bi-fg"><span>Recorte</span><select class="bi-sel" data-f="week" aria-label="Recorte do período">'+wsOpts+'</select></div>':'')+
       '<div class="bi-fg"><span>Dia da semana</span><div class="bi-chips">'+DS.map(function(n,i){return chip('wd',i,n,F.wd.indexOf(i)>=0)}).join('')+'</div></div>'+
       '<div class="bi-fg"><span>Faixa horária</span><div class="bi-chips">'+BANDS.map(function(b,i){return chip('band',i,b[0],F.band.indexOf(i)>=0,'<small>'+b[1]+'</small>')}).join('')+'</div></div>'+
-      '<div class="bi-fg"><span>Conhecimento</span><div class="bi-chips">'+chip('fail','1','Só falhas de conhecimento',F.fail)+'</div></div>'+
       '<div class="bi-fg"><span>Evolução</span><select class="bi-sel" data-f="gran" aria-label="Agrupar a evolução"><option value="">Automático</option><option value="day"'+(F.gran==='day'?' selected':'')+'>Por dia</option><option value="week"'+(F.gran==='week'?' selected':'')+'>Por semana</option></select></div>'+
     '</div>'+
     '<div class="bi-bar"><span>Mostrando <b>'+n0(c.st._all.t)+'</b> de <b>'+n0(c.all._all.t)+'</b> atendimentos com desfecho</span>'+
@@ -233,13 +229,13 @@ function renderKpis(c){
     k('--bi-tra','Transferidos',t?pc(v.transferido):'—','<em>'+n0(cnt.transferido)+' atendimentos</em>'+goalLine(g,'transferido',v.transferido,t>0))+
     k('--bi-nao','Não resolvidos',t?pc(v.nao):'—','<em>'+n0(cnt.nao)+' atendimentos</em>'+goalLine(g,'nao',v.nao,t>0))+
     k('--bi-ina','Inatividade',t?pc(v.inatividade):'—','<em>'+n0(cnt.inatividade)+' atendimentos</em>')+
-    k('','Nota média',v.nn?nt(v.nota):'—','<em>'+n0(v.nn)+' avaliações'+(v.nn?' · '+pc(v.pos)+' notas 4 e 5':'')+'</em>'+goalLine(g,'nota',v.nota,v.nn>0))+
-    k('--bi-fal','Falhas de conhecimento',n0(v.f),'<em>'+(t?pc(share(v.f,t))+' dos atendimentos':'—')+'</em>')+
+    k('','Nota média',v.nn?nt(v.nota):'—','<em>'+(v.nn?pc(v.pos)+' notas 4 e 5':'sem avaliações')+'</em>'+goalLine(g,'nota',v.nota,v.nn>0))+
+    k('','Respostas da pesquisa',n0(v.nn),'<em>'+(t?pc(share(v.nn,t))+' dos atendimentos':'—')+'</em>')+
     k('','Metas atingidas',mt.tot?mt.hit+' de '+mt.tot:'—','<em>'+(mt.tot?(F.ias.length?'nas IAs selecionadas':'em todas as IAs'):'sem metas definidas')+'</em>');
   q('#biKpis').innerHTML=h;
 }
 
-/* ---------- Composição por IA e falhas ---------- */
+/* ---------- Composição por IA e nota ---------- */
 function legend(c){
   var show=OUT.filter(function(o){return o.k!=='outros'||(c.stIA._all&&counts(c.stIA._all).outros>0)});
   return'<div class="bi-lg">'+show.map(function(o){return'<span><u style="--c:var('+o.c+')"></u>'+o.lab+'</span>'}).join('')+'</div>';
@@ -260,16 +256,15 @@ function renderMix(c){
   q('#biMix').innerHTML='<div class="panel-head"><div><h2>Como terminam os atendimentos</h2><p>Composição dos desfechos por IA · clique numa IA para filtrar</p></div></div>'+
     (c.stIA._all.t&&any?legend(c)+'<div class="bi-mix'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
 }
-function renderFail(c){
-  var max=0;IAS.forEach(function(n){var v=c.stFail[n];if(v&&v.f>max)max=v.f});
-  var rows=IAS.filter(function(n){var v=c.stFail[n];return v&&(v.t||v.f)}).map(function(n){
-    var v=c.stFail[n],sel=F.ias.indexOf(n)>=0;
-    return'<button type="button" class="bi-frow'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(n)+': '+n0(v.f)+' falhas de conhecimento"><span class="bi-mn" title="'+esc(n)+'">'+esc(n)+'</span>'+
-      '<span class="bi-ftrack"><span class="bi-fbar" style="width:'+(max?Math.max(1,v.f/max*100):0)+'%" data-fail="'+esc(n)+'"></span></span>'+
-      '<span class="bi-fv">'+n0(v.f)+'<small>'+(v.t?pc(share(v.f,v.t)):'—')+' dos atend.</small></span></button>';
+function renderNota(c){
+  var rows=IAS.filter(function(n){var v=c.stIA[n];return v&&v.t}).map(function(n){
+    var v=c.stIA[n],sel=F.ias.indexOf(n)>=0;
+    return'<button type="button" class="bi-frow'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(n)+': nota média '+(v.nn?nt(v.nota):'sem avaliações')+', '+n0(v.nn)+' avaliações"><span class="bi-mn" title="'+esc(n)+'">'+esc(n)+'</span>'+
+      '<span class="bi-ftrack"><span class="bi-fbar" style="width:'+(v.nn?Math.max(1,v.nota/5*100):0)+'%" data-nota="'+esc(n)+'"></span></span>'+
+      '<span class="bi-fv">'+(v.nn?nt(v.nota):'—')+'<small>'+n0(v.nn)+' avaliações</small></span></button>';
   }).join('');
-  q('#biFail').innerHTML='<div class="panel-head"><div><h2>Falhas de conhecimento</h2><p>Atendimentos em que a IA não soube responder, por IA</p></div></div>'+
-    (rows&&c.stFail._all.f?'<div class="bi-fail'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">'+(rows?'Nenhuma falha de conhecimento nesses filtros.':'Sem atendimentos nesses filtros.')+'</div>');
+  q('#biNota').innerHTML='<div class="panel-head"><div><h2>Nota da pesquisa</h2><p>Nota média de 1 a 5 por IA · barras na escala de 0 a 5</p></div></div>'+
+    (rows&&c.stIA._all.nn?'<div class="bi-nota'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">'+(rows?'Nenhuma avaliação nesses filtros.':'Sem atendimentos nesses filtros.')+'</div>');
 }
 
 /* ---------- Gráficos SVG (largura real do contêiner) ---------- */
@@ -390,12 +385,12 @@ function statCells(v,goal){
     cellRate(goal,'transferido',v,t?pc(v.transferido):'—',n0(cn.transferido))+
     '<td><b>'+(t?pc(v.inatividade):'—')+'</b><small>'+n0(cn.inatividade)+'</small></td>'+
     cellRate(goal,'nota',v,v.nn?nt(v.nota):'—',v.nn?n0(v.nn)+' aval.':'')+
-    '<td><b>'+n0(v.f)+'</b></td>';
+    '';
 }
-var THEAD='<th>%s</th><th>Atend.</th><th>Resolvidos</th><th>Não resolvidos</th><th>Transferidos</th><th>Inatividade</th><th>Nota média</th><th>Falhas</th>';
+var THEAD='<th>%s</th><th>Atend.</th><th>Resolvidos</th><th>Não resolvidos</th><th>Transferidos</th><th>Inatividade</th><th>Nota média</th>';
 function renderTables(c){
   var metas=D.metas(),rows='';
-  IAS.forEach(function(n){var v=c.stIA[n];if(!v||(!v.t&&!v.f))return;var sel=F.ias.indexOf(n)>=0;
+  IAS.forEach(function(n){var v=c.stIA[n];if(!v||!v.t)return;var sel=F.ias.indexOf(n)>=0;
     rows+='<tr class="clk'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" tabindex="0" aria-pressed="'+(sel?'true':'false')+'"><td><b>'+esc(n)+'</b></td>'+statCells(v,metas[n])+'</tr>'});
   rows+='<tr class="tot"><td>Todas as IAs</td>'+statCells(c.stIA._all,null)+'</tr>';
   q('#biCmp').innerHTML='<div class="panel-head"><div><h2>Comparativo entre IAs</h2><p>Valores nos filtros atuais (exceto o filtro de IA) · verde/vermelho = meta atingida/não atingida · clique numa linha para filtrar</p></div></div>'+
@@ -404,7 +399,7 @@ function renderTables(c){
   var ev=c.B.map(function(b){return'<tr><td><b>'+esc(b.full)+'</b></td>'+statCells(b.v,g)+'</tr>'}).join('');
   q('#biEvo').innerHTML='<div class="panel-head"><div><h2>Evolução '+(c.gran==='week'?'semanal':'diária')+'</h2><p>Os mesmos números dos gráficos, em tabela'+(g?' · com as metas de '+esc(F.ias[0]):'')+'</p></div></div>'+
     '<div class="bi-tw"><table><thead><tr>'+THEAD.replace('%s',c.gran==='week'?'Semana':'Dia')+'</tr></thead><tbody>'+ev+'<tr class="tot"><td>Total do filtro</td>'+statCells(c.st._all,g)+'</tr></tbody></table></div>'+
-    '<p class="bi-note">Percentuais calculados sobre os atendimentos com desfecho. “Falhas” conta protocolos com ponto de falha de conhecimento.</p>';
+    '<p class="bi-note">Percentuais calculados sobre os atendimentos com desfecho.</p>';
 }
 
 /* ---------- Render ---------- */
@@ -413,7 +408,7 @@ function render(){
   if(typeof data==='undefined'||!data||!data.r72){return}
   var af=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.bi')&&document.activeElement.getAttribute('data-f');
   var c=compute();LAST=c;
-  renderHead(c);renderKpis(c);renderMix(c);renderFail(c);renderCharts(c);renderTables(c);
+  renderHead(c);renderKpis(c);renderMix(c);renderNota(c);renderCharts(c);renderTables(c);
   if(af){var e=q('.bi [data-f="'+af+'"]');if(e&&e.focus)e.focus()}
 }
 function redo(){render()}
@@ -424,11 +419,11 @@ document.addEventListener('click',function(e){
   var f=e.target.closest('[data-f]'),a=e.target.closest('[data-act]'),ia=e.target.closest('[data-ia]');
   if(f&&f.tagName==='BUTTON'){
     var p=f.dataset.f.split(':'),g=p[0],v=p.slice(1).join(':');
-    if(g==='ia')toggle(F.ias,v);else if(g==='wd')toggle(F.wd,+v);else if(g==='band')toggle(F.band,+v);else if(g==='fail')F.fail=!F.fail;
+    if(g==='ia')toggle(F.ias,v);else if(g==='wd')toggle(F.wd,+v);else if(g==='band')toggle(F.band,+v);
     redo();return;
   }
   if(a){
-    if(a.dataset.act==='clear'){F={ias:[],week:'',wd:[],band:[],fail:false,gran:''};redo()}
+    if(a.dataset.act==='clear'){F={ias:[],week:'',wd:[],band:[],gran:''};redo()}
     else if(a.dataset.act==='xlsx')exportXlsx();
     else if(a.dataset.act==='csv')exportCsv();
     return;
@@ -443,17 +438,17 @@ document.addEventListener('change',function(e){
 document.addEventListener('keydown',function(e){
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.bi tr.clk')){e.preventDefault();toggle(F.ias,e.target.dataset.ia);redo()}
 });
-/* dicas nas barras de composição e de falhas */
+/* dicas nas barras de composição e de nota */
 function tipMove(e){
-  var t=e.target.closest&&e.target.closest('.bi [data-seg],.bi [data-fail]');
+  var t=e.target.closest&&e.target.closest('.bi [data-seg],.bi [data-nota]');
   if(!t||!LAST){if(tip&&!tip.hidden&&!e.target.closest('.bi-cw'))hideTip();return}
   if(t.dataset.seg){
     var s=t.dataset.seg.split('|'),name=s[0],k=s[1],v=name==='Todas as IAs'?LAST.stIA._all:LAST.stIA[name];if(!v)return;
     var o=OUT.filter(function(x){return x.k===k})[0],n=counts(v)[k];
     showTip('<b>'+esc(name)+'</b><span><em style="font-style:normal">'+swatch(o.c)+o.lab+'</em><em style="font-style:normal">'+n0(n)+' · '+pc(share(n,v.t))+'</em></span><span><em style="font-style:normal;opacity:.8">Total com desfecho</em><em style="font-style:normal">'+n0(v.t)+'</em></span>',e.clientX,e.clientY);
   }else{
-    var nm=t.dataset.fail,fv=LAST.stFail[nm];if(!fv)return;
-    showTip('<b>'+esc(nm)+'</b><span><em style="font-style:normal">'+swatch('--bi-fal')+'Falhas de conhecimento</em><em style="font-style:normal">'+n0(fv.f)+'</em></span><span><em style="font-style:normal;opacity:.8">Dos atendimentos com desfecho</em><em style="font-style:normal">'+(fv.t?pc(share(fv.f,fv.t)):'—')+'</em></span>',e.clientX,e.clientY);
+    var nm=t.dataset.nota,nv=LAST.stIA[nm];if(!nv)return;
+    showTip('<b>'+esc(nm)+'</b><span><em style="font-style:normal">'+swatch('--bi-nota')+'Nota média</em><em style="font-style:normal">'+(nv.nn?nt(nv.nota):'—')+'</em></span><span><em style="font-style:normal;opacity:.8">Avaliações</em><em style="font-style:normal">'+n0(nv.nn)+'</em></span>',e.clientX,e.clientY);
   }
 }
 document.addEventListener('pointermove',tipMove);document.addEventListener('pointerdown',tipMove);
@@ -477,8 +472,7 @@ function filterTexts(c){
     ia:F.ias.length?F.ias.join(', '):'Todas',
     rec:c.wk?'Semana '+brf(c.wk.start)+' a '+brf(c.wk.end):'Período todo',
     wd:F.wd.length?F.wd.slice().sort().map(function(i){return DS[i]}).join(', '):'Todos',
-    band:F.band.length?F.band.slice().sort().map(function(i){return BANDS[i][0]+' ('+BANDS[i][1]+')'}).join(', '):'Todas',
-    fail:F.fail?'Sim':'Não'
+    band:F.band.length?F.band.slice().sort().map(function(i){return BANDS[i][0]+' ('+BANDS[i][1]+')'}).join(', '):'Todas'
   };
 }
 function outLabel(x){
@@ -496,18 +490,18 @@ function statRow(label,v,goal,extra){
   D.FIELDS.forEach(function(fl){var has=fl[0]==='nota'?v.nn>0:v.t>0,ok=goal?D.check(goal,fl[0],v[fl[0]],has):null;if(ok!==null){tot++;if(ok)hit++}});
   var gp=function(k){var g=gv(k);return g==null?null:{v:g/100,s:'pct'}};
   return(extra||[label]).concat([i(v.t),i(cn.resolvido),f(v.t?v.r/v.t:null),i(cn.transferido),f(v.t?v.tr/v.t:null),i(cn.nao),f(v.t?v.u/v.t:null),i(cn.inatividade),f(v.t?v.ina/v.t:null),i(cn.outros),
-    i(v.nn),v.nn?{v:Math.round(v.nota*100)/100,s:'dec'}:null,v.nn?f(v.pos/100):null,i(v.f),gp('resolvido'),gp('transferido'),gp('nao'),gv('nota')!=null?{v:gv('nota'),s:'dec'}:null,tot?hit+' de '+tot:null]);
+    i(v.nn),v.nn?{v:Math.round(v.nota*100)/100,s:'dec'}:null,v.nn?f(v.pos/100):null,gp('resolvido'),gp('transferido'),gp('nao'),gv('nota')!=null?{v:gv('nota'),s:'dec'}:null,tot?hit+' de '+tot:null]);
 }
-var HEAD_STAT=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros','Avaliações','Nota média','% Notas 4 e 5','Falhas de conhecimento','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'];
+var HEAD_STAT=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros','Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'];
 function head(a){return a.map(function(t){return{v:t,s:'head'}})}
 function dataRows(c){
   return c.f.filter(function(r){return r.ms}).sort(function(a,b){return a.ms-b.ms}).map(function(r){
     var d=new Date(r.ms),x=r.x,wkStart=plus(r.day,-r.wd);
     return[String(x.protocol||''),new Date(d.getFullYear(),d.getMonth(),d.getDate()),r.h,DIAS[r.wd],bandOf(r.h),new Date(+wkStart.slice(0,4),+wkStart.slice(5,7)-1,+wkStart.slice(8,10)),x.agent||'',outLabel(x),
-      x.survey&&x.survey.note?{v:x.survey.note,s:'int'}:null,r.fail?'Sim':'Não'];
+      x.survey&&x.survey.note?{v:x.survey.note,s:'int'}:null];
   });
 }
-var DATA_HEAD=['Protocolo','Data','Hora','Dia da semana','Faixa horária','Semana (início)','IA','Desfecho','Nota','Falha de conhecimento'];
+var DATA_HEAD=['Protocolo','Data','Hora','Dia da semana','Faixa horária','Semana (início)','IA','Desfecho','Nota'];
 function stamp(){var d=new Date();return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
 function fileName(c,ext){return'bi-monitor-ia-'+c.rs.start+'-a-'+c.rs.end+'.'+ext}
 function save(blob,name){
@@ -527,7 +521,7 @@ function exportXlsx(){
     [{v:'Gerado em '+stamp()+'. Percentuais calculados sobre os atendimentos com desfecho.',s:'note'}],
     [],
     [lab('Período'),brf(c.p.start)+' a '+brf(c.p.end)],
-    [lab('Recorte'),ft.rec],[lab('IA'),ft.ia],[lab('Dias da semana'),ft.wd],[lab('Faixa horária'),ft.band],[lab('Somente falhas de conhecimento'),ft.fail],
+    [lab('Recorte'),ft.rec],[lab('IA'),ft.ia],[lab('Dias da semana'),ft.wd],[lab('Faixa horária'),ft.band],
     [],
     head(['Indicador','Valor','Meta','Situação da meta']),
     ['Atendimentos com desfecho',{v:t,s:'int'}],
@@ -538,31 +532,30 @@ function exportXlsx(){
     ['% Inatividade',{v:t?v.ina/t:null,s:'pct'}],
     kpi('Nota média',v.nn?Math.round(v.nota*100)/100:null,'dec',g&&g.nota,'nota',v.nn>0),
     ['Avaliações',{v:v.nn,s:'int'}],
-    ['Falhas de conhecimento',{v:v.f,s:'int'}],
     ['Metas atingidas',mt.tot?mt.hit+' de '+mt.tot:'sem metas definidas'],
     [],
     [{v:'A meta de cada indicador só aparece quando uma única IA está selecionada.',s:'note'}]
   ];
   var cmp=[head(['IA'].concat(HEAD_STAT).concat(['Incluída no filtro']))];
-  IAS.forEach(function(n){var s=c.stIA[n];if(!s||(!s.t&&!s.f))return;var r=statRow(n,s,metas[n]);r.push(!F.ias.length||F.ias.indexOf(n)>=0?'Sim':'Não');cmp.push(r)});
+  IAS.forEach(function(n){var s=c.stIA[n];if(!s||!s.t)return;var r=statRow(n,s,metas[n]);r.push(!F.ias.length||F.ias.indexOf(n)>=0?'Sim':'Não');cmp.push(r)});
   var rt=statRow('Todas as IAs',c.stIA._all,null);rt.push('');cmp.push(rt);
   var evo=function(gran){
-    var B=buckets(c.f,c.rs,gran),rows=[head([gran==='week'?'Semana':'Dia','De','Até'].concat(HEAD_STAT.slice(0,14)))];
+    var B=buckets(c.f,c.rs,gran),rows=[head([gran==='week'?'Semana':'Dia','De','Até'].concat(HEAD_STAT.slice(0,13)))];
     B.forEach(function(b){
       var d1=d0(b.start),d2=d0(b.end);
-      var r=statRow(b.full,b.v,null,[b.full,d1,d2]);rows.push(r.slice(0,17));
+      var r=statRow(b.full,b.v,null,[b.full,d1,d2]);rows.push(r.slice(0,16));
     });
-    var r=statRow('Total do filtro',v,null,['Total do filtro',d0(c.rs.start),d0(c.rs.end)]);rows.push(r.slice(0,17));
+    var r=statRow('Total do filtro',v,null,['Total do filtro',d0(c.rs.start),d0(c.rs.end)]);rows.push(r.slice(0,16));
     return rows;
   };
   var evoW=evo('week'),sheets=[
     {name:'Resumo',cols:[34,16,12,18],rows:resumo,grid:false},
-    {name:'Comparativo IAs',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,14,12,12,12,10,12,12],rows:cmp,freeze:1,filter:true},
-    {name:'Evolução semanal',cols:[30,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12,14],rows:evoW,freeze:1,filter:true}
+    {name:'Comparativo IAs',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:cmp,freeze:1,filter:true},
+    {name:'Evolução semanal',cols:[30,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evoW,freeze:1,filter:true}
   ];
-  if(c.days<=120)sheets.push({name:'Evolução diária',cols:[26,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12,14],rows:evo('day'),freeze:1,filter:true});
+  if(c.days<=120)sheets.push({name:'Evolução diária',cols:[26,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evo('day'),freeze:1,filter:true});
   var dr=dataRows(c);
-  sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,18,7,14],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
+  sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,18,7],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
   window.monXlsx.build(sheets).then(function(b){save(b,fileName(c,'xlsx'));toast('Planilha baixada ('+n0(dr.length)+' atendimentos)')},function(){toast('Não foi possível gerar a planilha')});
 }
 function csvCell(v){

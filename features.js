@@ -1,5 +1,5 @@
 /* features.js — carregar DEPOIS de app.js, ui.js, overview.js e extras.js.
-   Clicar para filtrar · Resumo para copiar · Falhas de conhecimento · Tendência nos KPIs · Impressão/PDF */
+   Clicar para filtrar · Resumo para copiar · Tendência nos KPIs · Impressão/PDF */
 (function(){
 'use strict';
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -12,7 +12,6 @@ var DESC={
   transferido:'Protocolos que a IA encaminhou para atendimento humano',
   inatividade:'Protocolos finalizados porque o cliente parou de responder',
   possivel:'Pesquisa encaminhada como possível solução, ainda sem confirmação',
-  falha:'Protocolos em que a IA registrou “Falha de conhecimento”',
   finalizado:'Protocolos em que o cliente não retomou o atendimento (“Não retomou atendimento”)',
   safenota:'Protocolos encerrados pelo fluxo “Finaliza SafeNota”',
   andamento:'Só “Iniciado atendimento” há menos de 24h: viram Inatividade se não houver resposta',
@@ -373,30 +372,7 @@ wrap('renderQuality',function(){
   qa('#funnelPanel .fn').forEach(function(r){var o=map[r.firstChild.textContent];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
 });
 
-/* ======================================================================
-   2. Falhas de conhecimento (aba Qualidade)
-   ====================================================================== */
-var OUTLBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando',retomado:'Retomado',outro:'Sem desfecho'};
-wrap('renderQuality',function(){
-  var anchor=$('recontactList').closest('.panel'),p=$('knowledgePanel');
-  if(!p){p=document.createElement('article');p.id='knowledgePanel';p.className='panel';anchor.after(p)}
-  var all=data.r72.protocols,list=all.filter(hasFailure),n=list.length;
-  var head='<div class="panel-head"><div><h2>Falhas de conhecimento</h2><p>Atendimentos em que a IA não soube responder: mostram o que precisa entrar no treinamento</p></div><span class="badge">'+fmt(n)+' protocolo'+(n===1?'':'s')+'</span></div>';
-  if(!n){p.innerHTML=head+'<div class="empty">Nenhuma falha de conhecimento registrada no período.</div>';return}
-  var byAg={},ends={};list.forEach(function(x){byAg[x.agent]=(byAg[x.agent]||0)+1;var o=isUnresolvedProtocol(x)?'nao':x.outcome;ends[o]=(ends[o]||0)+1});
-  var agTxt=Object.keys(byAg).sort(function(a,b){return byAg[b]-byAg[a]}).map(function(a){return esc(a)+' '+fmt(byAg[a])}).join(' · ');
-  var endTxt=['transferido','nao','resolvido','inatividade','possivel','outro','retomado'].filter(function(k){return ends[k]}).map(function(k){return'<span class="pill o-'+k+'">'+OUTLBL[k]+'<b>'+fmt(ends[k])+'</b></span>'}).join('');
-  var recent=list.slice().sort(function(a,b){var fa=failurePoint(a),fb=failurePoint(b);return dt(fb&&fb.date)-dt(fa&&fa.date)}).slice(0,6);
-  p.innerHTML=head+
-    '<div class="kf-sum"><big>'+fmt(n)+'</big><div class="kf-t"><b>'+pct(n,all.length)+'% dos '+fmt(all.length)+' atendimentos iniciados</b><small>'+agTxt+'</small></div><div class="kf-ends" aria-label="Como terminaram">'+endTxt+'</div></div>'+
-    '<div class="kf-list">'+recent.map(function(x){var f=failurePoint(x),o=isUnresolvedProtocol(x)?'nao':x.outcome,s=x.survey;
-      return'<div class="item"><div class="kf-top"><b>Protocolo '+esc(x.protocol)+'</b><span class="pill">'+esc(x.agent)+'</span><span class="pill o-'+esc(o)+'">Terminou: '+esc(OUTLBL[o]||'Sem desfecho')+'</span></div>'+
-        '<div class="meta">'+esc(f?f.date:x.firstDate)+(s&&s.note?' · nota '+s.note:'')+(s&&s.comment?' · “'+esc(s.comment.length>140?s.comment.slice(0,137)+'…':s.comment)+'”':'')+'</div>'+
-        '<button type="button" class="copy-protocol-btn" data-protocol="'+esc(x.protocol)+'">⧉ Copiar protocolo</button></div>'}).join('')+'</div>'+
-    (n>recent.length?'<div class="kf-foot"><button type="button" class="btn btn-secondary" data-go-failures>Ver os '+fmt(n)+' protocolos</button></div>':'');
-});
 document.addEventListener('click',function(e){var b=e.target.closest('.copy-protocol-btn');if(!b)return;copyText(b.dataset.protocol,'Protocolo '+b.dataset.protocol+' copiado')});
-document.addEventListener('click',function(e){if(e.target.closest('[data-go-failures]'))goProtocols('falha')});
 document.addEventListener('click',function(e){var b=e.target.closest('[data-go-out]');if(b)goProtocols(b.dataset.goOut)});
 
 /* ======================================================================

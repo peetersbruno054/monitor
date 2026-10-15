@@ -175,7 +175,6 @@ function stats(r72,r74){
     res:pct(c('resolvido'),t),
     tr:pct(c('transferido'),t),
     un:r72.protocols.filter(isUnresolvedProtocol).length,
-    failures:r72.protocols.filter(hasFailure).length,
     recontacts:recontactCount(r72.protocols),
     low:low.length,
     lowPct:notes.length?low.length/notes.length*100:0,

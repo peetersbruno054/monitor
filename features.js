@@ -11,9 +11,8 @@ var DESC={
   resolvido:'Protocolos cujo último desfecho foi “Problema resolvido”',
   transferido:'Protocolos que a IA encaminhou para atendimento humano',
   inatividade:'Protocolos finalizados porque o cliente parou de responder',
-  possivel:'Pesquisa encaminhada como possível solução, ainda sem confirmação',
-  finalizado:'Protocolos em que o cliente não retomou o atendimento (“Não retomou atendimento”)',
-  safenota:'Protocolos encerrados pelo fluxo “Finaliza SafeNota”',
+  possivel:'Pesquisa encaminhada como possível solução, ainda dentro das 24h de espera: depois disso vira Resolvido',
+  finalizado:'Protocolos em que o cliente não retornou (“Não retomou atendimento”): entram em Outros no BI',
   andamento:'Só “Iniciado atendimento” há menos de 24h: viram Inatividade se não houver resposta',
   sem:'Protocolos que não registraram nenhum ponto de encerramento: veja a trilha de cada um',
   voltou:'Protocolos que tiveram retorno do cliente em até 24h',
@@ -29,17 +28,18 @@ function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','butto
 
 /* ======================================================================
    0. Regras para protocolos sem ponto de encerramento (definidas pela coordenação)
-      Não retomou atendimento .......... Finalizado
-      Finaliza SafeNota ................ Finaliza SafeNota
+      Não retomou atendimento .......... Finalizado (não retornou) = “Outros” no BI
+      Finaliza SafeNota ................ Transferido (fila) — o fluxo agora vai para a fila
       Atendimento retomado / Retomada .. Transferido (fila)
       Só Falha de conhecimento ......... Transferido (fila)
       Só Iniciado atendimento .......... Inatividade depois de 24h; antes disso, Em andamento
+      Possível solução sem resposta .... Resolvido (cliente não respondeu à possível solução; não é Inatividade)
       Vale o último desses pontos na trilha. Só se aplica a quem não tem desfecho próprio.
    ====================================================================== */
 var WAIT_H=24;
 function trailRule(p){var x=norm(p);
   if(x.indexOf('nao retomou')>=0||x.indexOf('nao retornou')>=0)return'finalizado';
-  if(x.indexOf('finaliza safenota')>=0)return'safenota';
+  if(x.indexOf('finaliza safenota')>=0)return'transferido';
   if(x.indexOf('retomad')>=0||x.indexOf('retomou')>=0)return'transferido';
   if(x.indexOf('falha de conhecimento')>=0)return'transferido';
   return'';}
@@ -78,6 +78,17 @@ window.analyze72=function(raw){
     if(hit){x.outcome=hit.o;x.finalPoint=hit.point;x.inferred=true;return}
     // só quem tem "Iniciado atendimento" da IA; linhas sem bot point não viram desfecho
     if(ev.some(function(e){return norm(e.point).indexOf('iniciado atendimento')>=0})){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
+  });
+  /* Possível solução sem resposta: o cliente recebeu a pesquisa de possível solução e não respondeu
+     (o protocolo fechou por "Inatividade - Finalizado"). Isso não é Inatividade: é Resolvido.
+     Vale quando o último desfecho antes da inatividade foi "Possível solução"; Transferido e
+     Não resolvido continuam como estão. */
+  r.protocols.forEach(function(x){
+    if(x.outcome!=='inatividade'||x.hasProblemUnresolved)return;
+    var rel=(x.events||[]).filter(function(e){return['resolvido','transferido','nao','inatividade','possivel'].indexOf(e.out)>=0})
+      .sort(function(a,b){return(a.ms&&b.ms&&a.ms!==b.ms)?a.ms-b.ms:a.index-b.index});
+    var prev=null;for(var i=rel.length-1;i>=0;i--){if(rel[i].out!=='inatividade'){prev=rel[i];break}}
+    if(prev&&prev.out==='possivel'){x.outcome='resolvido';x.finalPoint=prev.point;x.possivelSilent=true}
   });
   /* "Problema resolvido" é definitivo: nada que venha depois (inatividade, transferência, novo contato)
      tira o protocolo de Resolvidos. Só não vale se o próprio protocolo também registrou "Problema não
@@ -368,7 +379,7 @@ function bindAgents(){
 wrap('renderOverview',bindOverview);
 wrap('renderAgents',bindAgents);
 wrap('renderQuality',function(){
-  var map={'Com desfecho':'todos','Resolvidos':'resolvido','Transferidos':'transferido','Não resolvidos':'nao','Inatividade':'inatividade','Aguardando':'possivel','Finalizado':'finalizado','Finaliza SafeNota':'safenota'};
+  var map={'Com desfecho':'todos','Resolvidos':'resolvido','Transferidos':'transferido','Não resolvidos':'nao','Inatividade':'inatividade','Aguardando':'possivel','Finalizado':'finalizado'};
   qa('#funnelPanel .fn').forEach(function(r){var o=map[r.firstChild.textContent];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
 });
 

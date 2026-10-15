@@ -15,7 +15,7 @@ var OUT=[
   {k:'nao',lab:'Não resolvidos',one:'Não resolvido',c:'--bi-nao',t:'--bi-nao-t'},
   {k:'transferido',lab:'Transferidos',one:'Transferido',c:'--bi-tra',t:'--bi-tra-t'},
   {k:'inatividade',lab:'Inatividade',one:'Inatividade',c:'--bi-ina',t:'--bi-ina-t'},
-  {k:'outros',lab:'Outros',one:'Outros',c:'--bi-out',t:'--bi-out-t'}
+  {k:'outros',lab:'Outros (não retornou)',one:'Outros (não retornou)',c:'--bi-out',t:'--bi-out-t'}
 ];
 var LINES=OUT.slice(0,4);
 var F={ias:[],week:'',wd:[],band:[],gran:''};
@@ -574,7 +574,7 @@ function outLabel(x){
   if(isUnresolvedProtocol(x))return'Não resolvido';
   if(x.outcome==='transferido')return'Transferido';
   if(x.outcome==='inatividade')return'Inatividade';
-  if(DESFECHOS.indexOf(x.outcome)>=0)return'Outros';
+  if(DESFECHOS.indexOf(x.outcome)>=0)return'Outros (não retornou)';
   return'Sem desfecho';
 }
 function bandOf(h){for(var i=0;i<BANDS.length;i++)if(h>=BANDS[i][2]&&h<BANDS[i][3])return BANDS[i][0];return''}
@@ -586,7 +586,7 @@ function statRow(label,v,goal,extra){
   return(extra||[label]).concat([i(v.t),i(cn.resolvido),f(v.t?v.r/v.t:null),i(cn.transferido),f(v.t?v.tr/v.t:null),i(cn.nao),f(v.t?v.u/v.t:null),i(cn.inatividade),f(v.t?v.ina/v.t:null),i(cn.outros),
     i(v.nn),v.nn?{v:Math.round(v.nota*100)/100,s:'dec'}:null,v.nn?f(v.pos/100):null,gp('resolvido'),gp('transferido'),gp('nao'),gv('nota')!=null?{v:gv('nota'),s:'dec'}:null,tot?hit+' de '+tot:null]);
 }
-var HEAD_STAT=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros','Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'];
+var HEAD_STAT=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros (não retornou)','Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'];
 function head(a){return a.map(function(t){return{v:t,s:'head'}})}
 function dataRows(c){
   return c.f.filter(function(r){return r.ms}).sort(function(a,b){return a.ms-b.ms}).map(function(r){

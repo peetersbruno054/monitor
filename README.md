@@ -177,3 +177,9 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 - **Painéis recolhíveis**: clique no título (ou Enter) para recolher/abrir os painéis da Visão geral, da Qualidade e do BI. O estado fica salvo no navegador; "Semana a semana" começa recolhido. Na impressão tudo aparece aberto.
 - **Cores de desfecho unificadas**: verde (resolvidos), azul (transferidos), vermelho (não resolvidos) e âmbar (inatividade) em todo o site, no claro e no escuro. As variáveis estão em `styles.css` e `ui.css`.
 - Os 14 dias de base dos alertas e a comparação do BI usam o período anterior que a Visão geral já carrega (`monPrev`, em `extras.js`).
+
+## Regras de desfecho (atualização)
+- **Possível solução sem resposta = Resolvido.** Se o cliente recebeu a “Pesquisa encaminhada – Possível solução” e não respondeu (o protocolo fechou em “Inatividade – Finalizado”), o desfecho é **Resolvido**, não Inatividade. Transferido e Não resolvido continuam como estão. Se o próprio cliente voltar em até 24h, vale o desfecho do novo atendimento.
+- **Aguardando confirmação** (possível solução ainda dentro das 24h) vira Resolvido depois de 24h sem retorno.
+- **Finaliza SafeNota deixou de existir** como desfecho: o fluxo agora vai para a fila. Em dados antigos que ainda tenham esse ponto, o protocolo é contado como Transferido (fila) e o ponto não aparece mais na lista de pontos monitorados.
+- **Outros** (aba BI e Padrões) = **Finalizado (não retornou)** — “Não retomou atendimento” — mais os protocolos ainda em “Aguardando confirmação” dentro das 24h.

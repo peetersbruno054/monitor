@@ -3,7 +3,7 @@
 'use strict';
 var CONVO_URL='';/* opcional: link da conversa no Orpen. Vazio = visualizar pela rota interna do Monitor */
 var OUT=DESFECHOS,
-LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',retomado:'Retomado',finalizado:'Finalizado',safenota:'Finaliza SafeNota',andamento:'Em andamento',outro:'Sem desfecho'};
+LBL={resolvido:'Resolvido',transferido:'Transferido',nao:'Não resolvido',inatividade:'Inatividade',possivel:'Aguardando confirmação',retomado:'Retomado',finalizado:'Finalizado (não retornou)',andamento:'Em andamento',outro:'Sem desfecho'};
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 
 var css='#toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);padding:9px 16px;border-radius:999px;background:var(--ink);color:var(--surface);font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200}#toast.show{opacity:1;transform:translate(-50%,0)}'+

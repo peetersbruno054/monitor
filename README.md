@@ -187,6 +187,7 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 - O canal vem da coluna **“Tipo de Entrada”** do R72. O servidor passou a guardar essa coluna junto das demais; períodos já salvos no Supabase antes dessa mudança são coletados de novo no Orpen na primeira vez que forem abertos (uma vez só).
 - **BI:** filtro “Canal” (chips), painel “Por onde o cliente chega” (quantidade e % de cada canal, com a composição de desfechos), planilha “Comparativo canais” e coluna “Canal” na aba “Dados” do Excel/CSV. O link do BI guarda o canal (`ch=`).
 - **Protocolos:** filtro por canal, e cada protocolo mostra o canal e o telefone parcialmente oculto.
+- Se a coluna “Tipo de Entrada” não trouxer nome de canal (por exemplo, só “Receptivo”), o canal é **estimado pelo contato**: número de telefone = WhatsApp, qualquer outro formato = Webchat. O painel avisa quando isso acontece. O painel do BI aparece sempre que houver protocolos.
 - Nomes reconhecidos: WhatsApp, Webchat, Telegram, Instagram, Facebook, E-mail. Qualquer outro valor aparece com o nome original, e o BI lista os valores lidos (nota no fim do painel). Protocolos sem a coluna ficam em “Não informado”.
 
 ## Aba Protocolos unificada
@@ -197,3 +198,11 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 ## Faixa azul de navegação
 - Conta com inicial (“Acessos” para administrador, “Minha senha” para os demais), abas em pílulas com indicador que desliza e sino de alertas.
 - “Pesquisas” agora tem o ícone de carinha e a sigla CSAT. A própria senha se troca só em “Trocar minha senha” (a linha “você” na lista de acessos não tem mais “Nova senha”).
+
+## Relatório Excel do BI (botão “Excel”)
+Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, validação de dados) e `bi-xlsx.js` (monta as abas extras). Se `bi-xlsx.js` falhar, o Excel sai no formato simples anterior.
+- **Painel** (1ª aba): quatro caixas amarelas de filtro (IA, canal, dia da semana, faixa horária); indicadores, desfechos (rosca) e quadros por IA, canal, dia e faixa horária com gráficos. Tudo é fórmula sobre a aba Dados e se recalcula ao trocar a caixa. Cada quadro ignora o filtro da própria dimensão para permitir comparar.
+- **Gráficos:** desfechos por período, taxas, nota média e avaliações.
+- **Canais no tempo**, **Canal × IA** (quantidade e % por IA), **Dia × hora** (mapa de calor + volume por hora).
+- Abas já existentes: Resumo, Comparativos (IAs e canais), Evolução semanal/diária, Dados (com filtro automático e coluna Canal).
+- A base é o recorte do BI no momento do download (filtros, período, semana).

@@ -80,12 +80,22 @@ function channelName(v){
   if(/^chat$/.test(x))return'Webchat';
   return t.charAt(0).toUpperCase()+t.slice(1);
 }
+var KNOWN_CH=['WhatsApp','Webchat','Telegram','Instagram','Facebook','E-mail'];
+function phoneLike(v){return String(v||'').replace(/\D/g,'').length>=10}
 function tagChannel(r){
-  var rows=r.rows||[],s=rows[0]||{},ck=col(s,['tipo de entrada','tipo entrada','input type','canal','channel']),pk=col(s,['protocolo']),map={},raw={};
-  r.hasChannel=!!ck;
-  if(ck&&pk)rows.forEach(function(row){var p=String(row[pk]||'').trim(),v=String(row[ck]||'').trim();if(p&&v&&!map[p]){map[p]=channelName(v);raw[v]=(raw[v]||0)+1}});
-  r.channelRaw=raw;
-  r.protocols.forEach(function(x){x.channel=map[x.protocol]||''});
+  var rows=r.rows||[],s=rows[0]||{},
+      ck=col(s,['tipo de entrada','tipo entrada','input type','canal','channel']),pk=col(s,['protocolo']),
+      map={},raw={},known=false;
+  if(ck&&pk)rows.forEach(function(row){
+    var p=String(row[pk]||'').trim(),v=String(row[ck]||'').trim();
+    if(p&&v&&!map[p]){map[p]=channelName(v);raw[v]=(raw[v]||0)+1;if(KNOWN_CH.indexOf(map[p])>=0)known=true}
+  });
+  /* 1) coluna "Tipo de Entrada" com nomes de canal; 2) senão, estimativa pelo contato:
+     número de telefone = WhatsApp, qualquer outra coisa (ou vazio) = Webchat */
+  r.channelSource=known?'coluna':'contato';
+  r.channelInfo={column:ck||'',values:raw,columns:[]};
+  r.hasChannel=r.protocols.length>0;
+  r.protocols.forEach(function(x){x.channel=known?(map[x.protocol]||''):(phoneLike(x.contact)?'WhatsApp':'Webchat')});
 }
 window.monChannelName=channelName;
 var _a72=window.analyze72;

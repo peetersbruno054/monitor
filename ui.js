@@ -32,7 +32,7 @@ applyTheme();
 
 /* ---- Link direto para cada aba (#pesquisas etc.) ---- */
 function goto(){
-  var v=location.hash.slice(1);if(views.indexOf(v)<0)v='overview';
+  var v=location.hash.slice(1).split('?')[0];if(views.indexOf(v)<0)v='overview';
   show(v);
   document.querySelectorAll('.tabs button').forEach(function(b){
     var on=b.dataset.view===v;b.setAttribute('aria-current',on?'page':'false');
@@ -40,7 +40,7 @@ function goto(){
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.tabs button').forEach(function(b){
-  b.addEventListener('click',function(){if(location.hash.slice(1)!==b.dataset.view)location.hash=b.dataset.view;else goto()});
+  b.addEventListener('click',function(){if(location.hash.slice(1).split('?')[0]!==b.dataset.view)location.hash=b.dataset.view;else goto()});
 });
 window.addEventListener('hashchange',goto);
 q('.tabs').setAttribute('role','navigation');q('.tabs').setAttribute('aria-label','Seções');

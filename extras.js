@@ -210,12 +210,15 @@ function prevRange(s,e){
 }
 window.prevRange=prevRange;
 // período anterior já carregado (usado pelo relatório mensal); null enquanto não chegou
-window.monPrev=function(){var c=cache[$('start').value+'|'+$('end').value];return c&&c.s?{range:c.r,s:c.s}:null};
+window.monPrev=function(){var c=cache[$('start').value+'|'+$('end').value];return c&&c.s?{range:c.r,s:c.s,protocols:c.p||[]}:null};
 function loadPrev(){
   var s=$('start').value,e=$('end').value,k=s+'|'+e;if(cache[k]&&Date.now()-cache[k].t<6e5)return applyDeltas();
   var r=prevRange(s,e);
   fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({start:r[0],end:r[1],__prev:1})}).then(function(x){return x.json()}).then(function(j){
-    if(!j.ok)return;cache[k]={t:Date.now(),r:r,s:stats(analyze72(j.r72),analyze74(j.r74))};applyDeltas()}).catch(function(){});
+    if(!j.ok)return;
+    var a72=analyze72(j.r72),a74=analyze74(j.r74),by={};a74.forEach(function(v){if(v.protocol)by[v.protocol]=v});a72.protocols.forEach(function(x){x.survey=by[x.protocol]||null});
+    cache[k]={t:Date.now(),r:r,s:stats(a72,a74),p:a72.protocols};applyDeltas();
+    try{document.dispatchEvent(new Event('monprev'))}catch(_){}}).catch(function(){});
 }
 wrap('renderAll',loadPrev);
 wrap('renderOverview',function(){

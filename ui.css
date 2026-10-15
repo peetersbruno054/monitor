@@ -64,7 +64,7 @@ html[data-theme=dark]{color-scheme:dark;
  --canvas:#0b131a;--surface:#111c26;--surface2:#15222d;--surface3:#1b2a37;--line:#243545;--line2:#1d2d3a;
  --ink:#e8f0f6;--ink2:#c5d3de;--muted:#8da2b3;--muted2:#6f8596;--good:#4fcf9a;--goodbg:rgba(79,207,154,.14);
  --bad:#ff7d8a;--badbg:rgba(255,125,138,.14);--blue:#2f95d8;--blue2:#2582c0;--navy:#0e2a3d;--navy2:#123650;
- --resolved:#9a86f0;--transferred:#4a9de0;--inactivity:#e0a640;--possible:#35bfd9}
+ --resolved:#199e70;--resolved-t:#4fcf9a;--transferred:#3987e5;--inactivity:#c98500;--possible:#35bfd9}
 html[data-theme=dark] :is(.topbar,.panel,.kpi,.login-card,.chip,.view-btn,.copy-protocol-btn,.pager button,.btn-secondary,.mode.active,select,input[type=date],input[type=search],input[type=email]){background:var(--surface)}
 html[data-theme=dark] .agent span{background:var(--surface3)}
 html[data-theme=dark] .brand-text h1,html[data-theme=dark] .brand-logo-text{color:var(--ink)}

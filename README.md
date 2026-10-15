@@ -163,5 +163,17 @@ Quinta aba do site (atalho **5**), com a mesma lógica de uma planilha de BI: fi
 - **Indicadores:** atendimentos com desfecho, % resolvidos, transferidos, não resolvidos e inatividade, nota média, respostas da pesquisa e metas atingidas. Com uma única IA selecionada, cada indicador mostra ✔/✖ conforme a meta definida em **Metas e economia**.
 - **Gráficos:** composição dos desfechos por IA, nota da pesquisa por IA, evolução dos percentuais e volume por desfecho. As tabelas "Comparativo entre IAs" e "Evolução" trazem os mesmos números.
 - **Exportar:** **↓ Excel** gera um `.xlsx` com os filtros aplicados (abas Resumo, Comparativo IAs, Evolução semanal, Evolução diária e Dados, com filtro e cabeçalho fixo). **↓ CSV** baixa só os atendimentos filtrados. O telefone do cliente não vai na exportação.
+- **Comparação:** os indicadores mostram a variação (▲/▼, em pontos percentuais) contra o período anterior, o mesmo da Visão geral, já com os filtros aplicados. Com uma semana escolhida, compara com a semana anterior.
+- **Filtros no link:** a barra de endereço guarda os filtros (`#bi?ia=IA SPC&wd=0&band=1`). **🔗 Link** copia o endereço; o período continua vindo do seletor do topo. Ao rolar a página, uma barra fixa mostra o resumo dos filtros, com **Ajustar** e **Limpar**.
 - Os números usam as mesmas regras da Visão geral (`byIA` em `desempenho.js`). Arquivos: `bi.js` (aba) e `xlsx.js` (gerador de planilha, sem bibliotecas externas).
 - As cores de desfecho da aba BI (verde, vermelho, azul, âmbar) foram escolhidas para serem distinguíveis por quem tem daltonismo; o restante do site mantém as cores atuais.
+
+## Alertas, motivos de transferência e painéis recolhíveis
+
+Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mail.
+
+- **Alertas** (topo da Visão geral): (1) IAs fora da meta no período, com os indicadores que falharam; (2) dias fora do padrão: resolvidos caindo, transferências subindo ou volume muito baixo, comparando cada dia com os 14 dias anteriores da mesma IA (exige 8 atendimentos no dia e 40 na base, e uma diferença de pelo menos 10 pp, acima de 2 desvios). O dia de hoje não entra. **Ver no BI →** abre o BI já filtrado.
+- **Por que os atendimentos são transferidos** (aba Qualidade): para onde a IA encaminha (ponto de transferência), o que veio antes, % de transferências diretas (sem outro ponto entre o início e a transferência) e tempo mediano até transferir. Há filtro por IA e atalho para a lista de protocolos transferidos.
+- **Painéis recolhíveis**: clique no título (ou Enter) para recolher/abrir os painéis da Visão geral, da Qualidade e do BI. O estado fica salvo no navegador; "Semana a semana" começa recolhido. Na impressão tudo aparece aberto.
+- **Cores de desfecho unificadas**: verde (resolvidos), azul (transferidos), vermelho (não resolvidos) e âmbar (inatividade) em todo o site, no claro e no escuro. As variáveis estão em `styles.css` e `ui.css`.
+- Os 14 dias de base dos alertas e a comparação do BI usam o período anterior que a Visão geral já carrega (`monPrev`, em `extras.js`).

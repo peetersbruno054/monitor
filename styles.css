@@ -20,7 +20,7 @@
  --canvas:#eef3f6;--surface:#fff;--surface2:#f6f9fb;--surface3:#eef3f7;
  --line:#d9e3ea;--line2:#e7eef2;--ink:#13293d;--ink2:#34495b;--muted:#5b7083;--muted2:#8597a6;
  --good:#1a7f55;--goodbg:#e7f5ee;--bad:#c23b48;--badbg:#fdecee;--warn:#9a6200;
- --resolved:#6e56cf;--transferred:#2072b8;--inactivity:#c98a16;--possible:#1597b5;
+ --resolved:#1baf7a;--resolved-t:#12805a;--transferred:#2a78d6;--inactivity:#eda100;--possible:#1597b5;
  --radius:14px;--item:10px;--ctl:8px;
 }
 *{box-sizing:border-box}

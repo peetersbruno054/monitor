@@ -13,7 +13,8 @@ Q+'.view>*{min-width:0}'+
 Q+'.view>#qualityKpis{grid-column:1/-1;order:0}'+
 Q+'.view>.panel:has(#recontactList){grid-column:span 7;order:1}'+
 Q+'.view>#funnelPanel{grid-column:span 5;order:2}'+
-Q+'.view>#recPanel{grid-column:1/-1;order:3}'+
+Q+'.view>#transferPanel{grid-column:1/-1;order:3}'+
+Q+'.view>#recPanel{grid-column:1/-1;order:4}'+
 Q+'.view>.panel:has(#checkpointList){grid-column:1/-1;order:5}'+
 Q+' .panel{padding:18px 20px}'+
 /* ---- tempo até voltar: três faixas empilhadas, cada uma com barra de proporção ---- */

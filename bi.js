@@ -697,7 +697,7 @@ function head(a){return a.map(function(t){return{v:t,s:'head'}})}
 function dataRows(c){
   return c.f.filter(function(r){return r.ms}).sort(function(a,b){return a.ms-b.ms}).map(function(r){
     var d=new Date(r.ms),x=r.x,wkStart=plus(r.day,-r.wd);
-    return[String(x.protocol||''),new Date(d.getFullYear(),d.getMonth(),d.getDate()),r.h,DIAS[r.wd],bandOf(r.h),new Date(+wkStart.slice(0,4),+wkStart.slice(5,7)-1,+wkStart.slice(8,10)),x.agent||NOCH,x.channel||NOCH,outLabel(x),
+    return[String(x.protocol||''),new Date(d.getFullYear(),d.getMonth(),d.getDate()),r.h,DIAS[r.wd],bandOf(r.h),new Date(+wkStart.slice(0,4),+wkStart.slice(5,7)-1,+wkStart.slice(8,10)),IAS.indexOf(x.agent)>=0?x.agent:'Sem IA identificada',x.channel||NOCH,outLabel(x),
       x.survey&&x.survey.note?{v:x.survey.note,s:'int'}:null];
   });
 }

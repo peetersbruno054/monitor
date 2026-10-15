@@ -30,10 +30,8 @@ function extend(sheets,c,H){
   function cnt(excl,extra){return 'COUNTIFS('+pairs(excl)+(extra?','+extra:'')+')'}
   var NOT='"<>Sem desfecho"';
 
-  var hasCh=!!c.hasCh,iaList=[],seen={};
-  recs.forEach(function(r){if(!seen[r.ia]){seen[r.ia]=1;iaList.push(r.ia)}});
-  var IAORD=H.IAS||[];
-  iaList.sort(function(a,b){var x=IAORD.indexOf(a),y=IAORD.indexOf(b);return(x<0?99:x)-(y<0?99:y)||a.localeCompare(b)});
+  var hasCh=!!c.hasCh,iaList=(H.IAS||[]).filter(function(n){return recs.some(function(r){return r.ia===n})}),NOIA='Sem IA identificada';
+  var noIA=recs.filter(function(r){return r.ia===NOIA&&r.out!=='Sem desfecho'}).length;
   var chList=hasCh?c.chNames.filter(function(k){return recs.some(function(r){return r.ch===k})}):[];
   recs.forEach(function(r){if(chList.indexOf(r.ch)<0&&hasCh)chList.push(r.ch)});
   var out={};
@@ -99,7 +97,7 @@ function extend(sheets,c,H){
   cur=dHead+15;
 
   /* quadros por dimensão */
-  function dimSection(title,dim,label,members,type,colorFn){
+  function dimSection(title,dim,label,members,type,colorFn,foot){
     if(!members.length)return;
     secRow(title);
     var hr=cur,i;
@@ -127,12 +125,13 @@ function extend(sheets,c,H){
       return{name:OUTH[k],nameRef:'Painel!$'+X.colName(2+k)+'$'+hr,ref:'Painel!$'+X.colName(2+k)+'$'+r1+':$'+X.colName(2+k)+'$'+r2,
         vals:members.map(function(m){return agg(recs.filter(function(r){return r[dim]===m})).c[k]}),color:OUTC[k]};
     });
+    if(foot){put(cur,0,{v:foot,s:'hint'});merge(cur,0,8);rows[cur-1].height=30}
     cur++;
     var hgt=type==='barPct'?Math.max(12,members.length*2+8):16;
     charts.push({type:type,title:title+(type==='barPct'?' (% dos atendimentos)':''),from:[0,cur-1],to:[9,cur-1+hgt],cats:{ref:catsRef,vals:vals},series:ser,gap:45});
     cur+=hgt+2;
   }
-  dimSection('Por IA','ia','IA',iaList,'barPct');
+  dimSection('Por IA','ia','IA',iaList,'barPct',null,noIA?'O total do Painel inclui '+noIA+' atendimento(s) sem IA identificada (ficam fora do filtro de IA e deste quadro, mas contam em "Todas as IAs", como no BI).':'');
   if(hasCh&&chList.length)dimSection('Por canal de entrada','ch','Canal',chList,'barPct');
   dimSection('Por dia da semana','dia','Dia da semana',H.DIAS.filter(function(d){return recs.some(function(r){return r.dia===d})}),'colStacked');
   dimSection('Por faixa horária','band','Faixa horária',H.BANDS.filter(function(b){return recs.some(function(r){return r.band===b})}),'colStacked');
@@ -211,8 +210,8 @@ function extend(sheets,c,H){
       line.push({v:tt,s:'toti',f:'SUM(B'+r+':'+X.colName(chList.length)+r+')'});cr.push(line);
     });
     var m2=m1+iaList.length;
-    var tr=[{v:'Total',s:'tott'}];chList.forEach(function(ch,k){var cl=X.colName(k+1);tr.push({v:recs.filter(function(x){return x.ch===ch&&x.out!=='Sem desfecho'}).length,s:'toti',f:'SUM('+cl+m1+':'+cl+(m2-1)+')'})});
-    var cl2=X.colName(chList.length+1);tr.push({v:recs.filter(function(x){return x.out!=='Sem desfecho'}).length,s:'toti',f:'SUM('+cl2+m1+':'+cl2+(m2-1)+')'});cr.push(tr);
+    var tr=[{v:'Total',s:'tott'}];chList.forEach(function(ch,k){var cl=X.colName(k+1);tr.push({v:recs.filter(function(x){return x.ch===ch&&iaList.indexOf(x.ia)>=0&&x.out!=='Sem desfecho'}).length,s:'toti',f:'SUM('+cl+m1+':'+cl+(m2-1)+')'})});
+    var cl2=X.colName(chList.length+1);tr.push({v:recs.filter(function(x){return iaList.indexOf(x.ia)>=0&&x.out!=='Sem desfecho'}).length,s:'toti',f:'SUM('+cl2+m1+':'+cl2+(m2-1)+')'});cr.push(tr);
     cr.push([]);cr.push([{v:'Participação de cada canal no volume da IA',s:'sec'}]);
     var h2=m2+3;cr.push([H_('IA')].concat(chList.map(H_)));
     iaList.forEach(function(ia,i){

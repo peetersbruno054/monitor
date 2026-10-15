@@ -80,6 +80,14 @@ window.analyze72=function(raw){
     // só quem tem "Iniciado atendimento" da IA; linhas sem bot point não viram desfecho
     if(ev.some(function(e){return norm(e.point).indexOf('iniciado atendimento')>=0})){x.outcome=last&&now-last<WAIT_H*36e5?'andamento':'inatividade';x.inferred=true}
   });
+  /* "Problema resolvido" é definitivo: nada que venha depois (inatividade, transferência, novo contato)
+     tira o protocolo de Resolvidos. Só não vale se o próprio protocolo também registrou "Problema não
+     resolvido" (essa marca continua sendo definitiva e segue a regra de antes). */
+  r.protocols.forEach(function(x){
+    if(x.outcome==='resolvido'||x.outcome==='nao'||x.hasProblemUnresolved)return;
+    var hit=null;(x.events||[]).forEach(function(e){if(e.out==='resolvido'&&(!hit||(e.ms||0)>=(hit.ms||0)))hit=e});
+    if(hit){x.outcome='resolvido';x.finalPoint=hit.point;x.stickyResolved=true}
+  });
   applyReturnRule(r.protocols,now);
   if(ctx&&ctx.end){   // mostra só os protocolos abertos dentro do período escolhido
     var keep={};r.protocols=r.protocols.filter(function(x){var d=dayKey(x.firstDate);var ok=!d||d<=ctx.end;if(ok)keep[x.protocol]=1;return ok});
@@ -117,6 +125,7 @@ function applyReturnRule(list,now){
   list.forEach(function(x){
     x.ownOutcome=x.outcome;
     x.ownUnresolved=!!x.hasProblemUnresolved||x.outcome==='nao';
+    x.ownResolved=!x.ownUnresolved&&(x.events||[]).some(function(e){return e.out==='resolvido'});
     var t=bounds(x);x._a=t.a;x._b=t.b;
     var k=contactKey(x.contact);
     x.noContact=!k;
@@ -173,6 +182,8 @@ function applyReturnRule(list,now){
         preserveUnresolved(x,x);
         continue;
       }
+
+      if(x.ownResolved){x.outcome='resolvido';continue}   // resolvido explícito não é trocado pelo retorno
 
       if(fin.outcome==='nao'||fin.hasProblemUnresolved){
         preserveUnresolved(x,fin);

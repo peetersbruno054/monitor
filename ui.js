@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var q=function(s){return document.querySelector(s)},root=document.documentElement,
-    mq=matchMedia('(prefers-color-scheme: dark)'),views=['overview','surveys','quality','protocols'];
+    mq=matchMedia('(prefers-color-scheme: dark)'),views=['overview','surveys','quality','protocols','bi'];
 function get(k){try{return localStorage.getItem(k)}catch(_){return null}}
 function set(k,v){try{localStorage.setItem(k,v)}catch(_){}}
 function mk(id,cls,html,title){var b=document.createElement('button');b.id=id;b.type='button';b.className=cls;b.innerHTML=html;b.title=title;b.setAttribute('aria-label',title);return b}
@@ -100,10 +100,10 @@ new MutationObserver(function(){
   at.querySelectorAll('tr').forEach(function(tr){tr.querySelectorAll('td').forEach(function(td,j){if(th[j])td.dataset.l=th[j].textContent})});
 }).observe(at,{childList:true});
 
-/* ---- Atalhos: 1–4 abas · R atualizar · T tema · / buscar ---- */
+/* ---- Atalhos: 1–5 abas · R atualizar · T tema · / buscar ---- */
 document.addEventListener('keydown',function(e){
   if(e.metaKey||e.ctrlKey||e.altKey||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||document.getElementById('main').hidden)return;
-  var k=e.key.toLowerCase(),i=['1','2','3','4'].indexOf(k);
+  var k=e.key.toLowerCase(),i=['1','2','3','4','5'].indexOf(k);
   if(i>=0)location.hash=views[i];
   else if(k==='r')refresh.click();
   else if(k==='t')theme.click();

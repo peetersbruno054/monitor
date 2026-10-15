@@ -154,3 +154,14 @@ Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishab
 - **Mapa de pico** (Visão geral): dia da semana × hora do primeiro contato, por IA, em volume, % transferidos ou % resolvidos. O expediente considerado é segunda a sexta, das 8h às 18h (constante `BIZ` em `padroes.js`).
 - **Clientes que mais voltam** (aba Qualidade): telefones com 2 ou mais atendimentos no período, com desfecho de cada um, protocolos (clique para copiar) e CSV da lista completa. O telefone aparece parcialmente oculto; clique para ver.
 - **Relatório mensal** (botão no topo): abre uma página limpa, sempre em fundo branco, com indicadores, destaques, pontos de atenção, desempenho por IA, semana a semana, horário de pico e clientes que mais voltaram. Use **Imprimir / salvar PDF**. Compara com o mês anterior quando o período é um mês fechado.
+
+## Aba BI
+
+Quinta aba do site (atalho **5**), com a mesma lógica de uma planilha de BI: filtrar, comparar e exportar. Respeita o período escolhido no topo da página.
+
+- **Filtros:** IA (várias ao mesmo tempo), recorte por semana, dia da semana, faixa horária (madrugada, manhã, tarde, noite), "só falhas de conhecimento" e agrupamento da evolução (automático, por dia ou por semana). Clicar numa IA em qualquer gráfico ou tabela também filtra. **Limpar filtros** volta ao período todo.
+- **Indicadores:** atendimentos com desfecho, % resolvidos, transferidos, não resolvidos e inatividade, nota média, falhas de conhecimento e metas atingidas. Com uma única IA selecionada, cada indicador mostra ✔/✖ conforme a meta definida em **Metas e economia**.
+- **Gráficos:** composição dos desfechos por IA, falhas de conhecimento por IA, evolução dos percentuais e volume por desfecho. As tabelas "Comparativo entre IAs" e "Evolução" trazem os mesmos números.
+- **Exportar:** **↓ Excel** gera um `.xlsx` com os filtros aplicados (abas Resumo, Comparativo IAs, Evolução semanal, Evolução diária e Dados, com filtro e cabeçalho fixo). **↓ CSV** baixa só os atendimentos filtrados. O telefone do cliente não vai na exportação.
+- Os números usam as mesmas regras da Visão geral (`byIA` em `desempenho.js`). Arquivos: `bi.js` (aba) e `xlsx.js` (gerador de planilha, sem bibliotecas externas).
+- As cores de desfecho da aba BI (verde, vermelho, azul, âmbar) foram escolhidas para serem distinguíveis por quem tem daltonismo; o restante do site mantém as cores atuais.

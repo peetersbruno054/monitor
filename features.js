@@ -66,11 +66,34 @@ function cleanR72(raw){
   return out;
 }
 window.cleanR72=cleanR72;
+/* Canal de entrada (WhatsApp, Webchat…): vem da coluna "Tipo de Entrada" do R72.
+   Cada protocolo fica com o primeiro valor preenchido; valores desconhecidos aparecem com o nome original. */
+function channelName(v){
+  var t=String(v||'').trim(),x=norm(t);
+  if(!t)return'';
+  if(/whats|wpp|zap/.test(x))return'WhatsApp';
+  if(/web\s*chat|webchat|chat web|site|widget|portal|\bweb\b/.test(x))return'Webchat';
+  if(/telegram/.test(x))return'Telegram';
+  if(/instagram/.test(x))return'Instagram';
+  if(/facebook|messenger/.test(x))return'Facebook';
+  if(/e-?mail/.test(x))return'E-mail';
+  if(/^chat$/.test(x))return'Webchat';
+  return t.charAt(0).toUpperCase()+t.slice(1);
+}
+function tagChannel(r){
+  var rows=r.rows||[],s=rows[0]||{},ck=col(s,['tipo de entrada','tipo entrada','input type','canal','channel']),pk=col(s,['protocolo']),map={},raw={};
+  r.hasChannel=!!ck;
+  if(ck&&pk)rows.forEach(function(row){var p=String(row[pk]||'').trim(),v=String(row[ck]||'').trim();if(p&&v&&!map[p]){map[p]=channelName(v);raw[v]=(raw[v]||0)+1}});
+  r.channelRaw=raw;
+  r.protocols.forEach(function(x){x.channel=map[x.protocol]||''});
+}
+window.monChannelName=channelName;
 var _a72=window.analyze72;
 window.analyze72=function(raw){
   // contexto do período (vem do fetch estendido): as linhas do dia seguinte servem só para o cruzamento de 24h
   var ctx=null;if(Array.isArray(raw)&&raw[0]&&raw[0].__ctx){ctx=CTX[raw[0].__ctx]||null;raw=raw.slice(1)}
   var r=_a72(cleanR72(raw)),now=Date.now();
+  tagChannel(r);
   r.protocols.forEach(function(x){
     if(x.outcome!=='outro')return;
     var ev=(x.events||[]).slice().sort(function(a,b){return(a.ms&&b.ms&&a.ms!==b.ms)?a.ms-b.ms:a.index-b.index}),hit=null,last=0;
@@ -441,7 +464,7 @@ wrap('renderSurveys',function(){
 /* ======================================================================
    5. Impressão / PDF
    ====================================================================== */
-var TITLES={overview:'Visão geral',surveys:'Pesquisas',quality:'Qualidade',protocols:'Protocolos'};
+var TITLES={overview:'Visão geral',surveys:'Pesquisas CSAT',protocols:'Protocolos',bi:'BI'};
 qa('main [data-panel]').forEach(function(s){s.dataset.title=TITLES[s.dataset.panel]||''});
 var ph=document.createElement('header');ph.id='printHead';$('main').insertBefore(ph,$('main').firstChild);
 var saved=null;

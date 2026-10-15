@@ -53,8 +53,8 @@ function when(v){if(!v)return'';var d=new Date(v);return isNaN(d)?'':d.toLocaleS
 /* ---------- Botão ---------- */
 function placeButton(){
   if(!btn){btn=document.createElement('button');btn.type='button';btn.id='accessBtn';btn.className='btn btn-ghost';btn.onclick=openDlg}
-  btn.innerHTML=(me.admin?IC.users+' Acessos':IC.key+' Minha senha');
-  btn.title=me.admin?'Criar e gerenciar acessos dos colegas':'Trocar a sua senha';
+  btn.innerHTML='<span class="ac-av" aria-hidden="true">'+esc((me.email||'?').charAt(0).toUpperCase())+'</span><span class="ac-l">'+(me.admin?'Acessos':'Minha senha')+'</span>';
+  btn.title=(me.email?me.email+' · ':'')+(me.admin?'Criar e gerenciar acessos dos colegas e trocar a sua senha':'Trocar a sua senha');
   var box=q('.quick-actions');
   if(box){if(btn.parentNode!==box)box.appendChild(btn)}
   else{var r=document.getElementById('refresh');if(r&&btn.parentNode!==r.parentNode)r.parentNode.insertBefore(btn,r)}
@@ -108,7 +108,7 @@ function renderList(){
       (u.blocked?'<span class="pill blk">Bloqueado</span>':'')+(self?'<span class="pill me">você</span>':u.owner?'<span class="pill me">responsável</span>':'')+
       '<span>'+(u.lastSignInAt?'último acesso '+when(u.lastSignInAt):'ainda não entrou')+'</span></div></div>'+
       '<div class="ad-acts">'+
-        '<button type="button" data-act="reset">Nova senha</button>'+
+        (self?'':'<button type="button" data-act="reset">Nova senha</button>')+   // a própria senha se troca em "Trocar minha senha", abaixo
         (locked||u.fixedAdmin?'':'<button type="button" data-act="role">'+(u.role==='admin'?'Tornar leitura':'Tornar admin')+'</button>')+
         (locked?'':'<button type="button" data-act="'+(u.blocked?'unblock':'block')+'">'+(u.blocked?'Desbloquear':'Bloquear')+'</button>')+
         (locked?'':'<button type="button" class="danger" data-act="delete">Remover</button>')+

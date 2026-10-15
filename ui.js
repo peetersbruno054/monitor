@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var q=function(s){return document.querySelector(s)},root=document.documentElement,
-    mq=matchMedia('(prefers-color-scheme: dark)'),views=['overview','surveys','quality','protocols','bi'];
+    mq=matchMedia('(prefers-color-scheme: dark)'),views=['overview','surveys','protocols','bi'];
 function get(k){try{return localStorage.getItem(k)}catch(_){return null}}
 function set(k,v){try{localStorage.setItem(k,v)}catch(_){}}
 function mk(id,cls,html,title){var b=document.createElement('button');b.id=id;b.type='button';b.className=cls;b.innerHTML=html;b.title=title;b.setAttribute('aria-label',title);return b}
@@ -32,7 +32,7 @@ applyTheme();
 
 /* ---- Link direto para cada aba (#pesquisas etc.) ---- */
 function goto(){
-  var v=location.hash.slice(1).split('?')[0];if(views.indexOf(v)<0)v='overview';
+  var v=location.hash.slice(1).split('?')[0];if(v==='quality')v='protocols';if(views.indexOf(v)<0)v='overview';
   show(v);
   document.querySelectorAll('.tabs button').forEach(function(b){
     var on=b.dataset.view===v;b.setAttribute('aria-current',on?'page':'false');

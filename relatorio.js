@@ -177,7 +177,7 @@ function build(){
   if(rc.rows.length){
     out+='<div class="mr-sec"><h2>Clientes que mais voltaram<small>telefones parcialmente ocultos</small></h2><div class="mr-w"><table><thead><tr><th>Contato</th><th>Vezes</th><th>Resolvidos</th><th>Transferidos</th><th>Não resolvidos</th><th>Último desfecho</th><th style="text-align:left">IAs</th></tr></thead><tbody>'+
       rc.rows.slice(0,10).map(function(r){return'<tr><td>'+esc(window.maskPhone?window.maskPhone(r.contact):r.contact)+'</td><td><b>'+r.n+'</b></td><td>'+r.c.res+'</td><td>'+r.c.tr+'</td><td>'+r.c.nao+'</td><td>'+esc(OUTCOME_ONE[r.lastOutcome]||r.lastOutcome)+'</td><td style="white-space:normal;text-align:left">'+esc(r.ias.join(', '))+'</td></tr>'}).join('')+
-      '</tbody></table></div>'+(rc.rows.length>10?'<div class="mr-note">Os 10 que mais voltaram de '+fmt(rc.rows.length)+'. A lista completa está na aba Qualidade (botão CSV).</div>':'')+'</div>';
+      '</tbody></table></div>'+(rc.rows.length>10?'<div class="mr-note">Os 10 que mais voltaram de '+fmt(rc.rows.length)+'. A lista completa está na aba Protocolos (botão CSV).</div>':'')+'</div>';
   }
 
   out+='<div class="mr-foot"><p><b>Como ler:</b> atendimento é o protocolo que passou pela IA e teve desfecho registrado. Resolvido: a IA concluiu e o cliente não voltou em até 24h (uma possível solução vira resolvida após 24h sem retorno). Não resolvido permanece mesmo com eventos posteriores. Transferido: encaminhado para a fila humana.</p>'+

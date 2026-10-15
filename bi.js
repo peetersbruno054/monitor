@@ -18,7 +18,8 @@ var OUT=[
   {k:'outros',lab:'Outros (não retornou)',one:'Outros (não retornou)',c:'--bi-out',t:'--bi-out-t'}
 ];
 var LINES=OUT.slice(0,4);
-var F={ias:[],week:'',wd:[],band:[],gran:''};
+var F={ias:[],ch:[],week:'',wd:[],band:[],gran:''};
+var NOCH='Não informado';
 var LAST=null;
 
 function toast(m){if(window.monToast)window.monToast(m)}
@@ -76,6 +77,11 @@ var css=
 '.bi tr.tot td{font-weight:600;border-top:1px solid var(--line);background:var(--surface2)}.bi tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--blue)}.bi tr.clk{cursor:pointer}.bi tr.clk:hover td{background:var(--surface2)}'+
 '@media(max-width:820px){.bi td:first-child,.bi th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}.bi tr.tot td:first-child{background:var(--surface2)}}'+
 '.bi .bi-note{margin-top:8px;font-size:11.5px;color:var(--muted)}'+
+'.bi .bi-cts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:2px 0 16px}'+
+'.bi .bi-ct{display:grid;gap:2px;text-align:left;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2);color:var(--ink2);font:inherit;cursor:pointer}'+
+'.bi .bi-ct:hover{border-color:var(--blue)}.bi .bi-ct.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}'+
+'.bi .bi-ct small{font-size:12px;color:var(--muted)}.bi .bi-ct strong{font-size:26px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}.bi .bi-ct em{font-style:normal;font-size:12px;color:var(--muted)}'+
+'.bi .bi-cb{display:block;height:4px;margin-top:6px;border-radius:4px;background:var(--line2);overflow:hidden}.bi .bi-cb i{display:block;height:100%;border-radius:4px;background:var(--blue)}'+
 '#biTip{position:fixed;z-index:200;max-width:260px;padding:8px 10px;border-radius:8px;background:var(--ink);color:var(--surface);font-size:12px;line-height:1.45;box-shadow:0 8px 24px rgba(0,20,35,.28);pointer-events:none}'+
 '#biTip b{display:block;margin-bottom:3px;font-weight:600}#biTip i{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:2px;background:var(--c)}#biTip span{display:flex;justify-content:space-between;gap:14px;font-variant-numeric:tabular-nums}'+
 '.bi .bi-sw{position:sticky;top:0;z-index:15;height:0;margin-bottom:-16px;overflow:visible}'+
@@ -100,6 +106,7 @@ function ensureTab(){
       '<article class="panel" id="biMix"></article>'+
       '<article class="panel" id="biNota"></article>'+
     '</div>'+
+    '<article class="panel" id="biCh"></article>'+
     '<article class="panel" id="biLine"></article>'+
     '<article class="panel" id="biCols"></article>'+
     '<article class="panel" id="biCmp"></article>'+
@@ -119,14 +126,15 @@ function ensureTab(){
 /* ---------- Dados preparados (uma vez por carga) ---------- */
 function toRow(x){
   var ms=dt(x.firstDate),d=ms?new Date(ms):null;
-  return{x:x,ia:x.agent,ms:ms,day:d?ymdLocal(d):'',wd:d?(d.getDay()+6)%7:-1,h:d?d.getHours():-1};
+  return{x:x,ia:x.agent,ch:x.channel||NOCH,ms:ms,day:d?ymdLocal(d):'',wd:d?(d.getDay()+6)%7:-1,h:d?d.getHours():-1};
 }
 function prep(){return data.r72.protocols.map(toRow)}
 function period(){return{start:q('#start').value,end:q('#end').value}}
 function weekObj(ws){for(var i=0;i<ws.length;i++)if(ws[i].start===F.week)return ws[i];return null}
 function inBand(h){return F.band.some(function(b){return h>=BANDS[b][2]&&h<BANDS[b][3]})}
-function pass(r,skipIA,wk){
+function pass(r,skipIA,wk,skipCh){
   if(!skipIA&&F.ias.length&&F.ias.indexOf(r.ia)<0)return false;
+  if(!skipCh&&F.ch.length&&F.ch.indexOf(r.ch)<0)return false;
   if(wk&&(!r.day||r.day<wk.start||r.day>wk.end))return false;
   if(F.wd.length&&F.wd.indexOf(r.wd)<0)return false;
   if(F.band.length&&!inBand(r.h))return false;
@@ -143,11 +151,16 @@ function compute(){
   var f=rows.filter(function(r){return pass(r,false,wk)});
   var stIA=D.byIA(fNoIA.map(function(r){return r.x}));
   var st=D.byIA(f.map(function(r){return r.x}));
+  var chRows=rows.filter(function(r){return pass(r,false,wk,true)}),chList={},stCh={};
+  chRows.forEach(function(r){(chList[r.ch]=chList[r.ch]||[]).push(r.x)});
+  Object.keys(chList).forEach(function(k){stCh[k]=D.byIA(chList[k])._all});
+  F.ch.forEach(function(k){if(!stCh[k])stCh[k]=D.byIA([])._all});
+  var chNames=Object.keys(stCh).sort(function(a,b){return(a===NOCH)-(b===NOCH)||stCh[b].t-stCh[a].t||a.localeCompare(b)});
   var days=rs.start&&rs.end&&rs.end>=rs.start?span(rs.start,rs.end):0;
   var gran=F.gran||(days>=21?'week':'day');
   if(wk)gran='day';
   if(days>62)gran='week';
-  return{rows:rows,p:p,ws:ws,wk:wk,rs:rs,all:all,f:f,st:st,stIA:stIA,days:days,gran:gran,B:buckets(f,rs,gran),prev:prevStats(rows,wk)};
+  return{stCh:stCh,chNames:chNames,hasCh:rows.some(function(r){return r.x.channel}),rows:rows,p:p,ws:ws,wk:wk,rs:rs,all:all,f:f,st:st,stIA:stIA,days:days,gran:gran,B:buckets(f,rs,gran),prev:prevStats(rows,wk)};
 }
 /* Comparação com o período anterior (o mesmo que a Visão geral usa): aplica os mesmos filtros.
    Com uma semana escolhida, compara com a semana imediatamente anterior. */
@@ -201,7 +214,7 @@ function chipsIA(c){
   return have;
 }
 function toggle(arr,v){var i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v)}
-function anyFilter(){return F.ias.length||F.week||F.wd.length||F.band.length||F.gran}
+function anyFilter(){return F.ias.length||F.ch.length||F.week||F.wd.length||F.band.length||F.gran}
 function chip(group,val,label,on,extra){return'<button type="button" class="bi-chip" data-f="'+group+':'+val+'" aria-pressed="'+(on?'true':'false')+'">'+label+(extra||'')+'</button>'}
 
 function renderHead(c){
@@ -213,6 +226,7 @@ function renderHead(c){
     '<div class="bi-actions"><button type="button" class="btn btn-primary" data-act="xlsx" title="Baixar a planilha com os filtros aplicados (resumo, comparativo, evolução e dados)">↓ Excel</button><button type="button" class="btn btn-ghost" data-act="csv" title="Baixar os atendimentos filtrados em CSV">↓ CSV</button><button type="button" class="btn btn-ghost" data-act="link" title="Copiar um link com esses filtros (o período vem do seletor do topo)">🔗 Link</button></div></div>'+
     '<div class="bi-filters">'+
       '<div class="bi-fg"><span>IA</span><div class="bi-chips">'+chipsIA(c).map(function(n){return chip('ia',esc(n),esc(n),F.ias.indexOf(n)>=0)}).join('')+'</div></div>'+
+      (c.hasCh?'<div class="bi-fg"><span>Canal</span><div class="bi-chips">'+c.chNames.map(function(n){return chip('ch',esc(n),esc(n),F.ch.indexOf(n)>=0)}).join('')+'</div></div>':'')+
       (wsOpts?'<div class="bi-fg"><span>Recorte</span><select class="bi-sel" data-f="week" aria-label="Recorte do período">'+wsOpts+'</select></div>':'')+
       '<div class="bi-fg"><span>Dia da semana</span><div class="bi-chips">'+DS.map(function(n,i){return chip('wd',i,n,F.wd.indexOf(i)>=0)}).join('')+'</div></div>'+
       '<div class="bi-fg"><span>Faixa horária</span><div class="bi-chips">'+BANDS.map(function(b,i){return chip('band',i,b[0],F.band.indexOf(i)>=0,'<small>'+b[1]+'</small>')}).join('')+'</div></div>'+
@@ -281,6 +295,33 @@ function renderMix(c){
   IAS.forEach(function(n){var v=c.stIA[n];if(!v||!v.t)return;any=true;rows+=mixRow(n,v,F.ias.indexOf(n)>=0,false)});
   q('#biMix').innerHTML='<div class="panel-head"><div><h2>Como terminam os atendimentos</h2><p>Composição dos desfechos por IA · clique numa IA para filtrar</p></div></div>'+
     (c.stIA._all.t&&any?legend(c)+'<div class="bi-mix'+(F.ias.length?' dim':'')+'">'+rows+'</div>':'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
+}
+
+/* ---------- Canais de entrada (WhatsApp, Webchat…) ---------- */
+function chRow(name,v,sel,tot){
+  var cn=counts(v),segs=OUT.map(function(o){
+    var n=cn[o.k];if(!n)return'';
+    var p=share(n,v.t);
+    return'<i data-segc="'+esc(name)+'|'+o.k+'" style="flex:'+n+' 1 0;--c:var('+o.c+');--t:var('+o.t+')">'+(p>=(innerWidth<560?17:10)?Math.round(p)+'%':'')+'</i>';
+  }).join('');
+  return'<button type="button" class="bi-mrow'+(sel?' sel':'')+(tot?' tot':'')+'" data-ch="'+(tot?'':esc(name))+'" aria-pressed="'+(sel?'true':'false')+'" aria-label="'+esc(name)+': '+n0(v.t)+' atendimentos"'+(tot?' tabindex="-1"':'')+'>'+
+    '<span class="bi-mn" title="'+esc(name)+'">'+esc(name)+'</span><span class="bi-mbar">'+(v.t?segs:'')+'</span><span class="bi-mt">'+n0(v.t)+'</span></button>';
+}
+function renderCh(c){
+  var host=q('#biCh');if(!host)return;
+  if(!c.hasCh){host.hidden=true;return}
+  host.hidden=false;
+  var tot=0;c.chNames.forEach(function(n){tot+=c.stCh[n].t});
+  var tiles=c.chNames.map(function(n,i){
+    var v=c.stCh[n],sel=F.ch.indexOf(n)>=0;
+    return'<button type="button" class="bi-ct'+(sel?' sel':'')+'" data-ch="'+esc(n)+'" aria-pressed="'+(sel?'true':'false')+'" title="Clique para filtrar por '+esc(n)+'"><small>'+esc(n)+'</small><strong>'+n0(v.t)+'</strong><em>'+(tot?pc(share(v.t,tot)):'—')+' dos atendimentos</em><span class="bi-cb"><i style="width:'+(tot?Math.max(v.t?2:0,share(v.t,tot)):0)+'%"></i></span></button>';
+  }).join('');
+  var rows=chRow('Todos os canais',{t:tot,r:0,u:0,tr:0,ina:0},false,true),any=c.chNames.some(function(n){return c.stCh[n].t});
+  var all=D.byIA(c.rows.filter(function(r){return pass(r,false,c.wk,true)}).map(function(r){return r.x}))._all;
+  rows=chRow('Todos os canais',all,false,true)+c.chNames.filter(function(n){return c.stCh[n].t}).map(function(n){return chRow(n,c.stCh[n],F.ch.indexOf(n)>=0,false)}).join('');
+  var raw=window.data&&data.r72&&data.r72.channelRaw,rawTxt=raw?Object.keys(raw).map(function(k){return k+' ('+n0(raw[k])+')'}).join(', '):'';
+  host.innerHTML='<div class="panel-head"><div><h2>Por onde o cliente chega</h2><p>Atendimentos com desfecho por canal de entrada · respeita os demais filtros · clique num canal para filtrar</p></div></div>'+
+    (any?'<div class="bi-cts">'+tiles+'</div>'+legend(c)+'<div class="bi-mix'+(F.ch.length?' dim':'')+'">'+rows+'</div>'+(rawTxt?'<p class="bi-note">Valores lidos da coluna “Tipo de Entrada” do R72 (protocolos): '+esc(rawTxt)+'.</p>':''):'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
 }
 function renderNota(c){
   var rows=IAS.filter(function(n){var v=c.stIA[n];return v&&v.t}).map(function(n){
@@ -434,7 +475,7 @@ function render(){
   if(typeof data==='undefined'||!data||!data.r72){return}
   var af=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.bi')&&document.activeElement.getAttribute('data-f');
   var c=compute();LAST=c;
-  renderHead(c);renderSticky(c);renderKpis(c);renderMix(c);renderNota(c);renderCharts(c);renderTables(c);
+  renderHead(c);renderSticky(c);renderKpis(c);renderMix(c);renderNota(c);renderCh(c);renderCharts(c);renderTables(c);
   if(af){var e=q('.bi [data-f="'+af+'"]');if(e&&e.focus)e.focus()}
   syncUrl();watchHead();
 }
@@ -444,6 +485,7 @@ function redo(){render()}
 function stateQS(){
   var a=[];
   if(F.ias.length)a.push('ia='+F.ias.map(encodeURIComponent).join(','));
+  if(F.ch.length)a.push('ch='+F.ch.map(encodeURIComponent).join(','));
   if(F.week)a.push('week='+F.week);
   if(F.wd.length)a.push('wd='+F.wd.slice().sort().join(','));
   if(F.band.length)a.push('band='+F.band.slice().sort().join(','));
@@ -451,11 +493,12 @@ function stateQS(){
   return a.join('&');
 }
 function parseQS(qs){
-  var o={ias:[],week:'',wd:[],band:[],gran:''},nums=function(v,max){return v.split(',').map(Number).filter(function(n){return n===Math.floor(n)&&n>=0&&n<=max})};
+  var o={ias:[],ch:[],week:'',wd:[],band:[],gran:''},nums=function(v,max){return v.split(',').map(Number).filter(function(n){return n===Math.floor(n)&&n>=0&&n<=max})};
   qs.split('&').forEach(function(kv){
     var i=kv.indexOf('=');if(i<0)return;var k=kv.slice(0,i),v=kv.slice(i+1);
     try{
       if(k==='ia')o.ias=v.split(',').map(decodeURIComponent).filter(function(n){return IAS.indexOf(n)>=0});
+      else if(k==='ch')o.ch=v.split(',').map(decodeURIComponent).filter(Boolean).slice(0,10);
       else if(k==='week'&&/^\d{4}-\d\d-\d\d$/.test(v))o.week=v;
       else if(k==='wd')o.wd=nums(v,6);
       else if(k==='band')o.band=nums(v,BANDS.length-1);
@@ -482,6 +525,7 @@ document.addEventListener('monprev',function(){if(LAST)redo()});
 function filterSummary(c){
   var a=[];
   if(F.ias.length)a.push(F.ias.join(', '));
+  if(F.ch.length)a.push(F.ch.join(', '));
   if(c.wk)a.push('Semana '+brd(c.wk.start)+' – '+brd(c.wk.end));
   if(F.wd.length)a.push(F.wd.slice().sort().map(function(i){return DS[i]}).join(', '));
   if(F.band.length)a.push(F.band.slice().sort().map(function(i){return BANDS[i][0]}).join(', '));
@@ -508,14 +552,14 @@ function watchHead(){
 /* ---------- Interações ---------- */
 document.addEventListener('click',function(e){
   var root=e.target.closest&&e.target.closest('.bi');if(!root)return;
-  var f=e.target.closest('[data-f]'),a=e.target.closest('[data-act]'),ia=e.target.closest('[data-ia]');
+  var f=e.target.closest('[data-f]'),a=e.target.closest('[data-act]'),ia=e.target.closest('[data-ia]'),chb=e.target.closest('[data-ch]');
   if(f&&f.tagName==='BUTTON'){
     var p=f.dataset.f.split(':'),g=p[0],v=p.slice(1).join(':');
-    if(g==='ia')toggle(F.ias,v);else if(g==='wd')toggle(F.wd,+v);else if(g==='band')toggle(F.band,+v);
+    if(g==='ia')toggle(F.ias,v);else if(g==='ch')toggle(F.ch,v);else if(g==='wd')toggle(F.wd,+v);else if(g==='band')toggle(F.band,+v);
     redo();return;
   }
   if(a){
-    if(a.dataset.act==='clear'){F={ias:[],week:'',wd:[],band:[],gran:''};redo()}
+    if(a.dataset.act==='clear'){F={ias:[],ch:[],week:'',wd:[],band:[],gran:''};redo()}
     else if(a.dataset.act==='xlsx')exportXlsx();
     else if(a.dataset.act==='csv')exportCsv();
     else if(a.dataset.act==='link')copyLink();
@@ -523,6 +567,7 @@ document.addEventListener('click',function(e){
     return;
   }
   if(ia&&ia.dataset.ia){toggle(F.ias,ia.dataset.ia);redo()}
+  else if(chb&&chb.dataset.ch){toggle(F.ch,chb.dataset.ch);redo()}
 });
 document.addEventListener('change',function(e){
   var s=e.target.closest&&e.target.closest('.bi select[data-f]');if(!s)return;
@@ -534,9 +579,14 @@ document.addEventListener('keydown',function(e){
 });
 /* dicas nas barras de composição e de nota */
 function tipMove(e){
-  var t=e.target.closest&&e.target.closest('.bi [data-seg],.bi [data-nota]');
+  var t=e.target.closest&&e.target.closest('.bi [data-seg],.bi [data-segc],.bi [data-nota]');
   if(!t||!LAST){if(tip&&!tip.hidden&&!e.target.closest('.bi-cw'))hideTip();return}
-  if(t.dataset.seg){
+  if(t.dataset.segc){
+    var sc=t.dataset.segc.split('|'),cname=sc[0],ck=sc[1],cv=cname==='Todos os canais'?null:LAST.stCh[cname];
+    if(!cv)cv=D.byIA(LAST.rows.filter(function(r){return pass(r,false,LAST.wk,true)}).map(function(r){return r.x}))._all;
+    var co=OUT.filter(function(x){return x.k===ck})[0],cn2=counts(cv)[ck];
+    showTip('<b>'+esc(cname)+'</b><span><em style="font-style:normal">'+swatch(co.c)+co.lab+'</em><em style="font-style:normal">'+n0(cn2)+' · '+pc(share(cn2,cv.t))+'</em></span><span><em style="font-style:normal;opacity:.8">Total com desfecho</em><em style="font-style:normal">'+n0(cv.t)+'</em></span>',e.clientX,e.clientY);
+  }else if(t.dataset.seg){
     var s=t.dataset.seg.split('|'),name=s[0],k=s[1],v=name==='Todas as IAs'?LAST.stIA._all:LAST.stIA[name];if(!v)return;
     var o=OUT.filter(function(x){return x.k===k})[0],n=counts(v)[k];
     showTip('<b>'+esc(name)+'</b><span><em style="font-style:normal">'+swatch(o.c)+o.lab+'</em><em style="font-style:normal">'+n0(n)+' · '+pc(share(n,v.t))+'</em></span><span><em style="font-style:normal;opacity:.8">Total com desfecho</em><em style="font-style:normal">'+n0(v.t)+'</em></span>',e.clientX,e.clientY);
@@ -564,6 +614,7 @@ if(window.ResizeObserver){
 function filterTexts(c){
   return{
     ia:F.ias.length?F.ias.join(', '):'Todas',
+    ch:F.ch.length?F.ch.join(', '):'Todos',
     rec:c.wk?'Semana '+brf(c.wk.start)+' a '+brf(c.wk.end):'Período todo',
     wd:F.wd.length?F.wd.slice().sort().map(function(i){return DS[i]}).join(', '):'Todos',
     band:F.band.length?F.band.slice().sort().map(function(i){return BANDS[i][0]+' ('+BANDS[i][1]+')'}).join(', '):'Todas'
@@ -591,11 +642,11 @@ function head(a){return a.map(function(t){return{v:t,s:'head'}})}
 function dataRows(c){
   return c.f.filter(function(r){return r.ms}).sort(function(a,b){return a.ms-b.ms}).map(function(r){
     var d=new Date(r.ms),x=r.x,wkStart=plus(r.day,-r.wd);
-    return[String(x.protocol||''),new Date(d.getFullYear(),d.getMonth(),d.getDate()),r.h,DIAS[r.wd],bandOf(r.h),new Date(+wkStart.slice(0,4),+wkStart.slice(5,7)-1,+wkStart.slice(8,10)),x.agent||'',outLabel(x),
+    return[String(x.protocol||''),new Date(d.getFullYear(),d.getMonth(),d.getDate()),r.h,DIAS[r.wd],bandOf(r.h),new Date(+wkStart.slice(0,4),+wkStart.slice(5,7)-1,+wkStart.slice(8,10)),x.agent||'',x.channel||'',outLabel(x),
       x.survey&&x.survey.note?{v:x.survey.note,s:'int'}:null];
   });
 }
-var DATA_HEAD=['Protocolo','Data','Hora','Dia da semana','Faixa horária','Semana (início)','IA','Desfecho','Nota'];
+var DATA_HEAD=['Protocolo','Data','Hora','Dia da semana','Faixa horária','Semana (início)','IA','Canal','Desfecho','Nota'];
 function stamp(){var d=new Date();return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
 function fileName(c,ext){return'bi-monitor-ia-'+c.rs.start+'-a-'+c.rs.end+'.'+ext}
 function save(blob,name){
@@ -615,7 +666,7 @@ function exportXlsx(){
     [{v:'Gerado em '+stamp()+'. Percentuais calculados sobre os atendimentos com desfecho.',s:'note'}],
     [],
     [lab('Período'),brf(c.p.start)+' a '+brf(c.p.end)],
-    [lab('Recorte'),ft.rec],[lab('IA'),ft.ia],[lab('Dias da semana'),ft.wd],[lab('Faixa horária'),ft.band],
+    [lab('Recorte'),ft.rec],[lab('IA'),ft.ia],[lab('Canal'),ft.ch],[lab('Dias da semana'),ft.wd],[lab('Faixa horária'),ft.band],
     [],
     head(['Indicador','Valor','Meta','Situação da meta']),
     ['Atendimentos com desfecho',{v:t,s:'int'}],
@@ -642,14 +693,17 @@ function exportXlsx(){
     var r=statRow('Total do filtro',v,null,['Total do filtro',d0(c.rs.start),d0(c.rs.end)]);rows.push(r.slice(0,16));
     return rows;
   };
+  var chs=[head(['Canal'].concat(HEAD_STAT))];
+  c.chNames.forEach(function(n){var s=c.stCh[n];if(s&&s.t)chs.push(statRow(n,s,null))});
   var evoW=evo('week'),sheets=[
     {name:'Resumo',cols:[34,16,12,18],rows:resumo,grid:false},
     {name:'Comparativo IAs',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:cmp,freeze:1,filter:true},
     {name:'Evolução semanal',cols:[30,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evoW,freeze:1,filter:true}
   ];
+  if(c.hasCh)sheets.splice(1,0,{name:'Comparativo canais',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:chs,freeze:1,filter:true});
   if(c.days<=120)sheets.push({name:'Evolução diária',cols:[26,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evo('day'),freeze:1,filter:true});
   var dr=dataRows(c);
-  sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,18,7],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
+  sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,14,18,7],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
   window.monXlsx.build(sheets).then(function(b){save(b,fileName(c,'xlsx'));toast('Planilha baixada ('+n0(dr.length)+' atendimentos)')},function(){toast('Não foi possível gerar a planilha')});
 }
 function csvCell(v){

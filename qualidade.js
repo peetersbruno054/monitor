@@ -1,21 +1,22 @@
-/* qualidade.js — visual da aba Qualidade no computador (≥ 1100 px). Carregar por ÚLTIMO.
+/* qualidade.js — visual da aba Protocolos (que agora inclui a antiga Qualidade) no computador (≥ 1100 px).
    Não muda nenhum cálculo: só reorganiza os painéis que os outros scripts já criam. */
 (function(){
 'use strict';
 var q=function(s,r){return(r||document).querySelector(s)},qa=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 function wrap(n,f){var o=window[n];if(typeof o!=='function')return;window[n]=function(){var r=o.apply(this,arguments);try{f()}catch(e){console.error('qualidade',n,e)}return r}}
 
-var Q='[data-panel=quality]';
+var Q='[data-panel=protocols]';
 var css='@media(min-width:1100px){'+
-/* ---- grade: KPIs em cima; 7+5 colunas; bot points embaixo, largura total ---- */
+/* ---- grade: abas rápidas e KPIs em cima; lista; recontatos 7+5; clientes que mais voltam e bot points embaixo ---- */
 Q+'.view{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:stretch}'+
 Q+'.view>*{min-width:0}'+
-Q+'.view>#qualityKpis{grid-column:1/-1;order:0}'+
-Q+'.view>.panel:has(#recontactList){grid-column:span 7;order:1}'+
-Q+'.view>#funnelPanel{grid-column:span 5;order:2}'+
-Q+'.view>#transferPanel{grid-column:1/-1;order:3}'+
-Q+'.view>#recPanel{grid-column:1/-1;order:4}'+
-Q+'.view>.panel:has(#checkpointList){grid-column:1/-1;order:5}'+
+Q+'.view>#upNav{grid-column:1/-1;order:0}'+
+Q+'.view>.up-kpis{grid-column:1/-1;order:1}'+
+Q+'.view>#upList{grid-column:1/-1;order:2}'+
+Q+'.view>#upRecontact{grid-column:span 7;order:3}'+
+Q+'.view>#funnelPanel{grid-column:span 5;order:4}'+
+Q+'.view>#recPanel{grid-column:1/-1;order:5}'+
+Q+'.view>#upBots{grid-column:1/-1;order:6}'+
 Q+' .panel{padding:18px 20px}'+
 /* ---- tempo até voltar: três faixas empilhadas, cada uma com barra de proporção ---- */
 Q+' .recontact-layout{grid-template-columns:minmax(220px,.75fr) minmax(0,1.25fr);gap:20px;align-items:start}'+

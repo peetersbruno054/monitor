@@ -79,8 +79,8 @@ ink.className='vz-ink';tabs.classList.add('vz','vz-first');tabs.appendChild(ink)
 function place(){
   var b=q('.tabs button.active');if(!b||!b.offsetWidth)return;
   var w=b.offsetWidth;
-  ink.style.left=(mob.matches?b.offsetLeft+w*.28:b.offsetLeft+12)+'px';
-  ink.style.width=(mob.matches?w*.44:w-24)+'px';
+  ink.style.left=(mob.matches?b.offsetLeft+w*.28:b.offsetLeft)+'px';
+  ink.style.width=(mob.matches?w*.44:w)+'px';
   if(tabs.classList.contains('vz-first'))requestAnimationFrame(function(){tabs.classList.remove('vz-first')});
 }
 if(window.ResizeObserver){var ro=new ResizeObserver(place);ro.observe(tabs);qa('.tabs button').forEach(function(b){ro.observe(b)})}

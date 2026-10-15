@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/features.css">
 <link rel="stylesheet" href="/ui.css">
 <link rel="stylesheet" href="/efeitos.css">
+<link rel="stylesheet" href="/rail.css">
 </head>
 <body>
 <section id="loginView" class="login-view">
@@ -65,11 +66,11 @@
     <div class="rail-spacer"></div>
     <div class="tabs">
       <button type="button" class="active" data-view="overview"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="12" y="3" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="12" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/><rect x="12" y="12" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.6"/></svg></span> Visão geral</button>
-      <button type="button" data-view="surveys"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="4.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 12l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span> Pesquisas <em id="tabSurveys"></em></button>
-      <button type="button" data-view="quality"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><path d="M4 14l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 6h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Qualidade <em id="tabQuality"></em></button>
+      <button type="button" data-view="surveys" title="Pesquisa de satisfação (CSAT)"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M7 11.6c.8 1.2 1.8 1.8 3 1.8s2.2-.6 3-1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="7.6" cy="8.2" r=".9" fill="currentColor"/><circle cx="12.4" cy="8.2" r=".9" fill="currentColor"/></svg></span> <span class="tl-l">Pesquisas</span><span class="tl-s"> CSAT</span> <em id="tabSurveys"></em></button>
       <button type="button" data-view="protocols"><span class="tab-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 7h7M6.5 10h7M6.5 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span> Protocolos <em id="tabProtocols"></em></button>
     </div>
   </div>
+  <span id="tabQuality" hidden></span>
 </nav>
 
 <main id="main" class="shell" hidden>
@@ -118,24 +119,12 @@
     </article>
   </section>
 
-  <section data-panel="quality" class="view" hidden>
-    <div id="qualityKpis" class="kpis kpis-4"></div>
-    <article class="panel">
-      <div class="panel-head"><div><h2>Clientes que voltaram em até 24h</h2><p>Mesmo telefone ou contato em protocolos diferentes do período</p></div><span id="recontactBadge" class="badge"></span></div>
-      <div class="recontact-layout">
-        <div><h3 class="subhead">Tempo até voltar</h3><div id="recontactWindows" class="columns-chart"></div></div>
-        <div id="recontactList" class="scroll-list"></div>
-      </div>
-    </article>
-    <article class="panel">
-      <div class="panel-head"><div><h2>Bot points do R72</h2><p>Os 21 pontos monitorados, inclusive os que ficaram zerados no período</p></div><span id="checkpointBadge" class="badge"></span></div>
-      <div id="checkpointList" class="checkpoints"></div>
-    </article>
-  </section>
-
   <section data-panel="protocols" class="view" hidden>
-    <div id="protocolKpis" class="kpis kpis-4"></div>
-    <article class="panel">
+    <div class="up-kpis">
+      <div id="protocolKpis" class="kpis kpis-4"></div>
+      <div id="qualityKpis" class="kpis kpis-4"></div>
+    </div>
+    <article class="panel" id="upList">
       <div class="panel-head"><div><h2>Problemas não resolvidos</h2><p>Protocolos com registro de “Problema não resolvido”; esse desfecho permanece mesmo após novos eventos</p></div><span id="unresolvedBadge" class="badge"></span></div>
       <div class="toolbar">
         <input id="unresolvedSearch" type="search" placeholder="Buscar protocolo, IA, contato, comentário ou motivo">
@@ -145,6 +134,17 @@
       <div id="unresolvedChips" class="chips"></div>
       <div id="unresolvedList" class="item-list"></div>
       <div id="unresolvedPager" class="pager"></div>
+    </article>
+    <article class="panel" id="upRecontact">
+      <div class="panel-head"><div><h2>Clientes que voltaram em até 24h</h2><p>Mesmo telefone ou contato em protocolos diferentes do período</p></div><span id="recontactBadge" class="badge"></span></div>
+      <div class="recontact-layout">
+        <div><h3 class="subhead">Tempo até voltar</h3><div id="recontactWindows" class="columns-chart"></div></div>
+        <div id="recontactList" class="scroll-list"></div>
+      </div>
+    </article>
+    <article class="panel" id="upBots">
+      <div class="panel-head"><div><h2>Bot points do R72</h2><p>Os 21 pontos monitorados, inclusive os que ficaram zerados no período</p></div><span id="checkpointBadge" class="badge"></span></div>
+      <div id="checkpointList" class="checkpoints"></div>
     </article>
   </section>
 </main>
@@ -159,6 +159,7 @@
 <script src="/padroes.js"></script>
 <script src="/movimento.js"></script>
 <script src="/qualidade.js"></script>
+<script src="/protocolos.js"></script>
 <script src="/xlsx.js"></script>
 <script src="/insights.js"></script>
 <script src="/bi.js"></script>

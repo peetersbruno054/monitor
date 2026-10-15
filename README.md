@@ -152,7 +152,7 @@ Com o Supabase configurado (`SUPABASE_URL`, chave **secret** e chave **publishab
   e, se `RESEND_API_KEY` e `ALERT_EMAIL` estiverem configurados, recebem um e-mail (no máximo um a cada 2 horas).
 - **Economia da IA**: em **Metas e economia**, administradores informam o tempo médio de um atendimento humano (e, se quiserem, o custo da hora). A Visão geral, o Semana a semana, o CSV, o resumo copiado e o PDF passam a mostrar as horas evitadas (só atendimentos resolvidos pela IA).
 - **Mapa de pico** (Visão geral): dia da semana × hora do primeiro contato, por IA, em volume, % transferidos ou % resolvidos. O expediente considerado é segunda a sexta, das 8h às 18h (constante `BIZ` em `padroes.js`).
-- **Clientes que mais voltam** (aba Qualidade): telefones com 2 ou mais atendimentos no período, com desfecho de cada um, protocolos (clique para copiar) e CSV da lista completa. O telefone aparece parcialmente oculto; clique para ver.
+- **Clientes que mais voltam** (aba Protocolos): telefones com 2 ou mais atendimentos no período, com desfecho de cada um, protocolos (clique para copiar) e CSV da lista completa. O telefone aparece parcialmente oculto; clique para ver.
 - **Relatório mensal** (botão no topo): abre uma página limpa, sempre em fundo branco, com indicadores, destaques, pontos de atenção, desempenho por IA, semana a semana, horário de pico e clientes que mais voltaram. Use **Imprimir / salvar PDF**. Compara com o mês anterior quando o período é um mês fechado.
 
 ## Aba BI
@@ -173,8 +173,7 @@ Quinta aba do site (atalho **5**), com a mesma lógica de uma planilha de BI: fi
 Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mail.
 
 - **Alertas** (ícone de sino na barra de navegação, visível em todas as abas; no celular fica ao lado do nome, no topo; o número vermelho é a quantidade de alertas e o ponto verde indica que não há nenhum; clique para abrir a lista): (1) IAs fora da meta no período, com os indicadores que falharam; (2) dias fora do padrão: resolvidos caindo, transferências subindo ou volume muito baixo, comparando cada dia com os 14 dias anteriores da mesma IA (exige 8 atendimentos no dia e 40 na base, e uma diferença de pelo menos 10 pp, acima de 2 desvios). O dia de hoje não entra. **Ver no BI →** abre o BI já filtrado.
-- **Por que os atendimentos são transferidos** (aba Qualidade): para onde a IA encaminha (ponto de transferência), o que veio antes, % de transferências diretas (sem outro ponto entre o início e a transferência) e tempo mediano até transferir. Há filtro por IA e atalho para a lista de protocolos transferidos.
-- **Painéis recolhíveis**: clique no título (ou Enter) para recolher/abrir os painéis da Visão geral, da Qualidade e do BI. O estado fica salvo no navegador; "Semana a semana" começa recolhido. Na impressão tudo aparece aberto.
+- **Painéis recolhíveis**: clique no título (ou Enter) para recolher/abrir os painéis da Visão geral, da aba Protocolos e do BI. O estado fica salvo no navegador; "Semana a semana" começa recolhido. Na impressão tudo aparece aberto.
 - **Cores de desfecho unificadas**: verde (resolvidos), azul (transferidos), vermelho (não resolvidos) e âmbar (inatividade) em todo o site, no claro e no escuro. As variáveis estão em `styles.css` e `ui.css`.
 - Os 14 dias de base dos alertas e a comparação do BI usam o período anterior que a Visão geral já carrega (`monPrev`, em `extras.js`).
 
@@ -183,3 +182,18 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 - **Aguardando confirmação** (possível solução ainda dentro das 24h) vira Resolvido depois de 24h sem retorno.
 - **Finaliza SafeNota deixou de existir** como desfecho: o fluxo agora vai para a fila. Em dados antigos que ainda tenham esse ponto, o protocolo é contado como Transferido (fila) e o ponto não aparece mais na lista de pontos monitorados.
 - **Outros** (aba BI e Padrões) = **Finalizado (não retornou)** — “Não retomou atendimento” — mais os protocolos ainda em “Aguardando confirmação” dentro das 24h.
+
+## Canais de entrada (WhatsApp, Webchat)
+- O canal vem da coluna **“Tipo de Entrada”** do R72. O servidor passou a guardar essa coluna junto das demais; períodos já salvos no Supabase antes dessa mudança são coletados de novo no Orpen na primeira vez que forem abertos (uma vez só).
+- **BI:** filtro “Canal” (chips), painel “Por onde o cliente chega” (quantidade e % de cada canal, com a composição de desfechos), planilha “Comparativo canais” e coluna “Canal” na aba “Dados” do Excel/CSV. O link do BI guarda o canal (`ch=`).
+- **Protocolos:** filtro por canal, e cada protocolo mostra o canal e o telefone parcialmente oculto.
+- Nomes reconhecidos: WhatsApp, Webchat, Telegram, Instagram, Facebook, E-mail. Qualquer outro valor aparece com o nome original, e o BI lista os valores lidos (nota no fim do painel). Protocolos sem a coluna ficam em “Não informado”.
+
+## Aba Protocolos unificada
+- A antiga aba **Qualidade** foi incorporada à aba **Protocolos** (`#quality` abre `#protocols`). Ordem: atalhos (“Ir para”), indicadores (protocolos e recontatos), lista de protocolos, recontatos em 24h + funil, clientes que mais voltam e bot points.
+- Lista: filtro rápido por desfecho com contagem, filtro por canal, busca, IA e ordenação; no computador cada protocolo ocupa uma linha (dados do protocolo, pesquisa e botão copiar).
+- O card “Por que os atendimentos são transferidos” foi removido.
+
+## Faixa azul de navegação
+- Conta com inicial (“Acessos” para administrador, “Minha senha” para os demais), abas em pílulas com indicador que desliza e sino de alertas.
+- “Pesquisas” agora tem o ícone de carinha e a sigla CSAT. A própria senha se troca só em “Trocar minha senha” (a linha “você” na lista de acessos não tem mais “Nova senha”).

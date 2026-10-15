@@ -315,7 +315,14 @@ function chRow(name,v,sel,tot){
 }
 function renderCh(c){
   var host=q('#biCh');if(!host)return;
-  if(!c.hasCh){host.hidden=true;return}
+  if(!c.hasCh){
+    var inf=window.data&&data.r72&&data.r72.channelInfo||{},vals=inf.values||{},vt=Object.keys(vals).map(function(k){return k+' ('+n0(vals[k])+')'}).join(', ');
+    if(!c.rows.length){host.hidden=true;return}
+    host.hidden=false;
+    host.innerHTML='<div class="panel-head"><div><h2>Por onde o cliente chega</h2><p>Webchat × WhatsApp, conforme a coluna “Tipo de Entrada” do R72</p></div></div>'+
+      '<div class="bi-empty">Canal indisponível neste período. '+(vt?'A coluna “Tipo de Entrada” trouxe: <b>'+esc(vt)+'</b> — nenhum é Webchat ou WhatsApp.':(inf.column?'A coluna “Tipo de Entrada” chegou sem valores.':'A coluna “Tipo de Entrada” não chegou do servidor (confira se o <code>api/reports.js</code> novo está no ar; períodos antigos são coletados de novo na primeira abertura).'))+'</div>';
+    return;
+  }
   host.hidden=false;
   var tot=0;c.chNames.forEach(function(n){tot+=c.stCh[n].t});
   var tiles=c.chNames.map(function(n,i){
@@ -326,9 +333,7 @@ function renderCh(c){
   var all=D.byIA(c.rows.filter(function(r){return pass(r,false,c.wk,true)}).map(function(r){return r.x}))._all;
   rows=chRow('Todos os canais',all,false,true)+c.chNames.filter(function(n){return c.stCh[n].t}).map(function(n){return chRow(n,c.stCh[n],F.ch.indexOf(n)>=0,false)}).join('');
   var info=window.data&&data.r72&&data.r72.channelInfo||{},raw=info.values||{},rawTxt=Object.keys(raw).map(function(k){return k+' ('+n0(raw[k])+')'}).join(', ');
-  var est=window.data&&data.r72&&data.r72.channelSource==='contato';
-  var note=est?'<p class="bi-note">Canal <b>estimado pelo contato</b>: número de telefone = WhatsApp; sem telefone = Webchat. '+(rawTxt?'A coluna “Tipo de Entrada” do R72 trouxe: '+esc(rawTxt)+' — sem nome de canal.':'O R72 não trouxe a coluna “Tipo de Entrada” com valores.')+'</p>':
-    (rawTxt?'<p class="bi-note">Canal lido da coluna “Tipo de Entrada” do R72 (protocolos): '+esc(rawTxt)+'.</p>':'');
+  var note=rawTxt?'<p class="bi-note">Canal lido da coluna “Tipo de Entrada” do R72 (protocolos): '+esc(rawTxt)+'.'+(c.chNames.indexOf(NOCH)>=0?' “Não informado” = protocolos cujo R72 veio sem o tipo de entrada.':'')+'</p>':'';
   host.innerHTML='<div class="panel-head"><div><h2>Por onde o cliente chega</h2><p>Atendimentos com desfecho por canal de entrada · respeita os demais filtros · clique num canal para filtrar</p></div></div>'+
     (any?'<div class="bi-cts">'+tiles+'</div>'+'<h3 class="bi-sub">Volume por canal '+(c.gran==='week'?'por semana':'por dia')+'</h3><div class="bi-chl">'+c.chNames.filter(function(n){return c.stCh[n].t}).map(function(n){return'<span><u style="--c:var('+chColor(n)+')"></u>'+esc(n)+'</span>'}).join('')+'</div><div class="bi-cw" id="biChCw"></div><h3 class="bi-sub">Como terminam, por canal</h3>'+legend(c)+'<div class="bi-mix'+(F.ch.length?' dim':'')+'">'+rows+'</div>'+note:'<div class="bi-empty">Sem atendimentos com desfecho nesses filtros.</div>');
 }
@@ -755,7 +760,7 @@ function exportXlsx(){
   var dr=dataRows(c);
   sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,14,18,7],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
   if(window.monBIXlsx){
-    try{sheets=window.monBIXlsx.extend(sheets,c,{dr:dr,IAS:IAS,DIAS:DIAS,BANDS:BANDS.map(function(b){return b[0]}),ft:ft,stamp:stamp,brf:brf,NOCH:NOCH,note:{estimado:!!(window.data&&data.r72&&data.r72.channelSource==='contato')}})}
+    try{sheets=window.monBIXlsx.extend(sheets,c,{dr:dr,IAS:IAS,DIAS:DIAS,BANDS:BANDS.map(function(b){return b[0]}),ft:ft,stamp:stamp,brf:brf,NOCH:NOCH})}
     catch(e){if(window.console)console.error('xlsx painel',e)}
   }
   window.monXlsx.build(sheets).then(function(b){save(b,fileName(c,'xlsx'));toast('Planilha baixada ('+n0(dr.length)+' atendimentos)')},function(){toast('Não foi possível gerar a planilha')});

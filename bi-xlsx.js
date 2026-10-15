@@ -1,7 +1,7 @@
 /* bi-xlsx.js — enriquece a planilha do BI: aba Painel (com filtros em caixa de seleção e fórmulas),
    gráficos nativos, Dia × hora (mapa de calor), Canal × IA e Canais no tempo.
    Carregar depois de xlsx.js. Usado por bi.js: window.monBIXlsx.extend(sheets, c, H) -> novas abas.
-   H = {dr:linhas da aba Dados, DIAS, BANDS:[nomes], ft:filterTexts, stamp, brf, NOCH, chOrder, note:{estimado:bool}} */
+   H = {dr:linhas da aba Dados, DIAS, BANDS:[nomes], ft:filterTexts, stamp, brf, NOCH, chOrder} */
 (function(){
 'use strict';
 var OUTL=['Resolvido','Transferido','Não resolvido','Inatividade','Outros (não retornou)'];
@@ -141,7 +141,7 @@ function extend(sheets,c,H){
   var notes=[
     'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder. "Outros (não retornou)": finalizado sem retorno do cliente.',
     'Percentuais são calculados sobre os atendimentos com desfecho. A nota média considera só atendimentos avaliados.',
-    H.note&&H.note.estimado?'Canal de entrada ESTIMADO pelo formato do contato (número de telefone = WhatsApp), pois o relatório de origem não trouxe nomes de canal na coluna "Tipo de Entrada".':'Canal de entrada conforme a coluna "Tipo de Entrada" do relatório de origem.',
+    'Canal de entrada conforme a coluna "Tipo de Entrada" do R72 (Webchat ou WhatsApp); "Não informado" = protocolo sem esse dado.',
     'As abas "Gráficos", "Comparativo…" e "Evolução…" refletem o recorte do BI no momento do download. O Painel permite refinar esse recorte sem voltar ao sistema.'
   ];
   notes.forEach(function(t){put(cur,0,{v:t,s:'hint'});merge(cur,0,8);rows[cur-1].height=44;cur++});

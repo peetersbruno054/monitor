@@ -278,6 +278,26 @@ function classifyR72Point(value) {
   return 'outro';
 }
 
+/* Canal de entrada (Webchat / WhatsApp): coluna "Tipo de Entrada" do R72.
+   Prefere o cabeçalho exato; se o valor não parecer um canal (linha com colunas deslocadas),
+   procura na própria linha uma célula que seja exatamente um nome de canal. */
+const SCAN_CELL = /^(web\s*chat|whats\s*app|wpp)$/i;
+const CHANNEL_CELL = /^(web\s*chat|chat|whats\s*app|wpp|telegram|instagram|facebook|e-?mail)$/i;
+function findInputColumn(row) {
+  const keys = Object.keys(row || {});
+  const exact = keys.find((k) => ['tipo de entrada', 'tipo entrada', 'input type'].includes(normalizeHeader(k)));
+  return exact || findColumn(row, ['Tipo de Entrada', 'Input Type', 'Tipo Entrada']);
+}
+function inputValue(row, key) {
+  const v = normalizeText(row[key]);
+  if (CHANNEL_CELL.test(v)) return v;
+  for (const k of Object.keys(row || {})) {
+    const c = normalizeText(row[k]);
+    if (SCAN_CELL.test(c)) return c;
+  }
+  return v;
+}
+
 function normalizeR72(csv) {
   const rows = parseCsv(csv);
   if (!rows.length) return [];
@@ -293,7 +313,7 @@ function normalizeR72(csv) {
   return data.map((row) => {
     const dateKey = findColumn(row, ['Data/Hora', 'Data Hora', 'Data']);
     const protocolKey = findColumn(row, ['Protocolo', 'Protocol']);
-    const inputKey = findColumn(row, ['Tipo de Entrada', 'Input Type', 'Tipo Entrada']);
+    const inputKey = findInputColumn(row);
     const clientKey = findColumn(row, ['Cliente', 'Client']);
     const contactKey = findColumn(row, ['Contato', 'Telefone', 'Contact', 'Phone']);
     const botPointKey = findColumn(row, ['Pontos de Bot', 'Bot Point', 'Checkpoint', 'Ponto de Bot']);
@@ -302,14 +322,14 @@ function normalizeR72(csv) {
     return {
       Data: row[dateKey] || '',
       Protocolo: row[protocolKey] || '',
-      'Tipo de Entrada': row[inputKey] || '',
+      'Tipo de Entrada': inputValue(row, inputKey),
       Cliente: row[clientKey] || '',
       Contato: row[contactKey] || '',
       'Pontos de Bot': row[botPointKey] || '',
       Agente: row[agentKey] || '',
       date: row[dateKey] || '',
       protocol: row[protocolKey] || '',
-      inputType: row[inputKey] || '',
+      inputType: inputValue(row, inputKey),
       client: row[clientKey] || '',
       contact: row[contactKey] || '',
       botPoint: row[botPointKey] || '',
@@ -450,6 +470,8 @@ function compactR72(rows) {
     Data: pick(r, ['Data', 'date']),
     Protocolo: pick(r, ['Protocolo', 'protocol']),
     Contato: pick(r, ['Contato', 'contact']),
+    'Tipo de Entrada': pick(r, ['Tipo de Entrada', 'inputType']),
+    Ent: 2,
     'Pontos de Bot': pick(r, ['Pontos de Bot', 'botPoint']),
     Agente: pick(r, ['Agente', 'agent'])
   }));
@@ -499,6 +521,8 @@ async function cachedSnapshots(start, requestedEnd, { anyAge = false } = {}) {
     getLatestReportSnapshot({ reportId: 74, start, end: requestedEnd })
   ]);
   if (!Array.isArray(a?.rows) || !Array.isArray(b?.rows)) return null;
+  // snapshots salvos antes da leitura do canal de entrada (marca "Ent" = 2) são coletados de novo, uma vez
+  if (!anyAge && a.rows.length && !a.rows.some((r) => r && r.Ent === 2)) return null;
   const t = Math.min(Date.parse(a.collected_at), Date.parse(b.collected_at));
   const ttl = requestedEnd >= saoPauloDate() ? OPEN_TTL_MS : YESTERDAY_TTL_MS;
   const fresh = anyAge || (isClosedRange(requestedEnd) ? t >= finalAfter(requestedEnd) : Date.now() - t < ttl);

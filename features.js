@@ -90,12 +90,12 @@ function tagChannel(r){
     var p=String(row[pk]||'').trim(),v=String(row[ck]||'').trim();
     if(p&&v&&!map[p]){map[p]=channelName(v);raw[v]=(raw[v]||0)+1;if(KNOWN_CH.indexOf(map[p])>=0)known=true}
   });
-  /* 1) coluna "Tipo de Entrada" com nomes de canal; 2) senão, estimativa pelo contato:
-     número de telefone = WhatsApp, qualquer outra coisa (ou vazio) = Webchat */
-  r.channelSource=known?'coluna':'contato';
+  /* O canal vem só da coluna "Tipo de Entrada" (Webchat ou WhatsApp). Sem ela, o protocolo fica sem canal ("Não informado"):
+     o contato não serve de pista, porque no Webchat o cliente também informa telefone. */
+  r.channelSource=known?'coluna':'ausente';
   r.channelInfo={column:ck||'',values:raw,columns:[]};
-  r.hasChannel=r.protocols.length>0;
-  r.protocols.forEach(function(x){x.channel=known?(map[x.protocol]||''):(phoneLike(x.contact)?'WhatsApp':'Webchat')});
+  r.hasChannel=known;
+  r.protocols.forEach(function(x){x.channel=known?(map[x.protocol]||''):''});
 }
 window.monChannelName=channelName;
 var _a72=window.analyze72;

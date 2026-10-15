@@ -187,7 +187,7 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 - O canal vem da coluna **“Tipo de Entrada”** do R72. O servidor passou a guardar essa coluna junto das demais; períodos já salvos no Supabase antes dessa mudança são coletados de novo no Orpen na primeira vez que forem abertos (uma vez só).
 - **BI:** filtro “Canal” (chips), painel “Por onde o cliente chega” (quantidade e % de cada canal, com a composição de desfechos), planilha “Comparativo canais” e coluna “Canal” na aba “Dados” do Excel/CSV. O link do BI guarda o canal (`ch=`).
 - **Protocolos:** filtro por canal, e cada protocolo mostra o canal e o telefone parcialmente oculto.
-- Se a coluna “Tipo de Entrada” não trouxer nome de canal (por exemplo, só “Receptivo”), o canal é **estimado pelo contato**: número de telefone = WhatsApp, qualquer outro formato = Webchat. O painel avisa quando isso acontece. O painel do BI aparece sempre que houver protocolos.
+- O canal vem **somente** da coluna “Tipo de Entrada” (Webchat ou WhatsApp); não há estimativa pelo telefone, porque no Webchat o cliente também informa telefone. Se a coluna não chegar ou trouxer outro valor, o painel avisa o que veio e os protocolos ficam “Não informado”. O servidor lê o cabeçalho exato e, em linha com colunas deslocadas, procura a célula “Webchat”/“WhatsApp” na própria linha. Os períodos são coletados de novo uma vez (marca `Ent` no snapshot).
 - Nomes reconhecidos: WhatsApp, Webchat, Telegram, Instagram, Facebook, E-mail. Qualquer outro valor aparece com o nome original, e o BI lista os valores lidos (nota no fim do painel). Protocolos sem a coluna ficam em “Não informado”.
 
 ## Aba Protocolos unificada

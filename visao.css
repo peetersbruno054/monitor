@@ -27,7 +27,8 @@ html .kpi2:not(.col) .kring .ar{stroke:var(--blue,#2a78d6)}
 html .kpi2 .spark .plot{opacity:.95}
 
 /* ---------- Desfechos da IA ---------- */
-#stackbar{height:12px;box-shadow:0 0 0 1px var(--line2),0 6px 16px -8px color-mix(in srgb,var(--blue,#2a78d6) 50%,transparent)}
+/* a barra comprida acima da rosca foi removida: a rosca já mostra a mesma divisão */
+#stackbar{display:none!important}
 #outcomes .oc-sum{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 22px;padding:18px 22px;margin-bottom:12px;border-radius:18px;
   background:radial-gradient(460px 180px at 0 50%,color-mix(in srgb,var(--cyan,#00a7c7) 14%,transparent),transparent 70%),var(--surface2)}
 #outcomes .oc-sum big{font-size:46px;font-weight:700;letter-spacing:-.035em;background:linear-gradient(135deg,var(--ink),color-mix(in srgb,var(--blue,#2a78d6) 70%,var(--ink)));-webkit-background-clip:text;background-clip:text;color:transparent}

@@ -180,7 +180,7 @@ Arquivo `insights.js`. Tudo é calculado no navegador; nada é enviado por e-mai
 ## Regras de desfecho (atualização)
 - **Possível solução sem resposta = Resolvido.** Se o cliente recebeu a “Pesquisa encaminhada – Possível solução” e não respondeu (o protocolo fechou em “Inatividade – Finalizado”), o desfecho é **Resolvido**, não Inatividade. Transferido e Não resolvido continuam como estão. Se o próprio cliente voltar em até 24h, vale o desfecho do novo atendimento.
 - **Aguardando confirmação** (possível solução ainda dentro das 24h) vira Resolvido depois de 24h sem retorno.
-- **Finaliza SafeNota deixou de existir** como desfecho: o fluxo agora vai para a fila. Em dados antigos que ainda tenham esse ponto, o protocolo é contado como Transferido (fila) e o ponto não aparece mais na lista de pontos monitorados.
+- **Finaliza SafeNota** voltou a ser um desfecho próprio (ver a seção “Finaliza SafeNota” abaixo).
 - **Outros** (aba BI e Padrões) = **Finalizado (não retornou)** — “Não retomou atendimento” — mais os protocolos ainda em “Aguardando confirmação” dentro das 24h.
 
 ## Canais de entrada (WhatsApp, Webchat)
@@ -211,3 +211,14 @@ Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, va
 - Cabeçalho com período e ações (Excel, CSV, Link); filtros num painel próprio (no celular ficam recolhidos atrás do botão “Filtros”, com contador e resumo dos filtros ativos).
 - Seis indicadores em uma faixa (Atendimentos, Resolvidos, Transferidos, Não resolvidos, Inatividade, Nota média, com variação e metas); “Metas atingidas” fica na linha de status.
 - “Desempenho por IA” junta a composição dos desfechos e a nota da pesquisa; canais e gráficos de evolução ficam lado a lado no computador.
+
+## Finaliza SafeNota (bot point de desfecho)
+- “Finaliza SafeNota” voltou como desfecho próprio: aparece na Visão geral (linha “Finaliza SafeNota”, quando há protocolos), na aba BI (cartão, linha do gráfico, coluna nas tabelas e barras), na aba Protocolos (filtro, lista e selo) e na lista dos bot points do R72.
+- Regra: protocolos cujo último bot point de desfecho é “Finaliza SafeNota” (a trilha decide quando o desfecho ficou como “outro”). Conta como “com desfecho”; o “Outros (não retornou)” desconta esse grupo.
+- Excel e CSV do BI: coluna/linha “Finaliza SafeNota” em Resumo, comparativos, evoluções, Painel (cartão, tabela de desfechos, quadros por IA/canal/dia/faixa) e gráficos. A coluna só entra quando há protocolos nesse desfecho; sem eles, a planilha fica como antes.
+
+## Movimento e cenas (cenas.js + cenas.css, junto do efeitos.css)
+- Cena “Jornada do atendimento” (Visão geral e BI): canais de entrada → IA → desfechos, com partículas em movimento proporcionais ao volume; no BI acompanha os filtros.
+- Gráficos do BI: linhas se desenham, colunas sobem e barras empilhadas se revelam; números dos cartões contam até o valor.
+- Painéis entram em sequência, cartões sobem ao passar o mouse, fio de luz no topo; tela de login com aurora e fluxo de conversas.
+- Tudo respeita “reduzir movimento” do sistema (cena fica estática, sem partículas) e não aparece na impressão.

@@ -81,14 +81,14 @@ var main=document.getElementById('main');
 if(main){new MutationObserver(function(){if(!main.hidden)loadSettings(true)}).observe(main,{attributes:true,attributeFilter:['hidden']});if(!main.hidden)loadSettings(true)}
 
 /* ---------- Números por IA ---------- */
-function blank(){return{t:0,r:0,tr:0,u:0,ina:0,n:[]}}
+function blank(){return{t:0,r:0,tr:0,u:0,ina:0,sn:0,n:[]}}
 function add(o,x){
   if(DESFECHOS.indexOf(x.outcome)<0)return;
-  o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.outcome==='inatividade')o.ina++;
+  o.t++;if(x.outcome==='resolvido')o.r++;if(x.outcome==='transferido')o.tr++;if(x.outcome==='inatividade')o.ina++;if(x.outcome==='safenota')o.sn++;
   if(isUnresolvedProtocol(x))o.u++;if(x.survey&&x.survey.note)o.n.push(x.survey.note);
 }
 function rates(o){var av=o.n.length?o.n.reduce(function(a,v){return a+v},0)/o.n.length:0,pos=o.n.filter(function(v){return v>=4}).length;
-  return{t:o.t,r:o.r,tr:o.tr,u:o.u,ina:o.ina,nn:o.n.length,resolvido:o.t?o.r/o.t*100:0,transferido:o.t?o.tr/o.t*100:0,nao:o.t?o.u/o.t*100:0,inatividade:o.t?o.ina/o.t*100:0,nota:av,pos:o.n.length?pos/o.n.length*100:0}}
+  return{t:o.t,r:o.r,tr:o.tr,u:o.u,ina:o.ina,sn:o.sn,safenota:o.t?o.sn/o.t*100:0,nn:o.n.length,resolvido:o.t?o.r/o.t*100:0,transferido:o.t?o.tr/o.t*100:0,nao:o.t?o.u/o.t*100:0,inatividade:o.t?o.ina/o.t*100:0,nota:av,pos:o.n.length?pos/o.n.length*100:0}}
 function byIA(list){var g={};IAS.forEach(function(n){g[n]=blank()});var all=blank();list.forEach(function(x){if(g[x.agent])add(g[x.agent],x);add(all,x)});
   var out={};IAS.forEach(function(n){out[n]=rates(g[n])});out._all=rates(all);return out}
 /* ---------- Economia: resolvidos pela IA × tempo médio de um atendimento humano ---------- */

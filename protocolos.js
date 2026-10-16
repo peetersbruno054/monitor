@@ -79,7 +79,7 @@ function markNav(){
 }
 
 /* ---------- Filtro rápido por desfecho (com contagem) ---------- */
-var OUTS=[['nao','--bad'],['transferido','--transferred'],['resolvido','--resolved'],['inatividade','--inactivity'],['possivel','--possible'],['finalizado','--finished'],['andamento','--ongoing'],['sem','--muted2'],['todos','--blue']];
+var OUTS=[['nao','--bad'],['transferido','--transferred'],['resolvido','--resolved'],['inatividade','--inactivity'],['possivel','--possible'],['finalizado','--finished'],['safenota','--safenota'],['andamento','--ongoing'],['sem','--muted2'],['todos','--blue']];
 function countOf(o,all){
   if(o==='nao')return all.filter(isUnresolvedProtocol).length;
   if(o==='sem')return all.filter(function(x){return x.outcome==='outro'}).length;

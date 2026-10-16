@@ -63,7 +63,7 @@ document.head.appendChild(Object.assign(document.createElement('style'),{textCon
 
 /* ---------- Atendimentos por hora: gráfico por desfecho + mapa dia da semana × hora ---------- */
 var CATS=[['resolvido','Resolvidos','resolved'],['nao','Não resolvidos','bad'],['transferido','Transferidos','transferred'],['outros','Outros (não retornou)','other']];
-var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['finalizado','Finalizado (não retornou)']];
+var OSUB=[['inatividade','Inatividade'],['possivel','Aguardando confirmação'],['finalizado','Finalizado (não retornou)'],['safenota','Finaliza SafeNota']];
 var KEYS=['t','r','tr'].concat(CATS.map(function(c){return c[0]}),OSUB.map(function(o){return o[0]}));
 function catOf(x){if(x.outcome==='resolvido')return'resolvido';if(isUnresolvedProtocol(x))return'nao';if(x.outcome==='transferido')return'transferido';return'outros'}
 function newSlot(){var s={};KEYS.forEach(function(k){s[k]=0});return s}

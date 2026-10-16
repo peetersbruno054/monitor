@@ -93,6 +93,7 @@ window.renderOverview=function(){
     ['inatividade','Inatividade','cliente parou de responder','inactivity',false,by('inatividade'),by('inatividade').length],
     ['possivel','Aguardando confirmação','possível solução, ainda dentro das 24h','possible',false,by('possivel'),by('possivel').length]
   ];
+  if(by('safenota').length)rows.push(['safenota','Finaliza SafeNota','encerrados pelo fluxo SafeNota','safenota',false,by('safenota'),by('safenota').length]);
   var ini=all.length;
   $('outcomes').innerHTML=
     '<div class="oc-sum"><big>'+num('sum',fmt(total),total,'')+'</big><div><b>atendimentos da IA com desfecho no período</b><small>'+pct(total,ini)+'% dos '+fmt(ini)+' iniciados</small></div></div>'+

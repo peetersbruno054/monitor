@@ -13,6 +13,7 @@ var DESC={
   inatividade:'Protocolos finalizados porque o cliente parou de responder',
   possivel:'Pesquisa encaminhada como possível solução, ainda dentro das 24h de espera: depois disso vira Resolvido',
   finalizado:'Protocolos em que o cliente não retornou (“Não retomou atendimento”): entram em Outros no BI',
+  safenota:'Protocolos encerrados pelo fluxo “Finaliza SafeNota”',
   andamento:'Só “Iniciado atendimento” há menos de 24h: viram Inatividade se não houver resposta',
   sem:'Protocolos que não registraram nenhum ponto de encerramento: veja a trilha de cada um',
   voltou:'Protocolos que tiveram retorno do cliente em até 24h',
@@ -29,7 +30,7 @@ function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','butto
 /* ======================================================================
    0. Regras para protocolos sem ponto de encerramento (definidas pela coordenação)
       Não retomou atendimento .......... Finalizado (não retornou) = “Outros” no BI
-      Finaliza SafeNota ................ Transferido (fila) — o fluxo agora vai para a fila
+      Finaliza SafeNota ................ Finaliza SafeNota (desfecho próprio, como os demais bot points)
       Atendimento retomado / Retomada .. Transferido (fila)
       Só Falha de conhecimento ......... Transferido (fila)
       Só Iniciado atendimento .......... Inatividade depois de 24h; antes disso, Em andamento
@@ -39,7 +40,7 @@ function keyGo(el,fn,label){el.classList.add('go');el.setAttribute('role','butto
 var WAIT_H=24;
 function trailRule(p){var x=norm(p);
   if(x.indexOf('nao retomou')>=0||x.indexOf('nao retornou')>=0)return'finalizado';
-  if(x.indexOf('finaliza safenota')>=0)return'transferido';
+  if(x.indexOf('finaliza safenota')>=0)return'safenota';
   if(x.indexOf('retomad')>=0||x.indexOf('retomou')>=0)return'transferido';
   if(x.indexOf('falha de conhecimento')>=0)return'transferido';
   return'';}
@@ -412,7 +413,7 @@ function bindAgents(){
 wrap('renderOverview',bindOverview);
 wrap('renderAgents',bindAgents);
 wrap('renderQuality',function(){
-  var map={'Com desfecho':'todos','Resolvidos':'resolvido','Transferidos':'transferido','Não resolvidos':'nao','Inatividade':'inatividade','Aguardando':'possivel','Finalizado':'finalizado'};
+  var map={'Com desfecho':'todos','Resolvidos':'resolvido','Transferidos':'transferido','Não resolvidos':'nao','Inatividade':'inatividade','Aguardando':'possivel','Finalizado':'finalizado','Finaliza SafeNota':'safenota'};
   qa('#funnelPanel .fn').forEach(function(r){var o=map[r.firstChild.textContent];if(o)keyGo(r,function(){goProtocols(o)},'Ver protocolos: '+r.firstChild.textContent)});
 });
 

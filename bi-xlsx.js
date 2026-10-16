@@ -4,9 +4,7 @@
    H = {dr:linhas da aba Dados, DIAS, BANDS:[nomes], ft:filterTexts, stamp, brf, NOCH, chOrder} */
 (function(){
 'use strict';
-var OUTL=['Resolvido','Transferido','Não resolvido','Inatividade','Outros (não retornou)'];
-var OUTH=['Resolvidos','Transferidos','Não resolvidos','Inatividade','Outros (não retornou)'];
-var OUTC=['1BAF7A','2A78D6','E34948','EDA100','9AA7B2'];
+var OUTL,OUTH,OUTC;   /* definidos em extend(): incluem "Finaliza SafeNota" só quando houver */
 var CHC=['6250D6','EB6834','12919F','B8860B','C13C7E'];
 var CHO=['WhatsApp','Webchat','Telegram','Instagram','Facebook','E-mail'];
 function chHex(n){var k=CHO.indexOf(n);if(k<0||k>4)return n==='Não informado'?'9AA7B2':CHC[4];return CHC[k]}
@@ -15,12 +13,18 @@ function q(n){return"'"+String(n).replace(/'/g,"''")+"'"}
 function A(col,r1,r2,abs){return '$'+col+'$'+r1+(r2!=null?':$'+col+'$'+r2:'')}
 
 function agg(list){
-  var a={t:0,c:[0,0,0,0,0],nn:0,s:0,pos:0};
+  var a={t:0,c:OUTL.map(function(){return 0}),nn:0,s:0,pos:0};
   list.forEach(function(r){var k=OUTL.indexOf(r.out);if(k>=0){a.c[k]++;a.t++}if(r.nota>0){a.nn++;a.s+=r.nota;if(r.nota>=4)a.pos++}});
   return a;
 }
 
 function extend(sheets,c,H){
+  var SN=!!H.sn;
+  OUTL=['Resolvido','Transferido','Não resolvido','Inatividade','Outros (não retornou)'];
+  OUTH=['Resolvidos','Transferidos','Não resolvidos','Inatividade','Outros (não retornou)'];
+  OUTC=['1BAF7A','2A78D6','E34948','EDA100','9AA7B2'];
+  if(SN){OUTL.splice(4,0,'Finaliza SafeNota');OUTH.splice(4,0,'Finaliza SafeNota');OUTC.splice(4,0,'B0477E')}
+  var nO=OUTL.length,W=SN?9:8,iOut=OUTL.indexOf('Outros (não retornou)'),iSN=OUTL.indexOf('Finaliza SafeNota');
   var X=window.monXlsx,dr=H.dr,n=dr.length,L=Math.max(n+1,2);
   var recs=dr.map(function(r){return{ia:r[6],ch:r[7],dia:r[3],band:r[4],out:r[8],h:r[2],nota:r[9]&&r[9].v!=null?Number(r[9].v):null}});
   var COL={ia:'G',ch:'H',dia:'D',band:'E',out:'I',nota:'J',hora:'C'};
@@ -43,8 +47,8 @@ function extend(sheets,c,H){
   function fillRow(n,from,to,v){for(var i=from;i<=to;i++)if(row(n)[i]==null)row(n)[i]=v}
   function merge(n,c1,c2){merges.push(X.colName(c1)+n+':'+X.colName(c2)+n)}
   var cur=1;
-  put(1,0,{v:'Painel · BI Monitor IA — Safeweb',s:'title'});merge(1,0,8);rows[0].height=28;
-  put(2,0,{v:'Gerado em '+H.stamp()+' · Período '+H.brf(c.p.start)+' a '+H.brf(c.p.end)+' · Recorte do BI: '+H.ft.rec+' · IA: '+H.ft.ia+(hasCh?' · Canal: '+H.ft.ch:'')+' · Dias: '+H.ft.wd+' · Faixa: '+H.ft.band,s:'note'});merge(2,0,8);
+  put(1,0,{v:'Painel · BI Monitor IA — Safeweb',s:'title'});merge(1,0,W);rows[0].height=28;
+  put(2,0,{v:'Gerado em '+H.stamp()+' · Período '+H.brf(c.p.start)+' a '+H.brf(c.p.end)+' · Recorte do BI: '+H.ft.rec+' · IA: '+H.ft.ia+(hasCh?' · Canal: '+H.ft.ch:'')+' · Dias: '+H.ft.wd+' · Faixa: '+H.ft.band,s:'note'});merge(2,0,W);
   var labels=[['IA',0],['Canal',2],['Dia da semana',4],['Faixa horária',6]];
   labels.forEach(function(l){put(4,l[1],{v:l[0],s:'sub'});put(4,l[1]+1,{v:'',s:'sub'});merge(4,l[1],l[1]+1)});
   put(4,8,{v:'◄ escolha nas caixas amarelas',s:'note'});
@@ -61,7 +65,7 @@ function extend(sheets,c,H){
   dvList('A5',iaOpts,'IA');dvList('C5',chOpts,'Canal');dvList('E5',diaOpts,'Dia da semana');dvList('G5',bandOpts,'Faixa horária');
 
   var all=agg(recs);
-  var tl=['Atendimentos com desfecho','% Resolvidos','% Transferidos','% Não resolvidos','% Inatividade','% Outros (não retornou)','Nota média','Avaliações','% Notas 4 e 5'];
+  var tl=['Atendimentos com desfecho','% Resolvidos','% Transferidos','% Não resolvidos','% Inatividade','% Outros (não retornou)','Nota média','Avaliações','% Notas 4 e 5'].concat(SN?['% Finaliza SafeNota']:[]);
   tl.forEach(function(t,i){put(7,i,{v:t,s:'lab'})});rows[6].height=32;
   var sh=function(k){return all.t?all.c[k]/all.t:'–'};
   var tv=[
@@ -70,16 +74,17 @@ function extend(sheets,c,H){
     {v:sh(1),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Transferido"')+'/$A$8)'},
     {v:sh(2),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Não resolvido"')+'/$A$8)'},
     {v:sh(3),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Inatividade"')+'/$A$8)'},
-    {v:sh(4),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Outros (não retornou)"')+'/$A$8)'},
+    {v:sh(iOut),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Outros (não retornou)"')+'/$A$8)'},
     {v:all.nn?all.s/all.nn:'–',s:'kpid',f:'IFERROR(AVERAGEIFS('+rg('nota')+','+pairs(null)+','+rg('nota')+',">0"),"–")'},
     {v:all.nn,s:'kpi',f:cnt(null,rg('nota')+',">0"')},
     {v:all.nn?all.pos/all.nn:'–',s:'kpip',f:'IF($H$8=0,"–",'+cnt(null,rg('nota')+',">=4"')+'/$H$8)'}
   ];
+  if(SN)tv.push({v:sh(iSN),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Finaliza SafeNota"')+'/$A$8)'});
   tv.forEach(function(v,i){put(8,i,v)});rows[7].height=40;
-  put(9,0,{v:'Os números e gráficos abaixo respondem às caixas amarelas. A base é a aba Dados (já com o recorte do BI no momento do download). Cada quadro ignora o filtro da própria dimensão, para permitir comparar.',s:'hint'});merge(9,0,8);rows[8].height=30;
+  put(9,0,{v:'Os números e gráficos abaixo respondem às caixas amarelas. A base é a aba Dados (já com o recorte do BI no momento do download). Cada quadro ignora o filtro da própria dimensão, para permitir comparar.',s:'hint'});merge(9,0,W);rows[8].height=30;
   cur=11;
 
-  function secRow(text){put(cur,0,{v:text,s:'sec'});fillRow(cur,1,8,{v:'',s:'sec'});merge(cur,0,8);rows[cur-1].height=22;cur++}
+  function secRow(text){put(cur,0,{v:text,s:'sec'});fillRow(cur,1,W,{v:'',s:'sec'});merge(cur,0,W);rows[cur-1].height=22;cur++}
 
   /* desfechos */
   secRow('Como terminam os atendimentos');
@@ -88,12 +93,12 @@ function extend(sheets,c,H){
   OUTL.forEach(function(lb,i){
     put(cur,0,lb);
     put(cur,1,{v:all.c[i],s:'int',f:cnt(null,rg('out')+',"'+lb+'"')});
-    put(cur,2,{v:all.t?all.c[i]/all.t:'',s:'pct',f:'IF($B$'+(d1+5)+'=0,"",B'+cur+'/$B$'+(d1+5)+')'});
+    put(cur,2,{v:all.t?all.c[i]/all.t:'',s:'pct',f:'IF($B$'+(d1+nO)+'=0,"",B'+cur+'/$B$'+(d1+nO)+')'});
     cur++;
   });
-  put(cur,0,{v:'Total',s:'tott'});put(cur,1,{v:all.t,s:'toti',f:'SUM(B'+d1+':B'+(d1+4)+')'});put(cur,2,{v:all.t?1:'',s:'totp',f:'IF(B'+cur+'=0,"",SUM(C'+d1+':C'+(d1+4)+'))'});
-  charts.push({type:'doughnut',title:'Desfechos (conforme filtros)',from:[3,dHead-1],to:[9,dHead+13],cats:{ref:'Painel!$A$'+d1+':$A$'+(d1+4),vals:OUTL},
-    series:[{name:'Atendimentos',nameRef:'Painel!$B$'+dHead,ref:'Painel!$B$'+d1+':$B$'+(d1+4),vals:all.c}],colors:OUTC});
+  put(cur,0,{v:'Total',s:'tott'});put(cur,1,{v:all.t,s:'toti',f:'SUM(B'+d1+':B'+(d1+nO-1)+')'});put(cur,2,{v:all.t?1:'',s:'totp',f:'IF(B'+cur+'=0,"",SUM(C'+d1+':C'+(d1+nO-1)+'))'});
+  charts.push({type:'doughnut',title:'Desfechos (conforme filtros)',from:[3,dHead-1],to:[9,dHead+13],cats:{ref:'Painel!$A$'+d1+':$A$'+(d1+nO-1),vals:OUTL},
+    series:[{name:'Atendimentos',nameRef:'Painel!$B$'+dHead,ref:'Painel!$B$'+d1+':$B$'+(d1+nO-1),vals:all.c}],colors:OUTC});
   cur=dHead+15;
 
   /* quadros por dimensão */
@@ -107,25 +112,25 @@ function extend(sheets,c,H){
     members.forEach(function(m){
       var list=recs.filter(function(r){return r[dim]===m}),a=agg(list),r=cur;
       put(r,0,{v:m,s:'bold'});
-      put(r,1,{v:a.t,s:'int',f:'SUM(C'+r+':G'+r+')'});
+      put(r,1,{v:a.t,s:'int',f:'SUM(C'+r+':'+X.colName(1+nO)+r+')'});
       OUTL.forEach(function(lb,k){put(r,2+k,{v:a.c[k],s:'int',f:cnt(dim,rg(dim)+',$A'+r+','+rg('out')+',"'+lb+'"')})});
-      put(r,7,{v:a.t?a.c[0]/a.t:'',s:'pct',f:'IF(B'+r+'=0,"",C'+r+'/B'+r+')'});
-      put(r,8,{v:a.nn?a.s/a.nn:'',s:'dec',f:'IFERROR(AVERAGEIFS('+rg('nota')+','+pairs(dim)+','+rg(dim)+',$A'+r+','+rg('nota')+',">0"),"")'});
+      put(r,2+nO,{v:a.t?a.c[0]/a.t:'',s:'pct',f:'IF(B'+r+'=0,"",C'+r+'/B'+r+')'});
+      put(r,3+nO,{v:a.nn?a.s/a.nn:'',s:'dec',f:'IFERROR(AVERAGEIFS('+rg('nota')+','+pairs(dim)+','+rg(dim)+',$A'+r+','+rg('nota')+',">0"),"")'});
       cur++;
     });
     var r2=cur-1,tot=agg(recs.filter(function(r){return members.indexOf(r[dim])>=0}));
     put(cur,0,{v:'Total',s:'tott'});
-    for(i=1;i<=6;i++){var cl=X.colName(i);put(cur,i,{v:i===1?tot.t:tot.c[i-2],s:'toti',f:'SUM('+cl+r1+':'+cl+r2+')'})}
-    put(cur,7,{v:tot.t?tot.c[0]/tot.t:'',s:'totp',f:'IF(B'+cur+'=0,"",C'+cur+'/B'+cur+')'});
+    for(i=1;i<=nO+1;i++){var cl=X.colName(i);put(cur,i,{v:i===1?tot.t:tot.c[i-2],s:'toti',f:'SUM('+cl+r1+':'+cl+r2+')'})}
+    put(cur,2+nO,{v:tot.t?tot.c[0]/tot.t:'',s:'totp',f:'IF(B'+cur+'=0,"",C'+cur+'/B'+cur+')'});
     cur++;
     cf.push({ref:'B'+r1+':B'+r2,type:'bar',color:'FF7FB0E8'});
-    cf.push({ref:'H'+r1+':H'+r2,type:'scale',from:'FFFFFFFF',color:'FF8FD6B8'});
+    cf.push({ref:X.colName(2+nO)+r1+':'+X.colName(2+nO)+r2,type:'scale',from:'FFFFFFFF',color:'FF8FD6B8'});
     var catsRef='Painel!$A$'+r1+':$A$'+r2,vals=members;
     var ser=OUTL.map(function(lb,k){
       return{name:OUTH[k],nameRef:'Painel!$'+X.colName(2+k)+'$'+hr,ref:'Painel!$'+X.colName(2+k)+'$'+r1+':$'+X.colName(2+k)+'$'+r2,
         vals:members.map(function(m){return agg(recs.filter(function(r){return r[dim]===m})).c[k]}),color:OUTC[k]};
     });
-    if(foot){put(cur,0,{v:foot,s:'hint'});merge(cur,0,8);rows[cur-1].height=30}
+    if(foot){put(cur,0,{v:foot,s:'hint'});merge(cur,0,W);rows[cur-1].height=30}
     cur++;
     var hgt=type==='barPct'?Math.max(12,members.length*2+8):16;
     charts.push({type:type,title:title+(type==='barPct'?' (% dos atendimentos)':''),from:[0,cur-1],to:[9,cur-1+hgt],cats:{ref:catsRef,vals:vals},series:ser,gap:45});
@@ -138,14 +143,14 @@ function extend(sheets,c,H){
 
   secRow('Como ler');
   var notes=[
-    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder. "Outros (não retornou)": finalizado sem retorno do cliente.',
+    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder.'+(SN?' "Finaliza SafeNota": protocolo encerrado pelo fluxo SafeNota.':'')+' "Outros (não retornou)": finalizado sem retorno do cliente.',
     'Percentuais são calculados sobre os atendimentos com desfecho. A nota média considera só atendimentos avaliados.',
     'Canal de entrada conforme a coluna "Tipo de Entrada" do R72 (Webchat ou WhatsApp); "Não informado" = protocolo sem esse dado.',
     'As abas "Gráficos", "Comparativo…" e "Evolução…" refletem o recorte do BI no momento do download. O Painel permite refinar esse recorte sem voltar ao sistema.'
   ];
-  notes.forEach(function(t){put(cur,0,{v:t,s:'hint'});merge(cur,0,8);rows[cur-1].height=44;cur++});
+  notes.forEach(function(t){put(cur,0,{v:t,s:'hint'});merge(cur,0,W);rows[cur-1].height=44;cur++});
   for(var z=0;z<rows.length;z++)if(!rows[z])rows[z]=[];
-  out.painel={name:'Painel',cols:[26,15,15,15,15,15,17,15,15,3,16,16,16,16],rows:rows,grid:false,merges:merges,charts:charts,dv:dv,cf:cf,tab:'FF003B5C'};
+  out.painel={name:'Painel',cols:[26,15,15,15,15,15,17,15,15,SN?15:3,16,16,16,16],rows:rows,grid:false,merges:merges,charts:charts,dv:dv,cf:cf,tab:'FF003B5C'};
 
   /* ---------------- Gráficos (evolução) ---------------- */
   function findSheet(nm){for(var i=0;i<sheets.length;i++)if(sheets[i].name===nm)return sheets[i];return null}
@@ -159,13 +164,13 @@ function extend(sheets,c,H){
     var cats=[];for(var i=1;i<=nd;i++)cats.push(String(evSh.rows[i][0]));
     var catx={ref:ref('A'),vals:cats};
     gcharts.push({type:'colStacked',title:'Atendimentos por desfecho',from:[0,3],to:[8,21],cats:catx,gap:40,
-      series:[['E',4,0],['G',6,1],['I',8,2],['K',10,3],['M',12,4]].map(function(s){return{name:OUTH[s[2]],nameRef:hd(s[0]),ref:ref(s[0]),vals:vals(s[1]),color:OUTC[s[2]]}})});
+      series:OUTL.map(function(lb,k){var sp={'Resolvido':['E',4],'Transferido':['G',6],'Não resolvido':['I',8],'Inatividade':['K',10],'Finaliza SafeNota':['N',13],'Outros (não retornou)':['M',12]}[lb];return{name:OUTH[k],nameRef:hd(sp[0]),ref:ref(sp[0]),vals:vals(sp[1]),color:OUTC[k]}})});
     gcharts.push({type:'line',title:'Taxas de desfecho (% dos atendimentos)',from:[8,3],to:[16,21],cats:catx,fmt:'0%',numFmt:'0.0%',
       series:[['F',5,0],['H',7,1],['J',9,2],['L',11,3]].map(function(s){return{name:OUTH[s[2]],nameRef:hd(s[0]),ref:ref(s[0]),vals:vals(s[1]),color:OUTC[s[2]]}})});
     gcharts.push({type:'line',title:'Nota média (CSAT)',from:[0,23],to:[8,41],cats:catx,min:1,max:5,fmt:'0.0',numFmt:'0.00',
-      series:[{name:'Nota média',nameRef:hd('O'),ref:ref('O'),vals:vals(14),color:'6250D6'}]});
+      series:[{name:'Nota média',nameRef:hd(SN?'P':'O'),ref:ref(SN?'P':'O'),vals:vals(14+(SN?1:0)),color:'6250D6'}]});
     gcharts.push({type:'col',title:'Avaliações recebidas',from:[8,23],to:[16,41],cats:catx,gap:50,
-      series:[{name:'Avaliações',nameRef:hd('N'),ref:ref('N'),vals:vals(13),color:'6250D6'}]});
+      series:[{name:'Avaliações',nameRef:hd(SN?'O':'N'),ref:ref(SN?'O':'N'),vals:vals(13+(SN?1:0)),color:'6250D6'}]});
   }
   if(gcharts.length){
     out.graficos={name:'Gráficos',cols:[12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12],rows:[

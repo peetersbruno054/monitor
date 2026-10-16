@@ -15,9 +15,11 @@ var OUT=[
   {k:'nao',lab:'Não resolvidos',one:'Não resolvido',c:'--bi-nao',t:'--bi-nao-t'},
   {k:'transferido',lab:'Transferidos',one:'Transferido',c:'--bi-tra',t:'--bi-tra-t'},
   {k:'inatividade',lab:'Inatividade',one:'Inatividade',c:'--bi-ina',t:'--bi-ina-t'},
+  {k:'safenota',lab:'Finaliza SafeNota',one:'Finaliza SafeNota',c:'--bi-sn',t:'--bi-sn-t'},
   {k:'outros',lab:'Outros (não retornou)',one:'Outros (não retornou)',c:'--bi-out',t:'--bi-out-t'}
 ];
 var LINES=OUT.slice(0,4);
+function linesFor(c){return c.st._all.sn>0?LINES.concat([OUT[4]]):LINES}
 var F={ias:[],ch:[],week:'',wd:[],band:[],gran:''};
 var NOCH='Não informado';
 /* a cor segue o canal (não a posição no ranking) */
@@ -40,8 +42,8 @@ function pad(n){return('0'+n).slice(-2)}
 
 /* ---------- Estilos ---------- */
 var css=
-'.bi{--bi-res:#1baf7a;--bi-nao:#e34948;--bi-tra:#2a78d6;--bi-ina:#eda100;--bi-out:#9aa7b2;--bi-nota:#6250d6;--bi-ch0:#6250d6;--bi-ch1:#eb6834;--bi-ch2:#12919f;--bi-ch3:#b8860b;--bi-ch4:#c13c7e;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#fff;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
-'html[data-theme=dark] .bi{--bi-res:#199e70;--bi-nao:#e66767;--bi-tra:#3987e5;--bi-ina:#c98500;--bi-out:#7b8a97;--bi-nota:#9085e9;--bi-ch0:#9085e9;--bi-ch1:#d95926;--bi-ch2:#27a3b1;--bi-ch3:#c9a227;--bi-ch4:#d55181;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#0b1720;--bi-ina-t:#0b1720;--bi-out-t:#0b1720}'+
+'.bi{--bi-res:#1baf7a;--bi-nao:#e34948;--bi-tra:#2a78d6;--bi-ina:#eda100;--bi-out:#9aa7b2;--bi-sn:#b0477e;--bi-nota:#6250d6;--bi-ch0:#6250d6;--bi-ch1:#eb6834;--bi-ch2:#12919f;--bi-ch3:#b8860b;--bi-ch4:#c13c7e;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#fff;--bi-ina-t:#0b1720;--bi-out-t:#0b1720;--bi-sn-t:#fff}'+
+'html[data-theme=dark] .bi{--bi-res:#199e70;--bi-nao:#e66767;--bi-tra:#3987e5;--bi-ina:#c98500;--bi-out:#7b8a97;--bi-sn:#e27fb2;--bi-nota:#9085e9;--bi-ch0:#9085e9;--bi-ch1:#d95926;--bi-ch2:#27a3b1;--bi-ch3:#c9a227;--bi-ch4:#d55181;--bi-res-t:#0b1720;--bi-nao-t:#0b1720;--bi-tra-t:#0b1720;--bi-ina-t:#0b1720;--bi-out-t:#0b1720;--bi-sn-t:#0b1720}'+
 '.bi .bi-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.bi .bi-head p b{color:var(--ink2);font-weight:600}'+
 '.bi .bi-head{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px;margin-bottom:0}.bi .bi-head>div:first-child{flex:1;min-width:220px}'+
 '.bi .bi-actions{display:flex;flex-wrap:wrap;gap:8px}.bi .bi-actions .btn{width:auto;height:34px;padding:0 13px;font-size:12.5px}'+
@@ -68,7 +70,7 @@ var css=
 '.bi .bi-mrow.n4{grid-template-columns:minmax(0,1fr) 44px 62px;grid-template-areas:"n t nt" "bar bar bar";row-gap:4px}.bi .n4 .bi-mn{grid-area:n}.bi .n4 .bi-mt{grid-area:t}.bi .n4 .bi-mnt{grid-area:nt}.bi .n4 .bi-mbar{grid-area:bar}.bi .bi-mix{gap:10px}}'+
 '.bi .bi-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line2);font-size:12.5px;color:var(--ink2)}'+
 '.bi .bi-bar b{color:var(--ink);font-variant-numeric:tabular-nums}.bi .bi-bar .bi-clear{margin-left:auto;border:0;background:none;color:var(--blue);font:inherit;font-weight:600;cursor:pointer}.bi .bi-clear[disabled]{color:var(--muted);cursor:default;opacity:.6}'+
-'.bi .bi-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}'+
+'.bi .bi-kpis{display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:12px}'+
 '.bi .bi-k{padding:14px 14px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0;box-shadow:inset 0 3px 0 var(--c,var(--line))}'+
 '.bi .bi-k small{display:block;color:var(--ink2);font-size:12.5px;font-weight:600}'+
 '.bi .bi-k strong{display:block;margin:3px 0 1px;font-size:25px;line-height:1.15;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}'+
@@ -155,7 +157,7 @@ function pass(r,skipIA,wk,skipCh){
   if(F.band.length&&!inBand(r.h))return false;
   return true;
 }
-function counts(v){return{resolvido:v.r,nao:v.u,transferido:v.tr,inatividade:v.ina,outros:Math.max(0,v.t-v.r-v.u-v.tr-v.ina)}}
+function counts(v){var sn=v.sn||0;return{resolvido:v.r,nao:v.u,transferido:v.tr,inatividade:v.ina,safenota:sn,outros:Math.max(0,v.t-v.r-v.u-v.tr-v.ina-sn)}}
 
 function compute(){
   var rows=prep(),p=period(),ws=p.start&&p.end?D.weeks(p.start,p.end):[],wk=null;
@@ -217,7 +219,7 @@ function hideTip(){if(tip)tip.hidden=true}
 function swatch(c){return'<i style="--c:var('+c+')"></i>'}
 function tipOutcomes(title,v,sub){
   var c=counts(v),h='<b>'+esc(title)+'</b>'+(sub?'<span><em style="font-style:normal;opacity:.8">'+esc(sub)+'</em></span>':'')+'<span><em style="font-style:normal;opacity:.8">Atendimentos com desfecho</em><b style="margin:0;display:inline">'+n0(v.t)+'</b></span>';
-  OUT.forEach(function(o){if(o.k==='outros'&&!c.outros)return;h+='<span><em style="font-style:normal">'+swatch(o.c)+o.lab+'</em><em style="font-style:normal">'+n0(c[o.k])+' · '+pc(share(c[o.k],v.t))+'</em></span>'});
+  OUT.forEach(function(o){if((o.k==='outros'||o.k==='safenota')&&!c[o.k])return;h+='<span><em style="font-style:normal">'+swatch(o.c)+o.lab+'</em><em style="font-style:normal">'+n0(c[o.k])+' · '+pc(share(c[o.k],v.t))+'</em></span>'});
   return h;
 }
 
@@ -289,13 +291,14 @@ function renderKpis(c){
     k('--bi-tra','Transferidos',(t?pc(v.transferido):'—')+dl(v.transferido,pst&&pst.transferido,-1,'pp'),'<em>'+n0(cnt.transferido)+' atendimentos</em>'+goalLine(g,'transferido',v.transferido,t>0))+
     k('--bi-nao','Não resolvidos',(t?pc(v.nao):'—')+dl(v.nao,pst&&pst.nao,-1,'pp'),'<em>'+n0(cnt.nao)+' atendimentos</em>'+goalLine(g,'nao',v.nao,t>0))+
     k('--bi-ina','Inatividade',(t?pc(v.inatividade):'—')+dl(v.inatividade,pst&&pst.inatividade,-1,'pp'),'<em>'+n0(cnt.inatividade)+' atendimentos</em>')+
+    (v.sn>0?k('--bi-sn','Finaliza SafeNota',(t?pc(v.safenota):'—')+dl(v.safenota,pst&&pst.safenota,0,'pp'),'<em>'+n0(cnt.safenota)+' atendimentos</em>'):'')+
     k('--bi-nota','Nota média',(v.nn?nt(v.nota):'—')+(v.nn&&pst&&pst.nn?dl(v.nota,pst.nota,1,'nota'):''),'<em>'+(v.nn?pc(v.pos)+' notas 4 e 5':'sem avaliações')+'</em><em>'+n0(v.nn)+' respostas'+(t?' · '+pc(share(v.nn,t)):'')+'</em>'+goalLine(g,'nota',v.nota,v.nn>0));
-  q('#biKpis').innerHTML=h;
+  var kp=q('#biKpis');kp.style.setProperty('--n',v.sn>0?7:6);kp.innerHTML=h;
 }
 
 /* ---------- Composição por IA e nota ---------- */
 function legend(c){
-  var show=OUT.filter(function(o){return o.k!=='outros'||(c.stIA._all&&counts(c.stIA._all).outros>0)});
+  var show=OUT.filter(function(o){return(o.k!=='outros'&&o.k!=='safenota')||(c.stIA._all&&counts(c.stIA._all)[o.k]>0)});
   return'<div class="bi-lg">'+show.map(function(o){return'<span><u style="--c:var('+o.c+')"></u>'+o.lab+'</span>'}).join('')+'</div>';
 }
 function mixRow(name,v,sel,tot){
@@ -424,7 +427,8 @@ function drawLine(c){
   [0,25,50,75,100].forEach(function(t){svg.appendChild(el('line',{x1:m.l,x2:W-m.r,y1:yc(t),y2:yc(t),class:t?'grid':'axis'}));svg.appendChild(el('text',{x:m.l-8,y:yc(t)+3.5,'text-anchor':'end'},t+'%'))});
   xlabels(svg,B,xc,H,m,pw);
   var ends=[];
-  LINES.forEach(function(o){
+  var LS=linesFor(c);
+  LS.forEach(function(o){
     var d='',pen=false,prevNull=true,single=[];
     B.forEach(function(b,i){
       if(!b.v.t){prevNull=true;return}
@@ -450,7 +454,7 @@ function drawLine(c){
   hoverLayer(host,svg,B,m,pw,ph,xc,function(i,hv,e){
     hv.textContent='';var b=B[i];
     hv.appendChild(el('line',{x1:xc(i),x2:xc(i),y1:m.t,y2:m.t+ph,stroke:'var(--muted2)','stroke-width':1}));
-    if(b.v.t)LINES.forEach(function(o){hv.appendChild(el('circle',{cx:xc(i),cy:yc(b.v[o.k]),r:4.5,fill:'var('+o.c+')',stroke:'var(--surface)','stroke-width':2}))});
+    if(b.v.t)LS.forEach(function(o){hv.appendChild(el('circle',{cx:xc(i),cy:yc(b.v[o.k]),r:4.5,fill:'var('+o.c+')',stroke:'var(--surface)','stroke-width':2}))});
     showTip(b.v.t?tipOutcomes(b.full,b.v):'<b>'+esc(b.full)+'</b>Sem atendimentos',e.clientX,e.clientY);
   });
   host.appendChild(svg);
@@ -501,6 +505,7 @@ function cellRate(goal,field,v,txt,cnt){
   var has=field==='nota'?v.nn>0:v.t>0,ok=goal?D.check(goal,field,v[field],has):null;
   return'<td class="'+(ok===true?'hit':ok===false?'miss':'')+'"><b>'+txt+'</b>'+(cnt!=null?'<small>'+cnt+'</small>':'')+'</td>';
 }
+var SNCOL=false;
 function statCells(v,goal){
   var cn=counts(v),t=v.t;
   return'<td><b>'+n0(t)+'</b></td>'+
@@ -508,12 +513,13 @@ function statCells(v,goal){
     cellRate(goal,'nao',v,t?pc(v.nao):'—',n0(cn.nao))+
     cellRate(goal,'transferido',v,t?pc(v.transferido):'—',n0(cn.transferido))+
     '<td><b>'+(t?pc(v.inatividade):'—')+'</b><small>'+n0(cn.inatividade)+'</small></td>'+
+    (SNCOL?'<td><b>'+(t?pc(v.safenota):'—')+'</b><small>'+n0(cn.safenota)+'</small></td>':'')+
     cellRate(goal,'nota',v,v.nn?nt(v.nota):'—',v.nn?n0(v.nn)+' aval.':'')+
     '';
 }
-var THEAD='<th>%s</th><th>Atend.</th><th>Resolvidos</th><th>Não resolvidos</th><th>Transferidos</th><th>Inatividade</th><th>Nota média</th>';
+function theadFor(){return'<th>%s</th><th>Atend.</th><th>Resolvidos</th><th>Não resolvidos</th><th>Transferidos</th><th>Inatividade</th>'+(SNCOL?'<th>SafeNota</th>':'')+'<th>Nota média</th>'}
 function renderTables(c){
-  var metas=D.metas(),rows='';
+  SNCOL=c.stIA._all.sn>0;var THEAD=theadFor(),metas=D.metas(),rows='';
   IAS.forEach(function(n){var v=c.stIA[n];if(!v||!v.t)return;var sel=F.ias.indexOf(n)>=0;
     rows+='<tr class="clk'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" tabindex="0" aria-pressed="'+(sel?'true':'false')+'"><td><b>'+esc(n)+'</b></td>'+statCells(v,metas[n])+'</tr>'});
   rows+='<tr class="tot"><td>Todas as IAs</td>'+statCells(c.stIA._all,null)+'</tr>';
@@ -683,6 +689,7 @@ function outLabel(x){
   if(isUnresolvedProtocol(x))return'Não resolvido';
   if(x.outcome==='transferido')return'Transferido';
   if(x.outcome==='inatividade')return'Inatividade';
+  if(x.outcome==='safenota')return'Finaliza SafeNota';
   if(DESFECHOS.indexOf(x.outcome)>=0)return'Outros (não retornou)';
   return'Sem desfecho';
 }
@@ -692,10 +699,11 @@ function statRow(label,v,goal,extra){
   var gv=function(k){return goal&&goal[k]!=null?Number(goal[k]):null};
   D.FIELDS.forEach(function(fl){var has=fl[0]==='nota'?v.nn>0:v.t>0,ok=goal?D.check(goal,fl[0],v[fl[0]],has):null;if(ok!==null){tot++;if(ok)hit++}});
   var gp=function(k){var g=gv(k);return g==null?null:{v:g/100,s:'pct'}};
-  return(extra||[label]).concat([i(v.t),i(cn.resolvido),f(v.t?v.r/v.t:null),i(cn.transferido),f(v.t?v.tr/v.t:null),i(cn.nao),f(v.t?v.u/v.t:null),i(cn.inatividade),f(v.t?v.ina/v.t:null),i(cn.outros),
-    i(v.nn),v.nn?{v:Math.round(v.nota*100)/100,s:'dec'}:null,v.nn?f(v.pos/100):null,gp('resolvido'),gp('transferido'),gp('nao'),gv('nota')!=null?{v:gv('nota'),s:'dec'}:null,tot?hit+' de '+tot:null]);
+  return(extra||[label]).concat([i(v.t),i(cn.resolvido),f(v.t?v.r/v.t:null),i(cn.transferido),f(v.t?v.tr/v.t:null),i(cn.nao),f(v.t?v.u/v.t:null),i(cn.inatividade),f(v.t?v.ina/v.t:null),i(cn.outros)].concat(SN?[i(cn.safenota)]:[],[
+    i(v.nn),v.nn?{v:Math.round(v.nota*100)/100,s:'dec'}:null,v.nn?f(v.pos/100):null,gp('resolvido'),gp('transferido'),gp('nao'),gv('nota')!=null?{v:gv('nota'),s:'dec'}:null,tot?hit+' de '+tot:null]));
 }
-var HEAD_STAT=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros (não retornou)','Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'];
+var SN=false;
+function headStat(){var h=['Atendimentos com desfecho','Resolvidos','% Resolvidos','Transferidos','% Transferidos','Não resolvidos','% Não resolvidos','Inatividade','% Inatividade','Outros (não retornou)'];if(SN)h.push('Finaliza SafeNota');return h.concat(['Avaliações','Nota média','% Notas 4 e 5','Meta % resolvidos','Meta % transferidos','Meta % não resolvidos','Meta nota','Metas atingidas'])}
 function head(a){return a.map(function(t){return{v:t,s:'head'}})}
 function dataRows(c){
   return c.f.filter(function(r){return r.ms}).sort(function(a,b){return a.ms-b.ms}).map(function(r){
@@ -713,6 +721,7 @@ function save(blob,name){
 function exportXlsx(){
   if(!LAST){toast('Carregue os dados primeiro');return}
   if(!window.monXlsx){toast('Exportação indisponível');return}
+  SN=LAST.stIA._all.sn>0;
   var c=LAST,ft=filterTexts(c),v=c.st._all,g=singleGoal(c),metas=D.metas(),t=v.t,mt=metaTally(c);
   var lab=function(s){return{v:s,s:'bold'}},st=function(ok){return ok===true?'Atingida':ok===false?'Não atingida':''};
   var kpi=function(name,val,fmt,goal,field,has){
@@ -733,37 +742,38 @@ function exportXlsx(){
     kpi('% Transferidos',t?v.tr/t:null,'pct',g&&g.transferido,'transferido',t>0),
     kpi('% Não resolvidos',t?v.u/t:null,'pct',g&&g.nao,'nao',t>0),
     ['% Inatividade',{v:t?v.ina/t:null,s:'pct'}],
+    ].concat(SN?[['% Finaliza SafeNota',{v:t?counts(v).safenota/t:null,s:'pct'}]]:[]).concat([
     kpi('Nota média',v.nn?Math.round(v.nota*100)/100:null,'dec',g&&g.nota,'nota',v.nn>0),
     ['Avaliações',{v:v.nn,s:'int'}],
     ['Metas atingidas',mt.tot?mt.hit+' de '+mt.tot:'sem metas definidas'],
     [],
     [{v:'A meta de cada indicador só aparece quando uma única IA está selecionada.',s:'note'}]
-  ];
-  var cmp=[head(['IA'].concat(HEAD_STAT).concat(['Incluída no filtro']))];
+  ]);
+  var cmp=[head(['IA'].concat(headStat()).concat(['Incluída no filtro']))];
   IAS.forEach(function(n){var s=c.stIA[n];if(!s||!s.t)return;var r=statRow(n,s,metas[n]);r.push(!F.ias.length||F.ias.indexOf(n)>=0?'Sim':'Não');cmp.push(r)});
   var rt=statRow('Todas as IAs',c.stIA._all,null);rt.push('');cmp.push(rt);
   var evo=function(gran){
-    var B=buckets(c.f,c.rs,gran),rows=[head([gran==='week'?'Semana':'Dia','De','Até'].concat(HEAD_STAT.slice(0,13)))];
+    var B=buckets(c.f,c.rs,gran),rows=[head([gran==='week'?'Semana':'Dia','De','Até'].concat(headStat().slice(0,13+(SN?1:0))))];
     B.forEach(function(b){
       var d1=d0(b.start),d2=d0(b.end);
-      var r=statRow(b.full,b.v,null,[b.full,d1,d2]);rows.push(r.slice(0,16));
+      var r=statRow(b.full,b.v,null,[b.full,d1,d2]);rows.push(r.slice(0,16+(SN?1:0)));
     });
-    var r=statRow('Total do filtro',v,null,['Total do filtro',d0(c.rs.start),d0(c.rs.end)]);rows.push(r.slice(0,16));
+    var r=statRow('Total do filtro',v,null,['Total do filtro',d0(c.rs.start),d0(c.rs.end)]);rows.push(r.slice(0,16+(SN?1:0)));
     return rows;
   };
-  var chs=[head(['Canal'].concat(HEAD_STAT))];
+  var chs=[head(['Canal'].concat(headStat()))];
   c.chNames.forEach(function(n){var s=c.stCh[n];if(s&&s.t)chs.push(statRow(n,s,null))});
   var evoW=evo('week'),sheets=[
     {name:'Resumo',cols:[34,16,12,18],rows:resumo,grid:false},
-    {name:'Comparativo IAs',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:cmp,freeze:1,filter:true},
-    {name:'Evolução semanal',cols:[30,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evoW,freeze:1,filter:true}
+    {name:'Comparativo IAs',cols:[22,14,12,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:cmp,freeze:1,filter:true},
+    {name:'Evolução semanal',cols:[30,12,12,14,12,12,12,12,12,12,12,12,12,10,11,11,12],rows:evoW,freeze:1,filter:true}
   ];
-  if(c.hasCh)sheets.splice(1,0,{name:'Comparativo canais',cols:[22,14,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:chs,freeze:1,filter:true});
-  if(c.days<=120)sheets.push({name:'Evolução diária',cols:[26,12,12,14,12,12,12,12,12,12,12,12,10,11,11,12],rows:evo('day'),freeze:1,filter:true});
+  if(c.hasCh)sheets.splice(1,0,{name:'Comparativo canais',cols:[22,14,12,12,12,12,12,12,12,12,12,10,11,11,12,12,12,12,10,12,12],rows:chs,freeze:1,filter:true});
+  if(c.days<=120)sheets.push({name:'Evolução diária',cols:[26,12,12,14,12,12,12,12,12,12,12,12,12,10,11,11,12],rows:evo('day'),freeze:1,filter:true});
   var dr=dataRows(c);
   sheets.push({name:'Dados',cols:[22,12,7,15,14,14,20,14,18,7],rows:[head(DATA_HEAD)].concat(dr),freeze:1,filter:true});
   if(window.monBIXlsx){
-    try{sheets=window.monBIXlsx.extend(sheets,c,{dr:dr,IAS:IAS,DIAS:DIAS,BANDS:BANDS.map(function(b){return b[0]}),ft:ft,stamp:stamp,brf:brf,NOCH:NOCH})}
+    try{sheets=window.monBIXlsx.extend(sheets,c,{dr:dr,IAS:IAS,DIAS:DIAS,BANDS:BANDS.map(function(b){return b[0]}),ft:ft,stamp:stamp,brf:brf,NOCH:NOCH,sn:SN})}
     catch(e){if(window.console)console.error('xlsx painel',e)}
   }
   window.monXlsx.build(sheets).then(function(b){save(b,fileName(c,'xlsx'));toast('Planilha baixada ('+n0(dr.length)+' atendimentos)')},function(){toast('Não foi possível gerar a planilha')});

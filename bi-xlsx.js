@@ -24,10 +24,10 @@ function extend(sheets,c,H){
   OUTH=['Resolvidos','Transferidos','Não resolvidos','Inatividade','Outros (não retornou)'];
   OUTC=['1BAF7A','2A78D6','E34948','EDA100','9AA7B2'];
   if(SN){OUTL.splice(4,0,'Finaliza SafeNota');OUTH.splice(4,0,'Finaliza SafeNota');OUTC.splice(4,0,'B0477E')}
-  var nO=OUTL.length,W=SN?9:8,iOut=OUTL.indexOf('Outros (não retornou)'),iSN=OUTL.indexOf('Finaliza SafeNota');
+  var FCR=H.fcr&&H.fcr.res>0,nO=OUTL.length,W=(SN?9:8)+(FCR?1:0),iOut=OUTL.indexOf('Outros (não retornou)'),iSN=OUTL.indexOf('Finaliza SafeNota');
   var X=window.monXlsx,dr=H.dr,n=dr.length,L=Math.max(n+1,2);
-  var recs=dr.map(function(r){return{ia:r[6],ch:r[7],dia:r[3],band:r[4],out:r[8],h:r[2],nota:r[9]&&r[9].v!=null?Number(r[9].v):null}});
-  var COL={ia:'G',ch:'H',dia:'D',band:'E',out:'I',nota:'J',hora:'C'};
+  var recs=dr.map(function(r){return{ia:r[6],ch:r[7],dia:r[3],band:r[4],out:r[8],h:r[2],nota:r[9]&&r[9].v!=null?Number(r[9].v):null,ret:r[10]||''}});
+  var COL={ia:'G',ch:'H',dia:'D',band:'E',out:'I',nota:'J',hora:'C',ret:'K'};
   function rg(k){var col=COL[k]||k;return 'Dados!$'+col+'$2:$'+col+'$'+L}
   var CRIT={ia:'$K$5',ch:'$L$5',dia:'$M$5',band:'$N$5'},ORDER=['ia','ch','dia','band'];
   function pairs(excl){return ORDER.filter(function(k){return k!==excl}).map(function(k){return rg(k)+','+CRIT[k]}).join(',')}
@@ -65,7 +65,7 @@ function extend(sheets,c,H){
   dvList('A5',iaOpts,'IA');dvList('C5',chOpts,'Canal');dvList('E5',diaOpts,'Dia da semana');dvList('G5',bandOpts,'Faixa horária');
 
   var all=agg(recs);
-  var tl=['Atendimentos com desfecho','% Resolvidos','% Transferidos','% Não resolvidos','% Inatividade','% Outros (não retornou)','Nota média','Avaliações','% Notas 4 e 5'].concat(SN?['% Finaliza SafeNota']:[]);
+  var tl=['Atendimentos com desfecho','% Resolvidos','% Transferidos','% Não resolvidos','% Inatividade','% Outros (não retornou)','Nota média','Avaliações','% Notas 4 e 5'].concat(SN?['% Finaliza SafeNota']:[]).concat(FCR?['FCR · 1º contato']:[]);
   tl.forEach(function(t,i){put(7,i,{v:t,s:'lab'})});rows[6].height=32;
   var sh=function(k){return all.t?all.c[k]/all.t:'–'};
   var tv=[
@@ -80,6 +80,11 @@ function extend(sheets,c,H){
     {v:all.nn?all.pos/all.nn:'–',s:'kpip',f:'IF($H$8=0,"–",'+cnt(null,rg('nota')+',">=4"')+'/$H$8)'}
   ];
   if(SN)tv.push({v:sh(iSN),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Finaliza SafeNota"')+'/$A$8)'});
+  if(FCR){
+    var rOk=recs.filter(function(r){return r.out==='Resolvido'&&r.ret==='Não voltou'}).length,rVo=recs.filter(function(r){return r.out==='Resolvido'&&r.ret==='Voltou em 24h'}).length;
+    var cOk=cnt(null,rg('out')+',"Resolvido",'+rg('ret')+',"Não voltou"'),cVo=cnt(null,rg('out')+',"Resolvido",'+rg('ret')+',"Voltou em 24h"');
+    tv.push({v:rOk+rVo?rOk/(rOk+rVo):'–',s:'kpip',f:'IF(('+cOk+'+'+cVo+')=0,"–",'+cOk+'/('+cOk+'+'+cVo+'))'});
+  }
   tv.forEach(function(v,i){put(8,i,v)});rows[7].height=40;
   put(9,0,{v:'Os números e gráficos abaixo respondem às caixas amarelas. A base é a aba Dados (já com o recorte do BI no momento do download). Cada quadro ignora o filtro da própria dimensão, para permitir comparar.',s:'hint'});merge(9,0,W);rows[8].height=30;
   cur=11;
@@ -143,14 +148,14 @@ function extend(sheets,c,H){
 
   secRow('Como ler');
   var notes=[
-    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder.'+(SN?' "Finaliza SafeNota": protocolo encerrado pelo fluxo SafeNota.':'')+' "Outros (não retornou)": finalizado sem retorno do cliente.',
+    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder.'+(SN?' "Finaliza SafeNota": protocolo encerrado pelo fluxo SafeNota.':'')+' "Outros (não retornou)": finalizado sem retorno do cliente.'+(FCR?' FCR: resolvidos em que o cliente não voltou em até 24h ÷ resolvidos avaliáveis (a coluna "Retorno em 24h" da aba Dados mostra o caso de cada protocolo).':''),
     'Percentuais são calculados sobre os atendimentos com desfecho. A nota média considera só atendimentos avaliados.',
     'Canal de entrada conforme a coluna "Tipo de Entrada" do R72 (Webchat ou WhatsApp); "Não informado" = protocolo sem esse dado.',
     'As abas "Gráficos", "Comparativo…" e "Evolução…" refletem o recorte do BI no momento do download. O Painel permite refinar esse recorte sem voltar ao sistema.'
   ];
   notes.forEach(function(t){put(cur,0,{v:t,s:'hint'});merge(cur,0,W);rows[cur-1].height=44;cur++});
   for(var z=0;z<rows.length;z++)if(!rows[z])rows[z]=[];
-  out.painel={name:'Painel',cols:[26,15,15,15,15,15,17,15,15,SN?15:3,16,16,16,16],rows:rows,grid:false,merges:merges,charts:charts,dv:dv,cf:cf,tab:'FF003B5C'};
+  out.painel={name:'Painel',cols:[26,15,15,15,15,15,17,15,15,(SN||FCR)?15:3,16,16,16,16],rows:rows,grid:false,merges:merges,charts:charts,dv:dv,cf:cf,tab:'FF003B5C'};
 
   /* ---------------- Gráficos (evolução) ---------------- */
   function findSheet(nm){for(var i=0;i<sheets.length;i++)if(sheets[i].name===nm)return sheets[i];return null}

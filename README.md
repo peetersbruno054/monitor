@@ -230,3 +230,9 @@ Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, va
 - Desempenho por IA: ícone com status (verde = com atendimentos, cinza = sem), barra de composição resolvidos/transferidos/não resolvidos e números maiores.
 - Atendimentos por hora e Economia da IA seguem o mesmo estilo. Tudo respeita “reduzir movimento”.
 
+## FCR — resolução no 1º contato (fcr.js)
+- **Definição:** % dos atendimentos *resolvidos pela IA* em que o cliente **não voltou em até 24h**. Cliente = mesmo telefone (11 últimos dígitos) ou, sem telefone, o mesmo contato; “voltou” = outro protocolo iniciado até 24h depois do início do protocolo resolvido.
+- **Fora do cálculo (e informado na tela):** protocolos sem telefone/contato e protocolos cuja janela de 24h não terminou dentro do período (ex.: últimas 24h do período). Se o cliente já voltou, mas a janela está incompleta, também fica de fora — assim o número não é puxado para baixo.
+- **Onde aparece:** cartão na Visão geral (com variação vs. período anterior) e selo “FCR xx%” em cada IA; cartão e coluna por IA no BI (acompanha os filtros); faixa acima dos clientes que voltaram na aba Protocolos; no Excel: tile no Painel (fórmula, reage aos filtros), linhas no Resumo, colunas no Comparativo IAs e coluna “Retorno em 24h” na aba Dados (e no CSV).
+- A regra fica em `window.monFCR` (state/stats/byAgent) para reaproveitar em metas ou alertas.
+

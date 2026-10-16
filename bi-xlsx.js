@@ -81,8 +81,8 @@ function extend(sheets,c,H){
   ];
   if(SN)tv.push({v:sh(iSN),s:'kpip',f:'IF($A$8=0,"–",'+cnt(null,rg('out')+',"Finaliza SafeNota"')+'/$A$8)'});
   if(FCR){
-    var rOk=recs.filter(function(r){return r.out==='Resolvido'&&r.ret==='Não voltou'}).length,rVo=recs.filter(function(r){return r.out==='Resolvido'&&r.ret==='Voltou em 24h'}).length;
-    var cOk=cnt(null,rg('out')+',"Resolvido",'+rg('ret')+',"Não voltou"'),cVo=cnt(null,rg('out')+',"Resolvido",'+rg('ret')+',"Voltou em 24h"');
+    var rOk=recs.filter(function(r){return r.ret==='Não voltou'}).length,rVo=recs.filter(function(r){return r.ret==='Voltou em 24h'}).length;
+    var cOk=cnt(null,rg('ret')+',"Não voltou"'),cVo=cnt(null,rg('ret')+',"Voltou em 24h"');
     tv.push({v:rOk+rVo?rOk/(rOk+rVo):'–',s:'kpip',f:'IF(('+cOk+'+'+cVo+')=0,"–",'+cOk+'/('+cOk+'+'+cVo+'))'});
   }
   tv.forEach(function(v,i){put(8,i,v)});rows[7].height=40;
@@ -148,7 +148,7 @@ function extend(sheets,c,H){
 
   secRow('Como ler');
   var notes=[
-    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder.'+(SN?' "Finaliza SafeNota": protocolo encerrado pelo fluxo SafeNota.':'')+' "Outros (não retornou)": finalizado sem retorno do cliente.'+(FCR?' FCR: resolvidos em que o cliente não voltou em até 24h ÷ resolvidos avaliáveis (a coluna "Retorno em 24h" da aba Dados mostra o caso de cada protocolo).':''),
+    'Desfecho "Resolvido": atendimento concluído pela IA (inclui possível solução sem retorno do cliente). "Transferido": foi para a fila de atendimento humano. "Não resolvido": a IA não conseguiu resolver. "Inatividade": o cliente parou de responder.'+(SN?' "Finaliza SafeNota": protocolo encerrado pelo fluxo SafeNota.':'')+' "Outros (não retornou)": finalizado sem retorno do cliente.'+(FCR?' FCR: resolvidos sem retorno em 24h ÷ (resolvidos + inativos e não resolvidos, sem transferência, que voltaram em 24h); transferidos ficam de fora. A coluna "Retorno em 24h" da aba Dados mostra o caso de cada protocolo.':''),
     'Percentuais são calculados sobre os atendimentos com desfecho. A nota média considera só atendimentos avaliados.',
     'Canal de entrada conforme a coluna "Tipo de Entrada" do R72 (Webchat ou WhatsApp); "Não informado" = protocolo sem esse dado.',
     'As abas "Gráficos", "Comparativo…" e "Evolução…" refletem o recorte do BI no momento do download. O Painel permite refinar esse recorte sem voltar ao sistema.'

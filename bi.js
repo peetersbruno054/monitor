@@ -284,7 +284,7 @@ function fcrCard(c,dl,pst){
   var f=c.fcr;if(!f||!f.res)return'';
   var pf=c.prev&&c.prev.fcr,okp=pf&&pf.elig>=10&&f.elig>=10&&pst&&pst.t>=10&&c.st._all.t>=10;
   var fo=f.janela+f.semid,tip=window.monFCR.DEF+(fo?' Fora do cálculo: '+window.monFCR.note(f)+'.':'');
-  return'<div class="bi-k" title="'+esc(tip)+'" style="--c:var(--bi-fcr)"><small>FCR · 1º contato</small><strong>'+(f.fcr==null?'—':pc(f.fcr))+(okp?dl(f.fcr,pf.fcr,1,'pp'):'')+'</strong><em>'+n0(f.ok)+' de '+n0(f.elig)+' resolvidos não voltaram em 24h</em>'+(fo?'<em>'+n0(fo)+' fora do cálculo</em>':'')+'</div>';
+  return'<div class="bi-k" title="'+esc(tip)+'" style="--c:var(--bi-fcr)"><small>FCR · 1º contato</small><strong>'+(f.fcr==null?'—':pc(f.fcr))+(okp?dl(f.fcr,pf.fcr,1,'pp'):'')+'</strong><em>'+n0(f.ok)+' de '+n0(f.elig)+' casos sem retorno em 24h</em>'+(fo?'<em>'+n0(fo)+' fora do cálculo</em>':'')+'</div>';
 }
 function renderKpis(c){
   var v=c.st._all,cnt=counts(v),g=singleGoal(c),t=v.t;
@@ -537,7 +537,7 @@ function renderTables(c){
     rows+='<tr class="clk'+(sel?' sel':'')+'" data-ia="'+esc(n)+'" tabindex="0" aria-pressed="'+(sel?'true':'false')+'"><td><b>'+esc(n)+'</b></td>'+statCells(v,metas[n],HASF?c.fcrIA[n]||{}:undefined)+'</tr>'});
   rows+='<tr class="tot"><td>Todas as IAs</td>'+statCells(c.stIA._all,null,HASF?c.fcrIA._all:undefined)+'</tr>';
   q('#biCmp').innerHTML='<div class="panel-head"><div><h2>Comparativo entre IAs</h2><p>Valores nos filtros atuais (exceto o filtro de IA) · verde/vermelho = meta atingida/não atingida · clique numa linha para filtrar</p></div></div>'+
-    '<div class="bi-tw"><table><thead><tr>'+THEADF.replace('%s','IA')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+(HASF?'<p class="bi-note">FCR: resolvidos em que o cliente não voltou em até 24h (clientes sem telefone/contato e janelas de 24h incompletas ficam de fora).</p>':'');
+    '<div class="bi-tw"><table><thead><tr>'+THEADF.replace('%s','IA')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+(HASF?'<p class="bi-note">FCR: resolvidos sem retorno em 24h ÷ (resolvidos + inativos e não resolvidos, sem transferência, que voltaram em 24h). Transferidos, clientes sem telefone/contato e janelas de 24h incompletas ficam de fora.</p>':'');
   var g=F.ias.length===1?metas[F.ias[0]]:null;
   var ev=c.B.map(function(b){return'<tr><td><b>'+esc(b.full)+'</b></td>'+statCells(b.v,g)+'</tr>'}).join('');
   q('#biEvo').innerHTML='<div class="panel-head"><div><h2>Evolução '+(c.gran==='week'?'semanal':'diária')+'</h2><p>Os mesmos números dos gráficos, em tabela'+(g?' · com as metas de '+esc(F.ias[0]):'')+'</p></div></div>'+
@@ -767,9 +767,9 @@ function exportXlsx(){
   var fc=c.fcr;
   if(fc&&fc.res){
     var ri=resumo.findIndex(function(r){return r[0]==='Nota média'});
-    resumo.splice(ri,0,['FCR · resolução no 1º contato',{v:fc.fcr!=null?fc.fcr/100:null,s:'pct'}],['  Resolvidos que não voltaram em 24h',{v:fc.ok,s:'int'}],['  Resolvidos avaliáveis',{v:fc.elig,s:'int'}],['  Fora do cálculo (janela incompleta / sem contato)',{v:fc.janela+fc.semid,s:'int'}]);
+    resumo.splice(ri,0,['FCR · resolução no 1º contato',{v:fc.fcr!=null?fc.fcr/100:null,s:'pct'}],['  Resolvidos sem retorno em 24h',{v:fc.ok,s:'int'}],['  Voltaram em 24h: resolvidos',{v:fc.voltou,s:'int'}],['  Voltaram em 24h: inativos (sem transferência)',{v:fc.vina,s:'int'}],['  Voltaram em 24h: não resolvidos (sem transferência)',{v:fc.vnao,s:'int'}],['  Casos avaliados',{v:fc.elig,s:'int'}],['  Resolvidos fora do cálculo (janela incompleta / sem contato)',{v:fc.janela+fc.semid,s:'int'}]);
   }
-  var HF=!!(c.fcrIA&&c.fcrIA._all.res),cmp=[head(['IA'].concat(headStat()).concat(HF?['FCR','Resolvidos sem retorno em 24h','Resolvidos avaliáveis']:[]).concat(['Incluída no filtro']))];
+  var HF=!!(c.fcrIA&&c.fcrIA._all.res),cmp=[head(['IA'].concat(headStat()).concat(HF?['FCR','Resolvidos sem retorno em 24h','Casos avaliados']:[]).concat(['Incluída no filtro']))];
   IAS.forEach(function(n){var s=c.stIA[n];if(!s||!s.t)return;var r=statRow(n,s,metas[n]);if(HF)r.push.apply(r,fcrCells(c.fcrIA[n]));r.push(!F.ias.length||F.ias.indexOf(n)>=0?'Sim':'Não');cmp.push(r)});
   var rt=statRow('Todas as IAs',c.stIA._all,null);if(HF)rt.push.apply(rt,fcrCells(c.fcrIA._all));rt.push('');cmp.push(rt);
   var evo=function(gran){

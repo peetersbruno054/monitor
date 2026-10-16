@@ -222,3 +222,4 @@ Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, va
 - Gráficos do BI: linhas se desenham, colunas sobem e barras empilhadas se revelam; números dos cartões contam até o valor.
 - Painéis entram em sequência, cartões sobem ao passar o mouse, fio de luz no topo; tela de login com aurora e fluxo de conversas.
 - Tudo respeita “reduzir movimento” do sistema (cena fica estática, sem partículas) e não aparece na impressão.
+- Extras: passar o mouse (ou tocar/focar com Tab) num desfecho da cena destaca só o caminho dele; sparklines dos cartões se revelam; estrelas da pesquisa acendem uma a uma; o sino balança e o contador pulsa enquanto houver alertas; painéis abaixo da dobra aparecem ao rolar.

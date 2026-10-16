@@ -104,12 +104,35 @@ html[data-theme=dark] .login-scene .blob{opacity:.32}
 .login-card{position:relative;z-index:1;animation:sc-in .7s cubic-bezier(.2,.8,.2,1) both}
 .login-card .brand-logo-text{animation:sc-fade 1s ease .2s both}
 
+
+/* ---------- Mais acabamento ---------- */
+@keyframes sc-bell{0%,88%,100%{transform:rotate(0)}91%{transform:rotate(14deg)}94%{transform:rotate(-12deg)}97%{transform:rotate(7deg)}}
+@keyframes sc-ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--bad,#e34948) 55%,transparent)}70%,100%{box-shadow:0 0 0 8px transparent}}
+/* sparklines dos cartões se revelam da esquerda para a direita */
+.kpi2 .spark .plot{display:block;animation:sc-wipe 1.1s cubic-bezier(.3,.7,.2,1) .15s both}
+/* estrelas da pesquisa de satisfação acendem uma a uma */
+.ss-stars .st{animation:sc-pop .45s cubic-bezier(.2,.8,.2,1) both}
+.ss-stars .st:nth-child(2){animation-delay:.08s}.ss-stars .st:nth-child(3){animation-delay:.16s}.ss-stars .st:nth-child(4){animation-delay:.24s}.ss-stars .st:nth-child(5){animation-delay:.32s}
+.stars{display:inline-block;animation:sc-pop .5s cubic-bezier(.2,.8,.2,1) both}
+/* sino: balança de tempos em tempos e o contador pulsa enquanto houver alertas */
+#alertBell:has(.al-n:not([hidden])) .al-btn svg{transform-origin:50% 8%;animation:sc-bell 7s ease-in-out 2s infinite}
+#alertBell .al-n:not([hidden]){animation:sc-ping 2.6s ease-out infinite}
+/* painéis abaixo da dobra aparecem ao rolar */
+.sc-rv{animation:none!important;opacity:0;transform:translateY(18px)}
+.sc-rv.on{opacity:1;transform:none;transition:opacity .6s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+/* cena: passar o mouse (ou tocar) num desfecho destaca só o caminho dele */
+.cena-cw svg.foc [data-k]:not(.on){opacity:.14;transition:opacity .2s}
+.cena-cw svg.foc circle[data-k]:not(.on){visibility:hidden}
+.cena-cw svg.foc .pth.on{opacity:.6!important}
+.cena-cw g.row{cursor:pointer}
+
 @media(max-width:560px){.cena-cw{min-height:140px}}
-@media print{.cena,.login-scene{display:none!important}}
+@media print{.cena,.login-scene{display:none!important}.sc-rv{opacity:1!important;transform:none!important}}
 
 /* ---------- "Reduzir movimento": nada se move, tudo aparece já no lugar ---------- */
 @media(prefers-reduced-motion:reduce){
   .cena-cw .halo,.login-scene .blob{display:none}
   .bi .sc-line,.bi .sc-dot,.bi .sc-col,.bi .sc-fade,.cena-cw .sc-line,.cena-cw .sc-in,.cena-cw .sc-bar{animation:none!important;stroke-dasharray:none}
+  .kpi2 .spark .plot,.ss-stars .st,.stars,#alertBell .al-btn svg,#alertBell .al-n{animation:none!important}
   .kpi2:hover,.bi .bi-k:hover,.bi .bi-ct:hover,.ag2:hover{transform:none}
 }

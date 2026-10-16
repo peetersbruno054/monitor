@@ -93,11 +93,11 @@ function drawScene(host){
 
   var yOf=function(i){return nR===1?cy:padY+rowH/2+i*((H-padY*2-rowH)/(nR-1))};
   var dur=function(i,n){return(2.6+((i*7+n)%5)*.35).toFixed(2)};
-  function particles(d,color,count,base,idx){
+  function particles(d,color,count,base,idx,key){
     if(!anim)return;
     for(var k=0;k<count;k++){
       var dr=dur(idx,k),beg=(k*(parseFloat(dr)/count)).toFixed(2);
-      var c=el('circle',{r:3.1,fill:'var('+color+')',opacity:0});
+      var c=el('circle',{r:3.1,fill:'var('+color+')',opacity:0});if(key)c.setAttribute('data-k',key);
       c.appendChild(el('animateMotion',{path:d,dur:dr+'s',begin:'-'+beg+'s',repeatCount:'indefinite',calcMode:'spline',keyTimes:'0;1',keySplines:'.35 .05 .55 .95'}));
       c.appendChild(el('animate',{attributeName:'opacity',values:'0;1;1;0',keyTimes:'0;.12;.85;1',dur:dr+'s',begin:'-'+beg+'s',repeatCount:'indefinite'}));
       gDots.appendChild(c);
@@ -108,14 +108,15 @@ function drawScene(host){
     var n=info.cn[o.k],sh=n/info.total,y=yOf(i);
     var d='M'+(cx+r)+' '+cy+' C'+(cx+r+(x0-cx-r)*.55).toFixed(1)+' '+cy+' '+(x0-(x0-cx-r)*.5).toFixed(1)+' '+y.toFixed(1)+' '+(x0-10)+' '+y.toFixed(1);
     var sw=Math.max(1.6,Math.min(9,1.6+sh*14));
-    var p=el('path',{d:d,class:'pth'+(anim?' sc-line':''),pathLength:1,stroke:'var('+o.c+')','stroke-width':sw,opacity:n?.28:.12});p.style.setProperty('--i',i);
+    var p=el('path',{d:d,class:'pth'+(anim?' sc-line':''),pathLength:1,stroke:'var('+o.c+')','stroke-width':sw,opacity:n?.28:.12});p.style.setProperty('--i',i);p.setAttribute('data-k','o'+i);
     gPaths.appendChild(p);
     if(n&&anim){
-      var f=el('path',{d:d,class:'flow',stroke:'var('+o.c+')','stroke-width':Math.max(1.4,Math.min(3,sw*.45))});gPaths.appendChild(f);
-      particles(d,o.c,Math.max(1,Math.min(6,Math.round(sh*10))),sw,i);
+      var f=el('path',{d:d,class:'flow',stroke:'var('+o.c+')','stroke-width':Math.max(1.4,Math.min(3,sw*.45)),'data-k':'o'+i});gPaths.appendChild(f);
+      particles(d,o.c,Math.max(1,Math.min(6,Math.round(sh*10))),sw,i,'o'+i);
     }
     /* linha do desfecho: marcador, rótulo, trilha com barra e números */
-    var g=el('g',{class:'row'+(anim?' sc-in':'')});g.style.setProperty('--i',i+2);
+    var g=el('g',{class:'row'+(anim?' sc-in':'')});g.style.setProperty('--i',i+2);g.setAttribute('data-k','o'+i);g.setAttribute('tabindex','0');
+    g.appendChild(el('rect',{x:x0-12,y:y-19,width:xR-x0+12,height:38,fill:'transparent'}));
     g.appendChild(el('title',{},o.lab+': '+n0(n)+' ('+pc(sh*100)+')'));
     g.appendChild(el('circle',{cx:x0,cy:y,r:6,fill:'var('+o.c+')'}));
     var tx=x0+16,rw=xR-tx;
@@ -160,6 +161,14 @@ function drawScene(host){
   if(!narrow)gNode.appendChild(el('text',{x:cx,y:cy+r+20,'text-anchor':'middle','font-size':11.5,'font-weight':600},info.ias.length>1?'Agentes de IA':(info.ias[0]||'Agente de IA')));
   if(narrow)gNode.appendChild(el('text',{x:cx,y:cy+r+16,'text-anchor':'middle','font-size':10.5,'font-weight':600},'IA'));
 
+  /* destaque ao passar o mouse, focar com o teclado ou tocar */
+  var focus=function(k){qa('[data-k]',svg).forEach(function(n){n.classList.toggle('on',n.getAttribute('data-k')===k)});svg.classList.toggle('foc',!!k)};
+  qa('g.row',svg).forEach(function(g){
+    var k=g.getAttribute('data-k');
+    g.addEventListener('mouseenter',function(){focus(k)});g.addEventListener('mouseleave',function(){focus(null)});
+    g.addEventListener('focus',function(){focus(k)});g.addEventListener('blur',function(){focus(null)});
+    g.addEventListener('click',function(){focus(svg.classList.contains('foc')&&g.classList.contains('on')?null:k)});
+  });
   cw.textContent='';cw.appendChild(svg);
   if(first&&anim)countText(big,0,info.total,900);
 }
@@ -170,7 +179,9 @@ function countText(node,from,to,ms){
   (function f(t){var p=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-p,3);node.textContent=n0(from+(to-from)*e);if(p<1)requestAnimationFrame(f)})(t0);
 }
 
+var rvT;
 function refreshScenes(){
+  clearTimeout(rvT);rvT=setTimeout(function(){qa('[data-panel]').forEach(prepReveal)},450);
   safe(function(){
     var ov=mountScene('cenaOv','#overviewKpis');if(ov)drawScene(ov);
     var bi=mountScene('cenaBi','#biKpis');if(bi)drawScene(bi);
@@ -246,10 +257,33 @@ function loginScene(){
 }
 
 /* ====================================================================
+   5. Painéis abaixo da dobra aparecem ao rolar
+   ==================================================================== */
+var RV=window.IntersectionObserver&&new IntersectionObserver(function(es){
+  es.forEach(function(e){if(!e.isIntersecting)return;RV.unobserve(e.target);e.target.classList.add('on');setTimeout(function(){e.target.classList.remove('sc-rv','on')},900)});
+},{rootMargin:'0px 0px -6% 0px'});
+function prepReveal(view){
+  if(!RV||reduce()||!view||view.hidden||!view.getClientRects().length)return;
+  qa(':scope>.panel,:scope>.grid-2>.panel',view).forEach(function(p){
+    if(p._seen||p.classList.contains('sc-rv'))return;
+    if(p.getBoundingClientRect().top<innerHeight*.92){p._seen=1;return}
+    p._seen=1;p.classList.add('sc-rv');RV.observe(p);
+    setTimeout(function(){if(p.classList.contains('sc-rv')&&!p.classList.contains('on')){RV.unobserve(p);p.classList.remove('sc-rv')}},12000);
+  });
+}
+function watchReveal(){
+  qa('[data-panel]').forEach(function(v){
+    new MutationObserver(function(){if(!v.hidden)setTimeout(function(){prepReveal(v)},60)}).observe(v,{attributes:true,attributeFilter:['hidden']});
+    if(!v.hidden)setTimeout(function(){prepReveal(v)},400);
+  });
+  var mn=q('#main');if(mn)new MutationObserver(function(){if(!mn.hidden)setTimeout(function(){qa('[data-panel]').forEach(prepReveal)},700)}).observe(mn,{attributes:true,attributeFilter:['hidden']});
+}
+
+/* ====================================================================
    Início
    ==================================================================== */
 function boot(){
-  safe(loginScene);safe(watchCounters);safe(watchCharts);
+  safe(loginScene);safe(watchCounters);safe(watchCharts);safe(watchReveal);
   ['overviewKpis','biKpis'].forEach(function(id){
     var k=q('#'+id);if(k)new MutationObserver(function(){requestAnimationFrame(refreshScenes)}).observe(k,{childList:true});
   });

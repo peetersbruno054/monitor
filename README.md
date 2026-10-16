@@ -223,3 +223,10 @@ Arquivos: `xlsx.js` (gerador: estilos, fórmulas, gráficos nativos, filtros, va
 - Painéis entram em sequência, cartões sobem ao passar o mouse, fio de luz no topo; tela de login com aurora e fluxo de conversas.
 - Tudo respeita “reduzir movimento” do sistema (cena fica estática, sem partículas) e não aparece na impressão.
 - Extras: passar o mouse (ou tocar/focar com Tab) num desfecho da cena destaca só o caminho dele; sparklines dos cartões se revelam; estrelas da pesquisa acendem uma a uma; o sino balança e o contador pulsa enquanto houver alertas; painéis abaixo da dobra aparecem ao rolar.
+
+## Visão geral redesenhada (visao.css + visao.js)
+- Indicadores do topo: brilho na cor de cada um, ícone em relevo e anel de progresso (percentual; a nota vai de 0 a 5; some no celular).
+- Desfechos da IA: rosca animada com o % de resolvidos no centro; passar o mouse na rosca destaca a linha do desfecho e vice-versa. Cada linha virou um cartão com barra em degradê com brilho.
+- Desempenho por IA: ícone com status (verde = com atendimentos, cinza = sem), barra de composição resolvidos/transferidos/não resolvidos e números maiores.
+- Atendimentos por hora e Economia da IA seguem o mesmo estilo. Tudo respeita “reduzir movimento”.
+

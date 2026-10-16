@@ -1,0 +1,105 @@
+/* visao.css — redesign da Visão geral na mesma linha da cena "Jornada do atendimento":
+   brilhos suaves, cantos grandes, anéis e barras com movimento. Só aparência; carregar depois do cenas.css. */
+
+@keyframes vs-arc{from{stroke-dasharray:0 100}}
+@keyframes vs-shine{0%{transform:translateX(-120%)}55%,100%{transform:translateX(220%)}}
+@keyframes vs-seg{from{stroke-dasharray:0 100;opacity:.2}}
+@keyframes vs-live{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--good,#1baf7a) 55%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
+
+/* ---------- Painéis da Visão geral: brilho no canto e marcador no título ---------- */
+html body [data-panel=overview]>.panel,html body [data-panel=overview]>.panel.cena{
+  border-radius:18px;
+  background:radial-gradient(520px 150px at 0 0,color-mix(in srgb,var(--blue,#2a78d6) 7%,transparent),transparent 72%),var(--surface,#fff)}
+[data-panel=overview] .panel-head h2:before{content:"";display:inline-block;width:4px;height:16px;margin-right:9px;border-radius:2px;vertical-align:-2px;
+  background:linear-gradient(var(--cyan,#00a7c7),var(--blue,#2a78d6))}
+
+/* ---------- Cartões de indicador (.kpi2) ---------- */
+html .kpi2{position:relative;overflow:hidden;padding:16px 18px;border-radius:18px;
+  background:radial-gradient(240px 120px at 100% 0,color-mix(in srgb,var(--c) 15%,transparent),transparent 72%),var(--surface,#fff)}
+html .kpi2:before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:3px;border-radius:0 3px 3px 0;background:var(--c);opacity:.9}
+html .kpi2 .ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 8%,transparent));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
+html .kpi2 .lb{font-weight:600;letter-spacing:.005em}
+html .kpi2 .vl{font-size:32px;font-weight:700;letter-spacing:-.03em}
+html .kpi2 .kring{position:absolute;right:14px;top:44px;width:42px;height:42px;transform:rotate(-90deg);pointer-events:none}
+html .kpi2 .kring .tk{fill:none;stroke:var(--surface3);stroke-width:5}
+html .kpi2 .kring .ar{fill:none;stroke:var(--c);stroke-width:5;stroke-linecap:round;animation:vs-arc 1.1s cubic-bezier(.3,.7,.2,1) .2s both}
+html .kpi2:not(.col) .kring .ar{stroke:var(--blue,#2a78d6)}
+html .kpi2 .spark .plot{opacity:.95}
+
+/* ---------- Desfechos da IA ---------- */
+#stackbar{height:12px;box-shadow:0 0 0 1px var(--line2),0 6px 16px -8px color-mix(in srgb,var(--blue,#2a78d6) 50%,transparent)}
+#outcomes .oc-sum{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px 22px;padding:18px 22px;margin-bottom:12px;border-radius:18px;
+  background:radial-gradient(460px 180px at 0 50%,color-mix(in srgb,var(--cyan,#00a7c7) 14%,transparent),transparent 70%),var(--surface2)}
+#outcomes .oc-sum big{font-size:46px;font-weight:700;letter-spacing:-.035em;background:linear-gradient(135deg,var(--ink),color-mix(in srgb,var(--blue,#2a78d6) 70%,var(--ink)));-webkit-background-clip:text;background-clip:text;color:transparent}
+#outcomes .oc-sum:not(:has(.oc-donut)){grid-template-columns:auto minmax(0,1fr)}
+#outcomes .oc-sum>div:last-child b{font-size:15px}
+.oc-donut{grid-row:1/3;width:136px;height:136px;position:relative}
+.oc-donut svg{display:block;width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.oc-donut .tk{fill:none;stroke:var(--surface3);stroke-width:15}
+.oc-donut .sg{fill:none;stroke-width:15;stroke-linecap:butt;transition:opacity .2s,stroke-width .2s;animation:vs-seg 1s cubic-bezier(.3,.7,.2,1) both;cursor:pointer}
+.oc-donut.foc .sg:not(.on){opacity:.2}.oc-donut .sg.on{stroke-width:19}
+.oc-donut .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.oc-donut .mid b{font-size:25px;font-weight:700;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.oc-donut .mid small{margin-top:3px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#outcomes .oc-sum{align-content:center;row-gap:2px}
+#outcomes .oc-sum big{grid-column:2;align-self:end}
+#outcomes .oc-sum>div:last-child{grid-column:2;align-self:start}
+
+#outcomes .oc-row{position:relative;margin:0 0 8px;padding:14px 16px;border:1px solid var(--line2);border-radius:16px;background:var(--surface);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,opacity .2s}
+#outcomes .oc-row:last-child{border-bottom:1px solid var(--line2)}
+#outcomes .oc-row:before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--c)}
+#outcomes .oc-row:hover,#outcomes .oc-row.on{background:linear-gradient(90deg,color-mix(in srgb,var(--c) 7%,transparent),transparent 60%),var(--surface);border-color:color-mix(in srgb,var(--c) 45%,var(--line2));transform:translateY(-1px);box-shadow:0 10px 24px -14px color-mix(in srgb,var(--c) 70%,transparent)}
+#outcomes:has(.oc-row:hover) .oc-row:not(:hover),#outcomes.foc .oc-row:not(.on){opacity:.55}
+#outcomes .oc-row.z{opacity:.62}
+#outcomes .oc-dot{width:11px;height:11px;margin-top:4px;border-radius:50%;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent)}
+#outcomes .oc-m .tr{height:11px;background:var(--surface3);box-shadow:inset 0 1px 2px rgba(0,30,50,.08)}
+#outcomes .oc-m .tr i{position:relative;overflow:hidden;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 62%,#fff),var(--c))}
+#outcomes .oc-m .tr i:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);transform:translateX(-120%);animation:vs-shine 5s ease-in-out 1.4s infinite}
+#outcomes .oc-r strong{font-size:24px;font-weight:700;letter-spacing:-.02em}
+#outcomes .oc-sp span{padding:2px 9px;border:1px solid var(--line2);border-radius:999px;background:var(--surface2)}
+#outcomes .oc-sp span+span{padding-left:9px;border-left:1px solid var(--line2)}
+
+/* ---------- Atendimentos por hora ---------- */
+#peakPanel .pk-s{position:relative;padding:12px 14px;border-radius:16px;border:1px solid var(--line2);
+  background:radial-gradient(180px 90px at 100% 0,color-mix(in srgb,var(--cyan,#00a7c7) 11%,transparent),transparent 72%),var(--surface2);transition:transform .18s,box-shadow .18s}
+#peakPanel .pk-s:hover{transform:translateY(-2px);box-shadow:0 10px 22px -14px rgba(0,40,64,.35)}
+#peakPanel .pk-s strong{font-size:22px;font-weight:700;letter-spacing:-.02em}
+#peakPanel .hs-stack .sg{border-radius:3px}
+
+/* ---------- Desempenho por IA ---------- */
+html .ag2{position:relative;padding:16px;border-radius:18px;border:1px solid var(--line);
+  background:radial-gradient(300px 130px at 100% 0,color-mix(in srgb,var(--blue,#2a78d6) 9%,transparent),transparent 72%),var(--surface2);
+  transition:transform .18s,box-shadow .18s,border-color .18s}
+html .ag2:hover{border-color:color-mix(in srgb,var(--blue,#2a78d6) 40%,var(--line))}
+html .ag2-h{margin-bottom:10px}
+html .ag2-h .ic{position:relative;width:34px;height:34px;border-radius:11px;border:0;color:#fff;background:linear-gradient(145deg,var(--blue,#2a78d6),var(--cyan,#00a7c7));box-shadow:0 6px 14px -6px color-mix(in srgb,var(--blue,#2a78d6) 70%,transparent)}
+html .ag2-h .ic:after{content:"";position:absolute;right:-2px;top:-2px;width:9px;height:9px;border-radius:50%;background:var(--good,#1baf7a);border:2px solid var(--surface2);animation:vs-live 2.4s ease-out infinite}
+html .ag2.off .ag2-h .ic{background:var(--surface3);color:var(--muted);box-shadow:none}.ag2.off .ag2-h .ic:after{background:var(--muted2,#9aa7b2);animation:none}
+html .ag2-h b{font-size:15px;font-weight:700}
+html .ag2-mix{display:flex;gap:2px;height:8px;margin:0 0 12px;border-radius:999px;overflow:hidden;background:var(--surface3)}
+html .ag2-mix i{display:block;min-width:0;background:var(--c);transform-origin:left;animation:ef-grow .9s cubic-bezier(.2,.8,.2,1) both}
+html .ag2-mix i+i{margin-left:0}
+html .ag-stat{position:relative;padding:11px 11px 10px;border-radius:14px;background:var(--surface);overflow:hidden}
+html .ag-stat strong{font-size:22px;font-weight:700;letter-spacing:-.02em}
+html .mb{height:5px}
+
+/* ---------- Economia da IA ---------- */
+#ecoPanel .eco-k strong{font-size:30px;font-weight:700;letter-spacing:-.03em}
+#ecoPanel .eco-k:first-child strong{background:linear-gradient(135deg,var(--good),color-mix(in srgb,var(--good) 55%,var(--cyan,#00a7c7)));-webkit-background-clip:text;background-clip:text;color:transparent}
+#ecoPanel .eco-bar{height:11px;box-shadow:inset 0 1px 2px rgba(0,30,50,.08)}
+#ecoPanel .eco-bar i{position:relative;overflow:hidden;transform-origin:left;animation:ef-grow .9s cubic-bezier(.2,.8,.2,1) both}
+#ecoPanel .eco-bar i:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);transform:translateX(-120%);animation:vs-shine 6s ease-in-out 1.8s infinite}
+
+@media(max-width:620px){
+  #outcomes .oc-sum{grid-template-columns:auto minmax(0,1fr);padding:14px;gap:4px 14px}
+  .oc-donut{width:96px;height:96px}.oc-donut .mid b{font-size:18px}.oc-donut .mid small{font-size:9px}
+  #outcomes .oc-sum big{font-size:34px}
+  #outcomes .oc-row{padding:12px 12px 12px 14px}
+  html .kpi2 .kring{display:none}html .kpi2 .vl{font-size:27px}
+}
+@media print{#outcomes .oc-m .tr i:after,#ecoPanel .eco-bar i:after{display:none}}
+@media(prefers-reduced-motion:reduce){
+  .kpi2 .kring .ar,.oc-donut .sg,.ag2-mix i,#ecoPanel .eco-bar i{animation:none!important}
+  #outcomes .oc-m .tr i:after,#ecoPanel .eco-bar i:after,.ag2-h .ic:after{animation:none!important;display:none}
+}
